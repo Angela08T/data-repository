@@ -1,0 +1,2510 @@
+{
+  "metadata": {
+    "total": 100,
+    "generado": "2025-01-21",
+    "fuente": "Programa Vaso de Leche - MSJL",
+    "version": "1.0"
+  },
+  "comites": [
+    {
+      "id": 589,
+      "codigo": 1501321905,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR E",
+      "comite": "REUBICADOS SANTA ROSITA - III",
+      "pueblo": "REUBICADOS SANTA ROSITA III",
+      "coordenadas": {
+        "latitud": -11.946397,
+        "longitud": -77.006546
+      },
+      "inspector": "ANDY",
+      "beneficiarios": 47,
+      "socios": 24,
+      "comuna": 10,
+      "coordinadora": {
+        "nombre": "JULIANA SOPAN SAJAMI",
+        "dni": 47582996,
+        "celular": 900188107
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ I LT 5 AAHH REUBICADOS DE SANTA ROSITA 3era Etapa ref: comisaría los amautas",
+      "observacion": null
+    },
+    {
+      "id": 1576,
+      "codigo": 1501320500,
+      "ruta": "D",
+      "centroAcopio": "SAN FRANCISCO DE ASIS",
+      "comite": "28 DE julio - 2003",
+      "pueblo": "28 DE JULIO",
+      "coordenadas": {
+        "latitud": -12.021176,
+        "longitud": -76.978546
+      },
+      "inspector": "NOHEMI",
+      "beneficiarios": 63,
+      "socios": 38,
+      "comuna": 1,
+      "coordinadora": {
+        "nombre": "Hayme Roca Fernández",
+        "dni": 42510461,
+        "celular": 900594840
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Arco de 28 espalda colegio Daniel AC",
+      "observacion": null
+    },
+    {
+      "id": 148,
+      "codigo": 1501321056,
+      "ruta": "A",
+      "centroAcopio": "HUASCAR C",
+      "comite": "SAN MARCOS",
+      "pueblo": "SAN MARCOS",
+      "coordenadas": {
+        "latitud": -11.967283,
+        "longitud": -77.014252
+      },
+      "inspector": "CARLOS",
+      "beneficiarios": 91,
+      "socios": 52,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "María Isabel Ramos Quispe",
+        "dni": 10364122,
+        "celular": 901227752
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Dirección Mz D - Lt 08 AA.HH San marcos",
+      "observacion": null
+    },
+    {
+      "id": 1599,
+      "codigo": 1501321180,
+      "ruta": "D",
+      "centroAcopio": "SAN PEDRO DE CAMPOY",
+      "comite": "ROSALES DE CAMPOY UNICO",
+      "pueblo": "ROSALES DE CAMPOY",
+      "coordenadas": {
+        "latitud": -12.007761,
+        "longitud": -76.964386
+      },
+      "inspector": "NOHEMI",
+      "beneficiarios": 32,
+      "socios": 21,
+      "comuna": 1,
+      "coordinadora": {
+        "nombre": "Sarita Pariona Medina",
+        "dni": 43995079,
+        "celular": 901828336
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Capilla de la rinconada\nEntrenamiento de Serenazgo",
+      "observacion": null
+    },
+    {
+      "id": 1157,
+      "codigo": 1501320769,
+      "ruta": "C",
+      "centroAcopio": "MARISCAL CACERES A",
+      "comite": "MARISCAL CACERES A COMITE 5 C",
+      "pueblo": "MARISCAL CACERES A",
+      "coordenadas": {
+        "latitud": -11.948754,
+        "longitud": -76.97747
+      },
+      "inspector": "DERIAN",
+      "beneficiarios": 35,
+      "socios": 29,
+      "comuna": 13,
+      "coordinadora": {
+        "nombre": "Yennifer Marleni Soto Galván",
+        "dni": 46824545,
+        "celular": 902062008
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz R7 Lote 13 Mariscal Cáceres / paradero 6 de Mariscal Cáceres",
+      "observacion": null
+    },
+    {
+      "id": 1516,
+      "codigo": 1501321476,
+      "ruta": "D",
+      "centroAcopio": "EL SAUCE",
+      "comite": "A.H CERRO EL SAUCE - FOR",
+      "pueblo": "AAHH CERRO EL SAUCE",
+      "coordenadas": {
+        "latitud": -12.005669,
+        "longitud": -76.996574
+      },
+      "inspector": "ANDY",
+      "beneficiarios": 53,
+      "socios": 42,
+      "comuna": 5,
+      "coordinadora": {
+        "nombre": "ROXANA PALOMINO PORTOCARRERO",
+        "dni": 44864965,
+        "celular": 902114566
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ F LT G5 AAHH CERRO EL SAUCE",
+      "observacion": null
+    },
+    {
+      "id": 972,
+      "codigo": 1501322027,
+      "ruta": "C",
+      "centroAcopio": "INMACULADA CONCEPCION",
+      "comite": "PROYECTOS ESPECIALES 54",
+      "pueblo": "PROYECTOS ESPECIALES",
+      "coordenadas": {
+        "latitud": -11.958176,
+        "longitud": -76.991303
+      },
+      "inspector": "RUFINA",
+      "beneficiarios": 34,
+      "socios": 0,
+      "comuna": 24,
+      "coordinadora": {
+        "nombre": "Sinder Risco zelada",
+        "dni": 70827125,
+        "celular": 902131357
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ 54 lt 25 proyectos Especiales ll etapa por el colegio Daniel Alcides Carrion",
+      "observacion": null
+    },
+    {
+      "id": 1645,
+      "codigo": 1501322216,
+      "ruta": "D",
+      "centroAcopio": "ALFONSO BARRANTES",
+      "comite": "CANTO REY 2DA ETAPA - M1",
+      "pueblo": "CANTO REY",
+      "coordenadas": {
+        "latitud": -11.974208,
+        "longitud": -76.997223
+      },
+      "inspector": "RUFINA",
+      "beneficiarios": 15,
+      "socios": 13,
+      "comuna": 9,
+      "coordinadora": {
+        "nombre": "Lidia Bonifacio Flores",
+        "dni": 10349007,
+        "celular": 902193831
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz M1 lote 32 segunda parque de canto Rey",
+      "observacion": null
+    },
+    {
+      "id": 604,
+      "codigo": 1501320940,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR E",
+      "comite": "AF SAN JUAN ALTO",
+      "pueblo": "AF SAN JUAN ALTO",
+      "coordenadas": {
+        "latitud": -11.952807,
+        "longitud": -77.008667
+      },
+      "inspector": "BASURTO",
+      "beneficiarios": 36,
+      "socios": 20,
+      "comuna": 10,
+      "coordinadora": {
+        "nombre": "OLGA HUAMAN SOTO",
+        "dni": 23274087,
+        "celular": 902307430
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ B LOTE 04 NUEVO SAN JUAN ALTO PARADERO 52 AL CERRO",
+      "observacion": null
+    },
+    {
+      "id": 820,
+      "codigo": 1501320441,
+      "ruta": "C",
+      "centroAcopio": "1RO DE MAYO",
+      "comite": "SANTA BÁRBARA E-F-G",
+      "pueblo": "SANTA BARBARA",
+      "coordenadas": {
+        "latitud": -11.944012,
+        "longitud": -76.972481
+      },
+      "inspector": "BASURTO",
+      "beneficiarios": 23,
+      "socios": 16,
+      "comuna": 16,
+      "coordinadora": {
+        "nombre": "VANESSA VIVIANA RIMACHI QUISPE",
+        "dni": 45540695,
+        "celular": 902414144
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ H LOTE 05 AA. HH. SANTA BARBARA",
+      "observacion": null
+    },
+    {
+      "id": 426,
+      "codigo": 1501321627,
+      "ruta": "B",
+      "centroAcopio": "BAYOVAR",
+      "comite": "ZONA 3-66",
+      "pueblo": "3RA ZONA DE BAYOVAR",
+      "coordenadas": {
+        "latitud": -11.953086,
+        "longitud": -76.99363
+      },
+      "inspector": "CARLOS",
+      "beneficiarios": 33,
+      "socios": 15,
+      "comuna": 14,
+      "coordinadora": {
+        "nombre": "Mayra Muños Guevara",
+        "dni": 46124182,
+        "celular": 902539375
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Dirección Mz 66 Lt 01 3ra zona bayovar",
+      "observacion": null
+    },
+    {
+      "id": 417,
+      "codigo": 1501320916,
+      "ruta": "B",
+      "centroAcopio": "BAYOVAR",
+      "comite": "ZONA 2-20",
+      "pueblo": "2DA ZONA DE BAYOVAR",
+      "coordenadas": {
+        "latitud": -11.951525,
+        "longitud": -76.990807
+      },
+      "inspector": "CARLOS",
+      "beneficiarios": 34,
+      "socios": 17,
+      "comuna": 14,
+      "coordinadora": {
+        "nombre": "Gaby Vega Alvarado",
+        "dni": 60698999,
+        "celular": 902563348
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Dirección Mz 20 Lt 08 2da Zona bayovar",
+      "observacion": null
+    },
+    {
+      "id": 1410,
+      "codigo": 1501321586,
+      "ruta": "D",
+      "centroAcopio": "EL PROGRESO",
+      "comite": "NIÑO JESUS - SAGRADO CORAZON",
+      "pueblo": null,
+      "coordenadas": {
+        "latitud": -11.978714,
+        "longitud": -76.983177
+      },
+      "inspector": "BEATRIZ",
+      "beneficiarios": 36,
+      "socios": 15,
+      "comuna": 9,
+      "coordinadora": {
+        "nombre": "Jacqueline Rojas Yacolca",
+        "dni": 44378516,
+        "celular": 902651042
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz D Lt 17 Proyecto Los Angeles sector Sagrado Corazon / Ref:Altura del mercado San Martin",
+      "observacion": null
+    },
+    {
+      "id": 567,
+      "codigo": 1501320489,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR D",
+      "comite": "MIRADOR RICARDO PALMA",
+      "pueblo": "LOS MIRADORES DE RICARDO PALMA",
+      "coordenadas": {
+        "latitud": -11.956812,
+        "longitud": -77.004608
+      },
+      "inspector": "FRANCO",
+      "beneficiarios": 31,
+      "socios": 22,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "TRINIDAD TRUJILLO MENDOZA",
+        "dni": 43067466,
+        "celular": 902837348
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 2,
+      "direccion": "PASAJE SN MZB LT 8",
+      "observacion": null
+    },
+    {
+      "id": 1343,
+      "codigo": 1501320928,
+      "ruta": "D",
+      "centroAcopio": "EL CAMBIO",
+      "comite": "4 ETAPA-5",
+      "pueblo": "4TA ETAPA",
+      "coordenadas": {
+        "latitud": -11.980994,
+        "longitud": -76.989578
+      },
+      "inspector": "ANDY",
+      "beneficiarios": 30,
+      "socios": 28,
+      "comuna": 11,
+      "coordinadora": {
+        "nombre": "ROCIO ROJAS CHOMBA",
+        "dni": 42212284,
+        "celular": 902961058
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ A LT 4 AF COMBATE DE ANGAMOS.",
+      "observacion": null
+    },
+    {
+      "id": 550,
+      "codigo": 1501320783,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR D",
+      "comite": "GRUPO 11 - 87",
+      "pueblo": "GRUPO 11",
+      "coordenadas": {
+        "latitud": -11.959691,
+        "longitud": -77.00383
+      },
+      "inspector": "ELSA",
+      "beneficiarios": 33,
+      "socios": 24,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "Mariela liduvina Huaman Ordóñez",
+        "dni": 10128821,
+        "celular": 903372796
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Alt.colegio Ricardo Palma pard.7de huascar",
+      "observacion": null
+    },
+    {
+      "id": 175,
+      "codigo": 1501320852,
+      "ruta": "A",
+      "centroAcopio": "HUASCAR C",
+      "comite": "BRISAS DE HUASCAR - B",
+      "pueblo": "BRISAS DE HUASCAR",
+      "coordenadas": {
+        "latitud": -11.963456,
+        "longitud": -77.018669
+      },
+      "inspector": "Franco",
+      "beneficiarios": 21,
+      "socios": 14,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "ANA MARÍA COCHACHI ROMERO",
+        "dni": 10104568,
+        "celular": 903441724
+      },
+      "beneficiariosExtranjeros": 1,
+      "discapacitados": 0,
+      "direccion": "MZ D LT 3",
+      "observacion": null
+    },
+    {
+      "id": 514,
+      "codigo": 1501321008,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR B",
+      "comite": "GRUPO 16 - 145",
+      "pueblo": "GRUPO 16",
+      "coordenadas": {
+        "latitud": -11.952839,
+        "longitud": -77.002495
+      },
+      "inspector": "DERIAN",
+      "beneficiarios": 19,
+      "socios": 13,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "Yesi Cerna Cabrera",
+        "dni": 41586020,
+        "celular": 903454231
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 1,
+      "direccion": "Mz 145 Lote 31 Grupo 16 / paradero 11 de huascar",
+      "observacion": null
+    },
+    {
+      "id": 1682,
+      "codigo": 1501320862,
+      "ruta": "D",
+      "centroAcopio": "SANTA FE DE TOTORITA",
+      "comite": "LA HUAYRONA - 1",
+      "pueblo": "COOP LA HUAYRONA",
+      "coordenadas": {
+        "latitud": -11.992295,
+        "longitud": -77.002091
+      },
+      "inspector": "DERIAN",
+      "beneficiarios": 31,
+      "socios": 12,
+      "comuna": 8,
+      "coordinadora": {
+        "nombre": "Angélica Cabrera Cachi",
+        "dni": 10123402,
+        "celular": 906434600
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Jr los Asbestos 636 / Jorge Basadre y santa rosa",
+      "observacion": null
+    },
+    {
+      "id": 1644,
+      "codigo": 1501322212,
+      "ruta": "D",
+      "centroAcopio": "ALFONSO BARRANTES",
+      "comite": "CANTO REY 2DA ETAPA - L1",
+      "pueblo": "CANTO REY",
+      "coordenadas": {
+        "latitud": -11.973905,
+        "longitud": -76.99749
+      },
+      "inspector": "RUFINA",
+      "beneficiarios": 30,
+      "socios": 10,
+      "comuna": 9,
+      "coordinadora": {
+        "nombre": "Susana Daysi Anticona Briceño",
+        "dni": 17902945,
+        "celular": 906648577
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz L1 lt 3 ll etapa cantó rey",
+      "observacion": null
+    },
+    {
+      "id": 216,
+      "codigo": 1501321282,
+      "ruta": "A",
+      "centroAcopio": "PJ SAN HILARION",
+      "comite": "COMITÉ 55B - AMPLIACION 70 - EL MIRADOR",
+      "pueblo": "SAN HILARION - AMPLIACION 70 - EL MIRADOR",
+      "coordenadas": {
+        "latitud": -11.994716,
+        "longitud": -77.022133
+      },
+      "inspector": "FRANCO",
+      "beneficiarios": 17,
+      "socios": 17,
+      "comuna": 7,
+      "coordinadora": {
+        "nombre": "VERALUCIA CANELO MENDOZA",
+        "dni": 47821938,
+        "celular": 907267224
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 1,
+      "direccion": "MZ P2 lt 4",
+      "observacion": null
+    },
+    {
+      "id": 976,
+      "codigo": 1501322040,
+      "ruta": "C",
+      "centroAcopio": "INMACULADA CONCEPCION",
+      "comite": "PROYECTOS ESPECIALES 52",
+      "pueblo": "PROYECTOS ESPECIALES",
+      "coordenadas": {
+        "latitud": -11.958328,
+        "longitud": -76.992287
+      },
+      "inspector": "RUFINA",
+      "beneficiarios": 31,
+      "socios": 17,
+      "comuna": 14,
+      "coordinadora": {
+        "nombre": "Wendy Katerin Casas Serrot",
+        "dni": 41438077,
+        "celular": 908526117
+      },
+      "beneficiariosExtranjeros": 1,
+      "discapacitados": 0,
+      "direccion": "MZ 52 lt 27 primer piso Proyectos Especiales ll etapa con A V Naciones unidas",
+      "observacion": null
+    },
+    {
+      "id": 1352,
+      "codigo": 1501320792,
+      "ruta": "D",
+      "centroAcopio": "EL CAMBIO",
+      "comite": "3 ETAPA-T2",
+      "pueblo": "3RA ETAPA",
+      "coordenadas": {
+        "latitud": -11.975708,
+        "longitud": -76.998947
+      },
+      "inspector": "BASURTO",
+      "beneficiarios": 43,
+      "socios": 26,
+      "comuna": 10,
+      "coordinadora": {
+        "nombre": "MIRTA CONTRERAS GARCÍA",
+        "dni": 10118096,
+        "celular": 910118126
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "JR. RIO SULLANA 445 CANTO REY",
+      "observacion": null
+    },
+    {
+      "id": 80,
+      "codigo": 1501320062,
+      "ruta": "A",
+      "centroAcopio": "CANTO CHICO",
+      "comite": "CANTO CHICO 14 - JUVENTUD UNIDA",
+      "pueblo": "CANTO CHICO 14 - JUVENTUD UNIDA",
+      "coordenadas": {
+        "latitud": -12.007028,
+        "longitud": -77.01886
+      },
+      "inspector": "BASURTO",
+      "beneficiarios": 42,
+      "socios": 31,
+      "comuna": 6,
+      "coordinadora": {
+        "nombre": "CIRILA ALVAREZ MANDUJANO",
+        "dni": 20644894,
+        "celular": 910236047
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 2,
+      "direccion": "MZ E LOTE JUVENTUD UNIDA AA. HH SANTA ROSA DE LIMA ESPALDA DE JARDÍN LA MILAGROSA CERRO",
+      "observacion": null
+    },
+    {
+      "id": 1345,
+      "codigo": 1501320913,
+      "ruta": "D",
+      "centroAcopio": "EL CAMBIO",
+      "comite": "4 ETAPA-8-9",
+      "pueblo": "4TA ETAPA",
+      "coordenadas": {
+        "latitud": -11.977722,
+        "longitud": -76.990807
+      },
+      "inspector": "ANDY",
+      "beneficiarios": 35,
+      "socios": 23,
+      "comuna": 11,
+      "coordinadora": {
+        "nombre": "JANETH PARICAHUA",
+        "dni": 44138581,
+        "celular": 910262675
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ C LT 7E PASAJE LOS GRANADOS",
+      "observacion": null
+    },
+    {
+      "id": 146,
+      "codigo": 1501320295,
+      "ruta": "A",
+      "centroAcopio": "HUASCAR C",
+      "comite": "AMPLIACION BELEN - 13 15",
+      "pueblo": "AMPLIACION BELEN",
+      "coordenadas": {
+        "latitud": -11.964066,
+        "longitud": -77.016113
+      },
+      "inspector": "CARLOS",
+      "beneficiarios": 23,
+      "socios": 9,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "Flor velasquez anaya",
+        "dni": 16027715,
+        "celular": 910405054
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Dirección Mz 6 Lt 07 Ampliación Belen",
+      "observacion": null
+    },
+    {
+      "id": 984,
+      "codigo": 1501321936,
+      "ruta": "C",
+      "centroAcopio": "INMACULADA CONCEPCION",
+      "comite": "ATUSPARIA Mz.K6 -B",
+      "pueblo": "ATUSPARIA B",
+      "coordenadas": {
+        "latitud": -11.960774,
+        "longitud": -76.984749
+      },
+      "inspector": "BASURTO",
+      "beneficiarios": 24,
+      "socios": 17,
+      "comuna": 14,
+      "coordinadora": {
+        "nombre": "HILDA VENTURA AGUILAR",
+        "dni": 10512874,
+        "celular": 910535448
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ K7 LOTE 31A AGARRO EL CARHO PORQUE FALLECIÓ LA TITULAR",
+      "observacion": null
+    },
+    {
+      "id": 1422,
+      "codigo": 1501320040,
+      "ruta": "D",
+      "centroAcopio": "ALFONSO BARRANTES",
+      "comite": "BUENOS AIRES - H-D",
+      "pueblo": "BUENOS AIRES",
+      "coordenadas": {
+        "latitud": -11.965245,
+        "longitud": -76.992363
+      },
+      "inspector": "BEATRIZ",
+      "beneficiarios": 39,
+      "socios": 30,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "Geraldine Larico Torres",
+        "dni": 47129707,
+        "celular": 910613442
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz H Lote 4 Ah Buenos Aires / Paradero 13 de Wiesse",
+      "observacion": null
+    },
+    {
+      "id": 1127,
+      "codigo": 1501321274,
+      "ruta": "C",
+      "centroAcopio": "MARIATEGUI A",
+      "comite": "JOSE CARLOS MARIATEGUI MZ K20",
+      "pueblo": "JOSE CARLOS MARIATEGUI",
+      "coordenadas": {
+        "latitud": -11.941883,
+        "longitud": -76.983482
+      },
+      "inspector": "HECTOR",
+      "beneficiarios": 31,
+      "socios": 20,
+      "comuna": 17,
+      "coordinadora": {
+        "nombre": "Susy Fabiola Choque Neyra",
+        "dni": 76509985,
+        "celular": 910856538
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz K20 lt 2 mareategui",
+      "observacion": null
+    },
+    {
+      "id": 515,
+      "codigo": 1501321240,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR B",
+      "comite": "GRUPO 18 - 146",
+      "pueblo": "GRUPO 18",
+      "coordenadas": {
+        "latitud": -11.952146,
+        "longitud": -77.003044
+      },
+      "inspector": "ELSA",
+      "beneficiarios": 50,
+      "socios": 17,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "Maria del Pilar Pérez pipa",
+        "dni": 40088236,
+        "celular": 910898683
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Alt.parad.13 de huascar MZ 146lt.10",
+      "observacion": null
+    },
+    {
+      "id": 524,
+      "codigo": 1501321026,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR B",
+      "comite": "AMPL TRES CRUCES - D",
+      "pueblo": "AMPL 3 CRUCES",
+      "coordenadas": {
+        "latitud": -11.954579,
+        "longitud": -77.006271
+      },
+      "inspector": "ELSA",
+      "beneficiarios": 19,
+      "socios": 16,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "Ofelia Elizabeth Rentería Parra",
+        "dni": 44841429,
+        "celular": 912188060
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Ult.parad.52 MZ C lt.1 ampl.tres cruces huascar \n",
+      "observacion": null
+    },
+    {
+      "id": 735,
+      "codigo": 1501321570,
+      "ruta": "B",
+      "centroAcopio": "SAUL CANTORAL",
+      "comite": "7 DE JUNIO",
+      "pueblo": "7 DE JUNIO",
+      "coordenadas": {
+        "latitud": -11.93642,
+        "longitud": -77.004112
+      },
+      "inspector": "CARLOS",
+      "beneficiarios": 44,
+      "socios": 24,
+      "comuna": 15,
+      "coordinadora": {
+        "nombre": "Esquivel Rojas Orfelinda",
+        "dni": 40529298,
+        "celular": 912208527
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz K Lt 1 Pasaje Los Tulipanes AA.FF 7 de Junio",
+      "observacion": null
+    },
+    {
+      "id": 331,
+      "codigo": 1501321112,
+      "ruta": "B",
+      "centroAcopio": "9 DE OCTUBRE",
+      "comite": "9 DE OCTUBRE 5",
+      "pueblo": "9 DE OCTUBRE",
+      "coordenadas": {
+        "latitud": -11.95978,
+        "longitud": -77.002808
+      },
+      "inspector": "BASURTO",
+      "beneficiarios": 22,
+      "socios": 13,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "LIZ GIOVANA GALINDO SEGOVIA",
+        "dni": 44799163,
+        "celular": 912249569
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 2,
+      "direccion": "MZ 5 lote 16 grupo 9 Huascar",
+      "observacion": null
+    },
+    {
+      "id": 1446,
+      "codigo": 1501321732,
+      "ruta": "D",
+      "centroAcopio": "ISRAEL",
+      "comite": "SAN PABLO-B",
+      "pueblo": "\"B\"",
+      "coordenadas": {
+        "latitud": -11.990026,
+        "longitud": -76.993614
+      },
+      "inspector": "RUFINA",
+      "beneficiarios": 36,
+      "socios": 28,
+      "comuna": 9,
+      "coordinadora": {
+        "nombre": "Ofelia Aliaga Olivares",
+        "dni": 80538992,
+        "celular": 912383767
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ B lt 2 Asociación San Pablo por el Penal de Lurigancho",
+      "observacion": null
+    },
+    {
+      "id": 1148,
+      "codigo": 1501320579,
+      "ruta": "C",
+      "centroAcopio": "MARISCAL CACERES A",
+      "comite": "MARISCAL CACERES A - COMITÉ 18",
+      "pueblo": "MARISCAL CACERES A",
+      "coordenadas": {
+        "latitud": -11.942965,
+        "longitud": -76.980225
+      },
+      "inspector": "DERIAN",
+      "beneficiarios": 42,
+      "socios": 35,
+      "comuna": 13,
+      "coordinadora": {
+        "nombre": "Geraldine Vidal Ruiz",
+        "dni": 43862776,
+        "celular": 912409755
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz S14 Lote 21 Mariscal Cáceres / Paradero 7 de mariscal Cáceres",
+      "observacion": null
+    },
+    {
+      "id": 29,
+      "codigo": 1501322169,
+      "ruta": "A",
+      "centroAcopio": "ASOC SAN HILARION",
+      "comite": "ASOC SAN HILARION-33",
+      "pueblo": null,
+      "coordenadas": {
+        "latitud": -11.999407,
+        "longitud": -77.013458
+      },
+      "inspector": "ELSA",
+      "beneficiarios": 24,
+      "socios": 11,
+      "comuna": 5,
+      "coordinadora": {
+        "nombre": "Susana Palomino boza",
+        "dni": 80395291,
+        "celular": 912446931
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 1,
+      "direccion": "JR.los Amelos 2045 San hilarion bajo para.14 de las flores de primavera",
+      "observacion": null
+    },
+    {
+      "id": 603,
+      "codigo": 1501320691,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR E",
+      "comite": "ALTO EL ROSAL",
+      "pueblo": "ALTO EL ROSAL",
+      "coordenadas": {
+        "latitud": -11.953852,
+        "longitud": -77.008377
+      },
+      "inspector": "BASURTO",
+      "beneficiarios": 40,
+      "socios": 20,
+      "comuna": 10,
+      "coordinadora": {
+        "nombre": "JENNIFER TITO CÁRDENAS",
+        "dni": 60769087,
+        "celular": 912555839
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ G LOTE 18 ALTO ROSAL",
+      "observacion": null
+    },
+    {
+      "id": 1013,
+      "codigo": 1501320640,
+      "ruta": "C",
+      "centroAcopio": "INMACULADA CONCEPCION",
+      "comite": "MZ I - 3",
+      "pueblo": "JESUS ALBERTO PAEZ",
+      "coordenadas": {
+        "latitud": -11.961767,
+        "longitud": -76.987534
+      },
+      "inspector": "ELSA",
+      "beneficiarios": 24,
+      "socios": 23,
+      "comuna": 14,
+      "coordinadora": {
+        "nombre": "Marilú buscan zuta",
+        "dni": 42732234,
+        "celular": 912828099
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Alt.paradero 160 de wiesse",
+      "observacion": null
+    },
+    {
+      "id": 1011,
+      "codigo": 1501320805,
+      "ruta": "C",
+      "centroAcopio": "INMACULADA CONCEPCION",
+      "comite": "MZ I - 5",
+      "pueblo": "JESUS ALBERTO PAEZ",
+      "coordenadas": {
+        "latitud": -11.962353,
+        "longitud": -76.985809
+      },
+      "inspector": "ELSA",
+      "beneficiarios": 13,
+      "socios": 9,
+      "comuna": 14,
+      "coordinadora": {
+        "nombre": "Gisella Carmen Robles Barrantes",
+        "dni": 44125359,
+        "celular": 912972112
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Alt.estacion bayovar",
+      "observacion": null
+    },
+    {
+      "id": 1412,
+      "codigo": 1501321557,
+      "ruta": "D",
+      "centroAcopio": "ALFONSO BARRANTES",
+      "comite": "ALFONSO BARRANTES J O CHONTA E",
+      "pueblo": null,
+      "coordenadas": {
+        "latitud": -11.968583,
+        "longitud": -77.001114
+      },
+      "inspector": "BEATRIZ",
+      "beneficiarios": 33,
+      "socios": 22,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "Mery Vera Pacheco",
+        "dni": 44255267,
+        "celular": 913814680
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz F Lt 3 AH Jesus Oropeza Chonta (Vive en Mz F pero es coordinadora de la E) / Paradero 10 de Av Canto Grande",
+      "observacion": null
+    },
+    {
+      "id": 1338,
+      "codigo": 1501321268,
+      "ruta": "D",
+      "centroAcopio": "EL CAMBIO",
+      "comite": "EL CAMBIO EL ROSARIO -2",
+      "pueblo": "5TA ETAPA",
+      "coordenadas": {
+        "latitud": -11.974835,
+        "longitud": -76.99382
+      },
+      "inspector": "ANDY",
+      "beneficiarios": 39,
+      "socios": 22,
+      "comuna": 10,
+      "coordinadora": {
+        "nombre": "NELLY",
+        "dni": 45492988,
+        "celular": 914217611
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "EL ROSARIO, PASAJE SANTA ROSITA 552 SUB LOTE 7F",
+      "observacion": null
+    },
+    {
+      "id": 532,
+      "codigo": 1501320967,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR B",
+      "comite": "GRUPO 17 - 153",
+      "pueblo": "GRUPO 17",
+      "coordenadas": {
+        "latitud": -11.954442,
+        "longitud": -77.004601
+      },
+      "inspector": "Franco",
+      "beneficiarios": 39,
+      "socios": 14,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "LUZ JOHANA ROJAS SOTO",
+        "dni": 42529073,
+        "celular": 914773867
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz 153 Lt 13 grupo 157",
+      "observacion": null
+    },
+    {
+      "id": 736,
+      "codigo": 1501321432,
+      "ruta": "B",
+      "centroAcopio": "SAUL CANTORAL",
+      "comite": "NUEVO PERU",
+      "pueblo": "NUEVO PERU",
+      "coordenadas": {
+        "latitud": -11.942233,
+        "longitud": -77.002556
+      },
+      "inspector": "CARLOS",
+      "beneficiarios": 24,
+      "socios": 17,
+      "comuna": 15,
+      "coordinadora": {
+        "nombre": "Maura vargas Rojas",
+        "dni": 22886849,
+        "celular": 915975685
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz F1 Lt 2 AA.FF Nuevo Perú",
+      "observacion": null
+    },
+    {
+      "id": 422,
+      "codigo": 1501321140,
+      "ruta": "B",
+      "centroAcopio": "BAYOVAR",
+      "comite": "ZONA 3-37",
+      "pueblo": "3RA ZONA DE BAYOVAR",
+      "coordenadas": {
+        "latitud": -11.950968,
+        "longitud": -76.992966
+      },
+      "inspector": "CARLOS",
+      "beneficiarios": 29,
+      "socios": 24,
+      "comuna": 14,
+      "coordinadora": {
+        "nombre": "Rosa Elizabeth Espinoza Quispe",
+        "dni": 43742675,
+        "celular": 916159758
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Dirección Mz 37 Lt 10 3ra zona bayovar",
+      "observacion": null
+    },
+    {
+      "id": 552,
+      "codigo": 1501320774,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR D",
+      "comite": "GRUPO 11 - 90 93",
+      "pueblo": "GRUPO 11",
+      "coordenadas": {
+        "latitud": -11.958584,
+        "longitud": -77.004051
+      },
+      "inspector": "ELSA",
+      "beneficiarios": 21,
+      "socios": 14,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "Hermelinda Olga villa silva",
+        "dni": 10363454,
+        "celular": 916463686
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Pard.7 de huascar",
+      "observacion": null
+    },
+    {
+      "id": 592,
+      "codigo": 1501321121,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR E",
+      "comite": "HUASCAR E MANO DE DIOS",
+      "pueblo": "MANO DE DIOS",
+      "coordenadas": {
+        "latitud": -11.94807,
+        "longitud": -77.007843
+      },
+      "inspector": "ANDY",
+      "beneficiarios": 35,
+      "socios": 29,
+      "comuna": 10,
+      "coordinadora": {
+        "nombre": "ELIZABETH PAULINA BENITO RAMIREZ",
+        "dni": 43356341,
+        "celular": 916616378
+      },
+      "beneficiariosExtranjeros": 1,
+      "discapacitados": 0,
+      "direccion": "MZ A LT 1 PJ MANO DE DIOS",
+      "observacion": null
+    },
+    {
+      "id": 1096,
+      "codigo": 1501322074,
+      "ruta": "C",
+      "centroAcopio": "MARIATEGUI A",
+      "comite": "Q24-Q21E2",
+      "pueblo": "JOSE CARLOS MARIATEGUI",
+      "coordenadas": {
+        "latitud": -11.936424,
+        "longitud": -76.991539
+      },
+      "inspector": "CARLOS",
+      "beneficiarios": 18,
+      "socios": 8,
+      "comuna": 17,
+      "coordinadora": {
+        "nombre": "Yovana Guerrero Alcantara",
+        "dni": 90536923,
+        "celular": 916745422
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz Q24 Lt 6 AA.HH José Carlos Mariategui",
+      "observacion": null
+    },
+    {
+      "id": 1688,
+      "codigo": 1501321989,
+      "ruta": "D",
+      "centroAcopio": "SANTA FE DE TOTORITA",
+      "comite": "SANTA FE ALTA",
+      "pueblo": "SANTA FE ALTA",
+      "coordenadas": {
+        "latitud": -11.996581,
+        "longitud": -76.994804
+      },
+      "inspector": "RUFINA",
+      "beneficiarios": 38,
+      "socios": 23,
+      "comuna": 5,
+      "coordinadora": {
+        "nombre": "Betzabeth Languasco Peña",
+        "dni": 80406616,
+        "celular": 917012099
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZH lote 1 santa fé alta por el centro de salud de totorita canchita comité 7",
+      "observacion": null
+    },
+    {
+      "id": 151,
+      "codigo": 1501320848,
+      "ruta": "A",
+      "centroAcopio": "HUASCAR C",
+      "comite": "JORGE CHAVEZ - A",
+      "pueblo": "JORGE CHAVEZ",
+      "coordenadas": {
+        "latitud": -11.962106,
+        "longitud": -77.012772
+      },
+      "inspector": "CARLOS",
+      "beneficiarios": 53,
+      "socios": 34,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "Yessica Padilla Gamarra",
+        "dni": 43775189,
+        "celular": 917738416
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Dirección Mz e Lt 14 Aa.hh Jorge Chávez",
+      "observacion": null
+    },
+    {
+      "id": 1620,
+      "codigo": 1501321815,
+      "ruta": "D",
+      "centroAcopio": "EL SAUCE",
+      "comite": "PUEBLO LIBRE - A",
+      "pueblo": null,
+      "coordenadas": {
+        "latitud": -12.003534,
+        "longitud": -76.991509
+      },
+      "inspector": "NOHEMI",
+      "beneficiarios": 38,
+      "socios": 36,
+      "comuna": 5,
+      "coordinadora": {
+        "nombre": "Maria Angelica Pari Flores",
+        "dni": 45371269,
+        "celular": 918233316
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Frente a loza de pueblo libre por av jardines",
+      "observacion": null
+    },
+    {
+      "id": 1618,
+      "codigo": 1501321757,
+      "ruta": "D",
+      "centroAcopio": "EL SAUCE",
+      "comite": "EL ALAMO",
+      "pueblo": null,
+      "coordenadas": {
+        "latitud": -12.004655,
+        "longitud": -76.984528
+      },
+      "inspector": "NOHEMI",
+      "beneficiarios": 30,
+      "socios": 20,
+      "comuna": 5,
+      "coordinadora": {
+        "nombre": "Diana Punto Jurado",
+        "dni": 44697552,
+        "celular": 918367127
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Sector 3 el álamo 1 \nEl paraíso",
+      "observacion": null
+    },
+    {
+      "id": 1385,
+      "codigo": 1501321659,
+      "ruta": "D",
+      "centroAcopio": "ALFONSO BARRANTES",
+      "comite": "LOS PINOS - L-H-B",
+      "pueblo": null,
+      "coordenadas": {
+        "latitud": -11.96815,
+        "longitud": -76.996216
+      },
+      "inspector": "ANDY",
+      "beneficiarios": 29,
+      "socios": 26,
+      "comuna": 10,
+      "coordinadora": {
+        "nombre": "JANET ROSANA LOZANO BORDA",
+        "dni": 40546788,
+        "celular": 918716175
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ H LT 30 ASOC LOS PINOS",
+      "observacion": null
+    },
+    {
+      "id": 819,
+      "codigo": 1501320401,
+      "ruta": "C",
+      "centroAcopio": "1RO DE MAYO",
+      "comite": "LAS VIÑAS",
+      "pueblo": "LAS VIÑAS",
+      "coordenadas": {
+        "latitud": -11.943786,
+        "longitud": -76.971985
+      },
+      "inspector": "BASURTO",
+      "beneficiarios": 22,
+      "socios": 19,
+      "comuna": 16,
+      "coordinadora": {
+        "nombre": "ROSA MARÍA LUNA MACEDO",
+        "dni": 42480074,
+        "celular": 918979368
+      },
+      "beneficiariosExtranjeros": 1,
+      "discapacitados": 0,
+      "direccion": "MZ B LOTE 01 AGRUPACIÓN LA VIÑA",
+      "observacion": null
+    },
+    {
+      "id": 979,
+      "codigo": 1501322030,
+      "ruta": "C",
+      "centroAcopio": "INMACULADA CONCEPCION",
+      "comite": "PROYECTOS ESPECIALES 59",
+      "pueblo": "PROYECTOS ESPECIALES",
+      "coordenadas": {
+        "latitud": -11.95713,
+        "longitud": -76.990547
+      },
+      "inspector": "RUFINA",
+      "beneficiarios": 36,
+      "socios": 22,
+      "comuna": 14,
+      "coordinadora": {
+        "nombre": "Liz Raquel Martinez Velarde",
+        "dni": 42356946,
+        "celular": 918994298
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ 59 lt 7 Proyectos Especiales ll etapa frente a IPD Bayovar",
+      "observacion": null
+    },
+    {
+      "id": 1351,
+      "codigo": 1501320858,
+      "ruta": "D",
+      "centroAcopio": "EL CAMBIO",
+      "comite": "3 ETAPA-K",
+      "pueblo": "3RA ETAPA",
+      "coordenadas": {
+        "latitud": -11.980084,
+        "longitud": -76.995262
+      },
+      "inspector": "BASURTO",
+      "beneficiarios": 39,
+      "socios": 25,
+      "comuna": 10,
+      "coordinadora": {
+        "nombre": "HELEN CATALINA VALDIVIA DOMÍNGUEZ",
+        "dni": 74738142,
+        "celular": 919614966
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "CALLE LOS COCALENOS 731-11 INTERIOR 1 SEMI RUSTICA CANTO GRANDE",
+      "observacion": null
+    },
+    {
+      "id": 993,
+      "codigo": 1501321934,
+      "ruta": "C",
+      "centroAcopio": "INMACULADA CONCEPCION",
+      "comite": "ATUSPARIA Mz.K6 - A",
+      "pueblo": "ATUSPARIA B",
+      "coordenadas": {
+        "latitud": -11.961052,
+        "longitud": -76.985367
+      },
+      "inspector": "BASURTO",
+      "beneficiarios": 17,
+      "socios": 17,
+      "comuna": 14,
+      "coordinadora": {
+        "nombre": "CAROL DENISSE JIMÉNEZ CANDELARIO",
+        "dni": 44900899,
+        "celular": 920308610
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ K6A LOTE 27 ATUSPARIA B",
+      "observacion": null
+    },
+    {
+      "id": 1559,
+      "codigo": 1501320476,
+      "ruta": "D",
+      "centroAcopio": "NUEVA VENECIA",
+      "comite": "5 DE JULIO-P-Q",
+      "pueblo": "5 DE JULIO",
+      "coordenadas": {
+        "latitud": -11.970972,
+        "longitud": -76.985756
+      },
+      "inspector": "Andy",
+      "beneficiarios": 46,
+      "socios": 33,
+      "comuna": 11,
+      "coordinadora": {
+        "nombre": "DIANALI AREVALO CARRASCO",
+        "dni": 72026369,
+        "celular": 921294811
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 2,
+      "direccion": "MZ Q LT 5 NUEVO MILENIO",
+      "observacion": null
+    },
+    {
+      "id": 734,
+      "codigo": 1501321477,
+      "ruta": "B",
+      "centroAcopio": "SAUL CANTORAL",
+      "comite": "SAUL CANTORAL - J",
+      "pueblo": "SAUL CANTORAL",
+      "coordenadas": {
+        "latitud": -11.93963,
+        "longitud": -77.004463
+      },
+      "inspector": "CARLOS",
+      "beneficiarios": 26,
+      "socios": 16,
+      "comuna": 15,
+      "coordinadora": {
+        "nombre": "Karin Valdivia Alejos",
+        "dni": 42469907,
+        "celular": 921312853
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz I Lt 10 AA.HH Saul Cantonal",
+      "observacion": null
+    },
+    {
+      "id": 775,
+      "codigo": 1501321597,
+      "ruta": "B",
+      "centroAcopio": "SOMOS LIBRES",
+      "comite": "AMPL 10 DE OCTUBRE - C10",
+      "pueblo": "AMPL 10 DE OCTUBRE",
+      "coordenadas": {
+        "latitud": -11.946033,
+        "longitud": -76.991257
+      },
+      "inspector": "CARLOS",
+      "beneficiarios": 15,
+      "socios": 11,
+      "comuna": 15,
+      "coordinadora": {
+        "nombre": "Sulca Guevara Rufina Yolanda",
+        "dni": 10363280,
+        "celular": 921647558
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz C10 Lt 01 Ampliación 10 de octubre",
+      "observacion": null
+    },
+    {
+      "id": 172,
+      "codigo": 1501320837,
+      "ruta": "A",
+      "centroAcopio": "HUASCAR C",
+      "comite": "GRUPO 4 - 155",
+      "pueblo": "GRUPO 4",
+      "coordenadas": {
+        "latitud": -11.967544,
+        "longitud": -77.008362
+      },
+      "inspector": "Franco",
+      "beneficiarios": 24,
+      "socios": 21,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "Elizabeth Fabiola cruz aliaga",
+        "dni": 10113006,
+        "celular": 921897341
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ 155 lt 12 grupo 4",
+      "observacion": null
+    },
+    {
+      "id": 1159,
+      "codigo": 1501320948,
+      "ruta": "C",
+      "centroAcopio": "MARISCAL CACERES A",
+      "comite": "MARISCAL CACERES A COMITE 14",
+      "pueblo": "MARISCAL CACERES A",
+      "coordenadas": {
+        "latitud": -11.947701,
+        "longitud": -76.979118
+      },
+      "inspector": "DERIAN",
+      "beneficiarios": 39,
+      "socios": 23,
+      "comuna": 13,
+      "coordinadora": {
+        "nombre": "Carlos García Vara",
+        "dni": 41706840,
+        "celular": 922280016
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz Q7 Lote 13 Mariscal Cáceres / Paradero 6 de Mariscal Cáceres",
+      "observacion": null
+    },
+    {
+      "id": 1381,
+      "codigo": 1501321696,
+      "ruta": "D",
+      "centroAcopio": "ALFONSO BARRANTES",
+      "comite": "MARISCAL LUZURIAGA - B-C",
+      "pueblo": null,
+      "coordenadas": {
+        "latitud": -11.969081,
+        "longitud": -76.999412
+      },
+      "inspector": "ANDY",
+      "beneficiarios": 24,
+      "socios": 19,
+      "comuna": 10,
+      "coordinadora": {
+        "nombre": "ISABEL TITO ORDOÑEZ",
+        "dni": 43391787,
+        "celular": 922288263
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ B LT 10 COOP MARISCAL LUZURIAGA",
+      "observacion": null
+    },
+    {
+      "id": 62,
+      "codigo": 1501322000,
+      "ruta": "A",
+      "centroAcopio": "CANTO CHICO",
+      "comite": "NUEVO PERU - 7",
+      "pueblo": "NUEVO PERU",
+      "coordenadas": {
+        "latitud": -12.000303,
+        "longitud": -77.019501
+      },
+      "inspector": "CARLOS",
+      "beneficiarios": 59,
+      "socios": 21,
+      "comuna": 6,
+      "coordinadora": {
+        "nombre": "NELLY FLORES CALDERÓN",
+        "dni": 41265613,
+        "celular": 922348407
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Dirección - MZ H - LT 13 AA.HH NUEVO PERÚ",
+      "observacion": null
+    },
+    {
+      "id": 1340,
+      "codigo": 1501320932,
+      "ruta": "D",
+      "centroAcopio": "EL CAMBIO",
+      "comite": "4TA ETAPA-P",
+      "pueblo": "4TA ETAPA",
+      "coordenadas": {
+        "latitud": -11.980741,
+        "longitud": -77.009392
+      },
+      "inspector": "ANDY",
+      "beneficiarios": 47,
+      "socios": 37,
+      "comuna": 10,
+      "coordinadora": {
+        "nombre": "PILAR BRITO ALVAREZ",
+        "dni": 32950254,
+        "celular": 922389859
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ I18 LT 15 LOS NARANJOS.",
+      "observacion": null
+    },
+    {
+      "id": 728,
+      "codigo": 1501321433,
+      "ruta": "B",
+      "centroAcopio": "SAUL CANTORAL",
+      "comite": "MARIA JESUS - B",
+      "pueblo": "MARIA JESUS",
+      "coordenadas": {
+        "latitud": -11.9386,
+        "longitud": -77.007858
+      },
+      "inspector": "CARLOS",
+      "beneficiarios": 53,
+      "socios": 33,
+      "comuna": 15,
+      "coordinadora": {
+        "nombre": "Mollo verde mery marilu",
+        "dni": 10694296,
+        "celular": 922530380
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz B Lt 14 AAFF Cristo Rey",
+      "observacion": null
+    },
+    {
+      "id": 435,
+      "codigo": 1501321203,
+      "ruta": "B",
+      "centroAcopio": "BAYOVAR",
+      "comite": "ZONA 3-45A",
+      "pueblo": "3RA ZONA DE BAYOVAR",
+      "coordenadas": {
+        "latitud": -11.950524,
+        "longitud": -76.995301
+      },
+      "inspector": "BASURTO",
+      "beneficiarios": 13,
+      "socios": 9,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "INDIRA GANDI ARQUE QUISPE",
+        "dni": 46990483,
+        "celular": 922750119
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ Y1 LOTE 16 AMPLIACION BAYOVAR 3ERA ZONA",
+      "observacion": null
+    },
+    {
+      "id": 518,
+      "codigo": 1501321345,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR B",
+      "comite": "GRUPO 18 - 166",
+      "pueblo": "GRUPO 18",
+      "coordenadas": {
+        "latitud": -11.951058,
+        "longitud": -77.004227
+      },
+      "inspector": "ELSA",
+      "beneficiarios": 16,
+      "socios": 6,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "Luzbelia Enríquez baez",
+        "dni": 45559899,
+        "celular": 922777057
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 1,
+      "direccion": "Alt.colegio indepencia americana 145 MZ 166 lt.13",
+      "observacion": null
+    },
+    {
+      "id": 599,
+      "codigo": 1501321935,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR E",
+      "comite": "SANTA ROSA - 179",
+      "pueblo": "SANTA ROSA",
+      "coordenadas": {
+        "latitud": -11.950979,
+        "longitud": -77.006645
+      },
+      "inspector": "BASURTO",
+      "beneficiarios": 14,
+      "socios": 7,
+      "comuna": 10,
+      "coordinadora": {
+        "nombre": "JUANA MARIBEL GUEVARA ALMIDON",
+        "dni": 41102462,
+        "celular": 923016722
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ 179 lote 08 Huascar Santa rosa",
+      "observacion": null
+    },
+    {
+      "id": 1564,
+      "codigo": 1501320495,
+      "ruta": "D",
+      "centroAcopio": "SAN FRANCISCO DE ASIS",
+      "comite": "5 DE abril",
+      "pueblo": "5 DE ABRIL",
+      "coordenadas": {
+        "latitud": -12.01979,
+        "longitud": -76.972488
+      },
+      "inspector": "ELSA",
+      "beneficiarios": 69,
+      "socios": 43,
+      "comuna": 1,
+      "coordinadora": {
+        "nombre": "Ernestina yomira hidalgo Herrera",
+        "dni": 48623604,
+        "celular": 923351139
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Calle 10 espalda de terrazas del sol",
+      "observacion": null
+    },
+    {
+      "id": 425,
+      "codigo": 1501321601,
+      "ruta": "B",
+      "centroAcopio": "BAYOVAR",
+      "comite": "ZONA 3-59",
+      "pueblo": "3RA ZONA DE BAYOVAR",
+      "coordenadas": {
+        "latitud": -11.952801,
+        "longitud": -76.993576
+      },
+      "inspector": "CARLOS",
+      "beneficiarios": 25,
+      "socios": 21,
+      "comuna": 14,
+      "coordinadora": {
+        "nombre": "Ruby Silvana Hijar Castro",
+        "dni": 42974309,
+        "celular": 923417821
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Dirección Mz 59 Lt 11 3ra Zona Bayovar",
+      "observacion": null
+    },
+    {
+      "id": 1450,
+      "codigo": 1501321404,
+      "ruta": "D",
+      "centroAcopio": "ISRAEL",
+      "comite": "BALCONES DE LIBERACION",
+      "pueblo": "VASO DE LECHE",
+      "coordenadas": {
+        "latitud": -11.970886,
+        "longitud": -76.987549
+      },
+      "inspector": "ELSA",
+      "beneficiarios": 30,
+      "socios": 25,
+      "comuna": 11,
+      "coordinadora": {
+        "nombre": "Adela Carmen perez",
+        "dni": 45518558,
+        "celular": 923680313
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Loza de Israel",
+      "observacion": null
+    },
+    {
+      "id": 1411,
+      "codigo": 1501321563,
+      "ruta": "D",
+      "centroAcopio": "ALFONSO BARRANTES",
+      "comite": "ALFONSO BARRANTES J O CHONTA G",
+      "pueblo": null,
+      "coordenadas": {
+        "latitud": -11.967894,
+        "longitud": -77.000824
+      },
+      "inspector": "BEATRIZ",
+      "beneficiarios": 34,
+      "socios": 18,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "Lissett Jackeline Ccallata Minaya",
+        "dni": 45977097,
+        "celular": 923862116
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ G LT 2 AH JESÚS OROPEZA CHONTA /REF: ALT PARADERO 10 DE AV SAN MARTIN",
+      "observacion": null
+    },
+    {
+      "id": 510,
+      "codigo": 1501320548,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR B",
+      "comite": "GRUPO 16 - 136",
+      "pueblo": "GRUPO 16",
+      "coordenadas": {
+        "latitud": -11.954869,
+        "longitud": -77.002564
+      },
+      "inspector": "DERIAN",
+      "beneficiarios": 19,
+      "socios": 12,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "Julia Huayllino Huaman",
+        "dni": 80099204,
+        "celular": 923916175
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz 136 Lote 26 grupo 16 / paradero 11 de huascar",
+      "observacion": null
+    },
+    {
+      "id": 421,
+      "codigo": 1501321103,
+      "ruta": "B",
+      "centroAcopio": "BAYOVAR",
+      "comite": "ZONA 3-32-34",
+      "pueblo": "3RA ZONA DE BAYOVAR",
+      "coordenadas": {
+        "latitud": -11.951468,
+        "longitud": -76.990814
+      },
+      "inspector": "CARLOS",
+      "beneficiarios": 35,
+      "socios": 24,
+      "comuna": 14,
+      "coordinadora": {
+        "nombre": "Liz Giannina Suazo Hinostroza",
+        "dni": 10677215,
+        "celular": 923924786
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Dirección Mz 32 Lt 18 3ra Zona Bayovar",
+      "observacion": null
+    },
+    {
+      "id": 1014,
+      "codigo": 1501320629,
+      "ruta": "C",
+      "centroAcopio": "INMACULADA CONCEPCION",
+      "comite": "MZ I - 2",
+      "pueblo": "JESUS ALBERTO PAEZ",
+      "coordenadas": {
+        "latitud": -11.961639,
+        "longitud": -76.987473
+      },
+      "inspector": "ELSA",
+      "beneficiarios": 23,
+      "socios": 22,
+      "comuna": 14,
+      "coordinadora": {
+        "nombre": "Isabel Zanabria chamorro",
+        "dni": 10674710,
+        "celular": 924191329
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Alt.paradero 16 de wiesse",
+      "observacion": null
+    },
+    {
+      "id": 1615,
+      "codigo": 1501321798,
+      "ruta": "D",
+      "centroAcopio": "EL SAUCE",
+      "comite": "MONTECRISTO PARAISO",
+      "pueblo": null,
+      "coordenadas": {
+        "latitud": -12.000199,
+        "longitud": -76.982658
+      },
+      "inspector": "NOHEMI",
+      "beneficiarios": 75,
+      "socios": 42,
+      "comuna": 5,
+      "coordinadora": {
+        "nombre": "Susan Villanueva Silvestre",
+        "dni": 47648459,
+        "celular": 924283248
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Pasando el cementerio ovalo de monte cristo",
+      "observacion": null
+    },
+    {
+      "id": 104,
+      "codigo": 1501321488,
+      "ruta": "A",
+      "centroAcopio": "HUASCAR A",
+      "comite": "GRUPO 8 - 24",
+      "pueblo": "GRUPO 8",
+      "coordenadas": {
+        "latitud": -11.962747,
+        "longitud": -77.004059
+      },
+      "inspector": "CARLOS",
+      "beneficiarios": 20,
+      "socios": 10,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "Yully Milagros Bnilla Alvaro",
+        "dni": 40715192,
+        "celular": 924302389
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Dirección Mz 16 Lt 15 grupo 8 huascar",
+      "observacion": null
+    },
+    {
+      "id": 1666,
+      "codigo": 1501322066,
+      "ruta": "D",
+      "centroAcopio": "SANTA FE DE TOTORITA",
+      "comite": "HIJOS DE SANTA FE DE TOTORITA",
+      "pueblo": "LOS HIJOS DE SANTA FE",
+      "coordenadas": {
+        "latitud": -11.994919,
+        "longitud": -76.992668
+      },
+      "inspector": "BASURTO",
+      "beneficiarios": 35,
+      "socios": 20,
+      "comuna": 5,
+      "coordinadora": {
+        "nombre": "EVELINA GOMEZ COCHACHI",
+        "dni": 41367267,
+        "celular": 924699683
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ L lote 02 Hijos de Santa Fe espalda del penal",
+      "observacion": null
+    },
+    {
+      "id": 1600,
+      "codigo": 1501320292,
+      "ruta": "D",
+      "centroAcopio": "SAN PEDRO DE CAMPOY",
+      "comite": "MADRE EDITA--COMPRADOR UNICO",
+      "pueblo": "MADRE EDITA - COMPRADORES",
+      "coordenadas": {
+        "latitud": -12.009124,
+        "longitud": -76.961403
+      },
+      "inspector": "NOHEMI",
+      "beneficiarios": 51,
+      "socios": 33,
+      "comuna": 1,
+      "coordinadora": {
+        "nombre": "Rosa Elizabeth Cárdenas Huaman",
+        "dni": 80509403,
+        "celular": 924951048
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Último paradero de 2H al frente \nColegio Angelo Patrick",
+      "observacion": null
+    },
+    {
+      "id": 169,
+      "codigo": 1501320845,
+      "ruta": "A",
+      "centroAcopio": "HUASCAR C",
+      "comite": "GRUPO 4 - 165",
+      "pueblo": "GRUPO 4",
+      "coordenadas": {
+        "latitud": -11.966495,
+        "longitud": -77.007958
+      },
+      "inspector": "Franco",
+      "beneficiarios": 31,
+      "socios": 24,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "FABIOLA VANESA ÁLVAREZ MAMANI",
+        "dni": 74148772,
+        "celular": 925558751
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ 165 lt 25 grupo 4",
+      "observacion": null
+    },
+    {
+      "id": 714,
+      "codigo": 1501321589,
+      "ruta": "B",
+      "centroAcopio": "SAUL CANTORAL",
+      "comite": "SAUL CANTORAL-NUEVO AMANECER",
+      "pueblo": "SAUL CANTORAL-NUEVO AMANECER",
+      "coordenadas": {
+        "latitud": -11.939728,
+        "longitud": -77.012138
+      },
+      "inspector": "ESTHEFANI",
+      "beneficiarios": 28,
+      "socios": 13,
+      "comuna": 15,
+      "coordinadora": {
+        "nombre": "Alicia Marlene Gaspar Aguirre",
+        "dni": 44543852,
+        "celular": 925606840
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz B Lt 12 AAFF Nuevo Amanecer",
+      "observacion": null
+    },
+    {
+      "id": 1339,
+      "codigo": 1501320908,
+      "ruta": "D",
+      "centroAcopio": "EL CAMBIO",
+      "comite": "4 ETAPA-2",
+      "pueblo": "4TA ETAPA",
+      "coordenadas": {
+        "latitud": -11.983666,
+        "longitud": -76.991295
+      },
+      "inspector": "ANDY",
+      "beneficiarios": 49,
+      "socios": 32,
+      "comuna": 10,
+      "coordinadora": {
+        "nombre": "GUILLERMINA CONDORI",
+        "dni": 40956429,
+        "celular": 925645583
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ A LT 9 URB CANTO GRANDE SEMI RUSTICA",
+      "observacion": null
+    },
+    {
+      "id": 1378,
+      "codigo": 1501321691,
+      "ruta": "D",
+      "centroAcopio": "ALFONSO BARRANTES",
+      "comite": "MARISCAL LUZURIAGA - E-LL",
+      "pueblo": null,
+      "coordenadas": {
+        "latitud": -11.967087,
+        "longitud": -77.000114
+      },
+      "inspector": "ANDY",
+      "beneficiarios": 33,
+      "socios": 23,
+      "comuna": 10,
+      "coordinadora": {
+        "nombre": "CECILIA MAMANI PEÑALOZA",
+        "dni": 44501205,
+        "celular": 926536568
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ E LT 3 COOP MARISCAL LUZURIAGA",
+      "observacion": null
+    },
+    {
+      "id": 992,
+      "codigo": 1501322016,
+      "ruta": "C",
+      "centroAcopio": "INMACULADA CONCEPCION",
+      "comite": "AA.HH. HOSPITAL DEL NIÑO - O-2",
+      "pueblo": "AA.HH. HOSPITAL DEL NIÑO",
+      "coordenadas": {
+        "latitud": -11.958132,
+        "longitud": -76.988998
+      },
+      "inspector": "BASURTO",
+      "beneficiarios": 29,
+      "socios": 21,
+      "comuna": 14,
+      "coordinadora": {
+        "nombre": "ERIK LOURDES MEJÍA BAZAN",
+        "dni": 42960275,
+        "celular": 926610847
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ O2 LOTE 25 HOSPITAL DEL NIÑO",
+      "observacion": null
+    },
+    {
+      "id": 1007,
+      "codigo": 1501321945,
+      "ruta": "C",
+      "centroAcopio": "INMACULADA CONCEPCION",
+      "comite": "HORACIO ZEBALLOS GAMES E1",
+      "pueblo": "HORACIO ZEVALLOS",
+      "coordenadas": {
+        "latitud": -11.961876,
+        "longitud": -76.991592
+      },
+      "inspector": "ELSA",
+      "beneficiarios": 24,
+      "socios": 17,
+      "comuna": 14,
+      "coordinadora": {
+        "nombre": "Carmen Jasmin Galloso Álvarez",
+        "dni": 80000761,
+        "celular": 926665289
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Al.paradero 14 de wiesse",
+      "observacion": null
+    },
+    {
+      "id": 1663,
+      "codigo": 1501322147,
+      "ruta": "D",
+      "centroAcopio": "EL PROGRESO",
+      "comite": "FORTALEZA DE NUEVA VIDA",
+      "pueblo": null,
+      "coordenadas": {
+        "latitud": -11.980215,
+        "longitud": -76.976921
+      },
+      "inspector": "BEATRIZ",
+      "beneficiarios": 34,
+      "socios": 22,
+      "comuna": 9,
+      "coordinadora": {
+        "nombre": "Irma Carolina Rojas Cotrina",
+        "dni": 44867482,
+        "celular": 928151885
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz A Lt 6 AF Fortaleza de Nueva Vida / Ref: Altura del mercado Los Lirios",
+      "observacion": null
+    },
+    {
+      "id": 1439,
+      "codigo": 1501321832,
+      "ruta": "D",
+      "centroAcopio": "ISRAEL",
+      "comite": "SOL DE LIMA-AC",
+      "pueblo": "A-C",
+      "coordenadas": {
+        "latitud": -11.978303,
+        "longitud": -76.989845
+      },
+      "inspector": "RUFINA",
+      "beneficiarios": 30,
+      "socios": 16,
+      "comuna": 9,
+      "coordinadora": {
+        "nombre": "María Salcedo Díaz",
+        "dni": 40943302,
+        "celular": 928162651
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ C lt 12 la Loma por Av San Martin con santa rosa",
+      "observacion": null
+    },
+    {
+      "id": 79,
+      "codigo": 1501321956,
+      "ruta": "A",
+      "centroAcopio": "CANTO CHICO",
+      "comite": "NUEVO PERÚ 1 - 2",
+      "pueblo": "PJ CANTO CHICO",
+      "coordenadas": {
+        "latitud": -12.002297,
+        "longitud": -77.018745
+      },
+      "inspector": "BASURTO",
+      "beneficiarios": 30,
+      "socios": 21,
+      "comuna": 6,
+      "coordinadora": {
+        "nombre": "SONIA HILARES SEQUEIROS",
+        "dni": 10801135,
+        "celular": 928232796
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ C LOTE 08 NUEVO PERÚ",
+      "observacion": null
+    },
+    {
+      "id": 1017,
+      "codigo": 1501320894,
+      "ruta": "C",
+      "centroAcopio": "INMACULADA CONCEPCION",
+      "comite": "MZ I - 4",
+      "pueblo": "JESUS ALBERTO PAEZ",
+      "coordenadas": {
+        "latitud": -11.962026,
+        "longitud": -76.98661
+      },
+      "inspector": "ELSA",
+      "beneficiarios": 26,
+      "socios": 23,
+      "comuna": 14,
+      "coordinadora": {
+        "nombre": "Irma Yolanda cuenta Mauricio de pumapillo",
+        "dni": 10576238,
+        "celular": 928486236
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Alt.paradero 16 de wiesse",
+      "observacion": null
+    },
+    {
+      "id": 1641,
+      "codigo": 1501320552,
+      "ruta": "D",
+      "centroAcopio": "SANTA FE DE TOTORITA",
+      "comite": "A.F MARISCAL CACERES",
+      "pueblo": "AF MARISCAL CACERES",
+      "coordenadas": {
+        "latitud": -11.993723,
+        "longitud": -76.999535
+      },
+      "inspector": "BASURTO",
+      "beneficiarios": 50,
+      "socios": 32,
+      "comuna": 8,
+      "coordinadora": {
+        "nombre": "ISABEL ESPINO QUIROGA",
+        "dni": 42259539,
+        "celular": 928778740
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ B LOTE AA. HH Mariscal Cáceres",
+      "observacion": null
+    },
+    {
+      "id": 118,
+      "codigo": 1501321392,
+      "ruta": "A",
+      "centroAcopio": "HUASCAR A",
+      "comite": "LAS BRISAS DE SAN JUAN - 24 DE OCTUBRE",
+      "pueblo": "LAS BRISAS DE SAN JUAN - 24 DE OCTUBRE",
+      "coordenadas": {
+        "latitud": -11.96289,
+        "longitud": -77.008873
+      },
+      "inspector": "andy",
+      "beneficiarios": 39,
+      "socios": 25,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "MADELEIDE GOMEZ OCAMPO",
+        "dni": 42243707,
+        "celular": 929272927
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "MZ C LT 5 AAHH 24 DE OCTUBRE",
+      "observacion": null
+    },
+    {
+      "id": 562,
+      "codigo": 1501321604,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR D",
+      "comite": "GRUPO 12 - 182-186",
+      "pueblo": "GRUPO 12",
+      "coordenadas": {
+        "latitud": -11.957912,
+        "longitud": -77.006515
+      },
+      "inspector": "ELSA",
+      "beneficiarios": 33,
+      "socios": 19,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "Ana Lucila ccente mamani",
+        "dni": 45308208,
+        "celular": 929349430
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Alt.parad.7de Huáscar MZ 182 lt.12",
+      "observacion": null
+    },
+    {
+      "id": 570,
+      "codigo": 1501320674,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR D",
+      "comite": "PEDREGAL - 195 192",
+      "pueblo": "PEDREGAL",
+      "coordenadas": {
+        "latitud": -11.95661,
+        "longitud": -77.00946
+      },
+      "inspector": "FRANCO",
+      "beneficiarios": 48,
+      "socios": 24,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "BETZAUDA AIQUIPA LOPEZ",
+        "dni": 80274577,
+        "celular": 930105556
+      },
+      "beneficiariosExtranjeros": 9,
+      "discapacitados": 1,
+      "direccion": "MZ 194 lt 3",
+      "observacion": null
+    },
+    {
+      "id": 512,
+      "codigo": 1501320505,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR B",
+      "comite": "GRUPO 16 - 135",
+      "pueblo": "GRUPO 16",
+      "coordenadas": {
+        "latitud": -11.953676,
+        "longitud": -77.001945
+      },
+      "inspector": "DERIAN",
+      "beneficiarios": 34,
+      "socios": 24,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "Marisol Leon Retamoso",
+        "dni": 47734833,
+        "celular": 930302720
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz 135 Lote 06 grupo 16 / paradero 11 de huascar",
+      "observacion": null
+    },
+    {
+      "id": 995,
+      "codigo": 1501322035,
+      "ruta": "C",
+      "centroAcopio": "INMACULADA CONCEPCION",
+      "comite": "PROYECTOS ESPECIALES 64",
+      "pueblo": "PROYECTOS ESPECIALES",
+      "coordenadas": {
+        "latitud": -11.956739,
+        "longitud": -76.991905
+      },
+      "inspector": "Carlos",
+      "beneficiarios": 15,
+      "socios": 8,
+      "comuna": 13,
+      "coordinadora": {
+        "nombre": "Noemi Oliva Olleros Navarro",
+        "dni": 20594085,
+        "celular": 930479995
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz 64 Lt 24",
+      "observacion": null
+    },
+    {
+      "id": 610,
+      "codigo": 1501320875,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR E",
+      "comite": "SECTOR EL ROSAL",
+      "pueblo": "SECTOR EL ROSAL",
+      "coordenadas": {
+        "latitud": -11.954521,
+        "longitud": -77.007484
+      },
+      "inspector": "Franco",
+      "beneficiarios": 30,
+      "socios": 15,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "MARIA MARIBEL MACALPU",
+        "dni": 48455377,
+        "celular": 931166210
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 1,
+      "direccion": "MZ G LT 6",
+      "observacion": null
+    },
+    {
+      "id": 569,
+      "codigo": 1501320413,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR D",
+      "comite": "3 DE abril",
+      "pueblo": "3 DE ABRIL",
+      "coordenadas": {
+        "latitud": -11.95849,
+        "longitud": -77.008133
+      },
+      "inspector": "FRANCO",
+      "beneficiarios": 26,
+      "socios": 15,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "LUZMILA TAIPE LEON",
+        "dni": 80168003,
+        "celular": 931594283
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 2,
+      "direccion": "MZ D LT 3 ah 3 de abril",
+      "observacion": null
+    },
+    {
+      "id": 511,
+      "codigo": 1501320501,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR B",
+      "comite": "GRUPO 16 - 134",
+      "pueblo": "GRUPO 16",
+      "coordenadas": {
+        "latitud": -11.954121,
+        "longitud": -77.002113
+      },
+      "inspector": "DERIAN",
+      "beneficiarios": 32,
+      "socios": 24,
+      "comuna": 12,
+      "coordinadora": {
+        "nombre": "Mirtha Paucar Villafuerte",
+        "dni": 44924771,
+        "celular": 931664514
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "Mz 134 Lote 07 grupo 16 / paradero 11 de huascar",
+      "observacion": null
+    },
+    {
+      "id": 818,
+      "codigo": 1501320372,
+      "ruta": "C",
+      "centroAcopio": "1RO DE MAYO",
+      "comite": "24 DE ENERO",
+      "pueblo": "24 DE ENERO",
+      "coordenadas": {
+        "latitud": -11.942995,
+        "longitud": -76.969238
+      },
+      "inspector": "BASURTO",
+      "beneficiarios": 26,
+      "socios": 16,
+      "comuna": 16,
+      "coordinadora": {
+        "nombre": "MARÍA ADELAIDA CALDERÓN REYES",
+        "dni": 10133726,
+        "celular": 932089200
+      },
+      "beneficiariosExtranjeros": 1,
+      "discapacitados": 0,
+      "direccion": "MZ A LOTE 02 AGRUPACIÓN FAMILIAR 24 DE ENERO",
+      "observacion": null
+    },
+    {
+      "id": 605,
+      "codigo": 1501320551,
+      "ruta": "B",
+      "centroAcopio": "HUASCAR E",
+      "comite": "3 DE MARZO",
+      "pueblo": "3 DE MARZO",
+      "coordenadas": {
+        "latitud": -11.948219,
+        "longitud": -77.007286
+      },
+      "inspector": "BASURTO",
+      "beneficiarios": 40,
+      "socios": 19,
+      "comuna": 10,
+      "coordinadora": {
+        "nombre": "GRACIELA CHATE CCAHUANA",
+        "dni": 43284873,
+        "celular": 932576664
+      },
+      "beneficiariosExtranjeros": 0,
+      "discapacitados": 0,
+      "direccion": "PUEBLO 3 DE MARZO MZ D lote 04",
+      "observacion": null
+    }
+  ]
+}

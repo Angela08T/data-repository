@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  /* Colores de las Subgerencias */
+  --programas-sociales: #d81b7e;
+  --programas-sociales-hover: #b81667;
+  --programas-sociales-bg: #fdf2f8;
+  --servicios-sociales: #00a3a8;
+  --servicios-sociales-hover: #008a8e;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-poppins);
+  --font-mono: var(--font-poppins);
+
+  /* Colores personalizados para las subgerencias */
+  --color-programas-sociales: var(--programas-sociales);
+  --color-programas-sociales-hover: var(--programas-sociales-hover);
+  --color-programas-sociales-bg: var(--programas-sociales-bg);
+  --color-servicios-sociales: var(--servicios-sociales);
+  --color-servicios-sociales-hover: var(--servicios-sociales-hover);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Aplicar Poppins a todos los elementos */
+* {
+  font-family: inherit;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+div,
+a,
+button,
+input,
+textarea,
+select,
+label {
+  font-family: inherit;
+}
+
+/* Override MUI typography */
+.MuiTypography-root,
+.MuiButton-root,
+.MuiInputBase-root,
+.MuiMenuItem-root,
+.MuiListItemText-root {
+  font-family: inherit !important;
+}
+
+/* Estilos globales para SweetAlert2 */
+.swal2-container {
+  z-index: 2000 !important;
+}
+
+/* Estilos para tablas */
+.table-container {
+  overflow-x: auto;
+}
+
+/* Clases utilitarias personalizadas */
+.bg-programas-sociales {
+  background-color: var(--programas-sociales);
+}
+
+.bg-programas-sociales-hover:hover {
+  background-color: var(--programas-sociales-hover);
+}
+
+.bg-servicios-sociales {
+  background-color: var(--servicios-sociales);
+}
+
+.bg-servicios-sociales-hover:hover {
+  background-color: var(--servicios-sociales-hover);
+}
+
+.text-programas-sociales {
+  color: var(--programas-sociales);
+}
+
+.text-servicios-sociales {
+  color: var(--servicios-sociales);
+}
+
+.bg-programas-sociales-light {
+  background: linear-gradient(to bottom, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
+  min-height: 100%;
+}
+
+/* Estilos para tooltips de sectores en el mapa */
+.sector-tooltip {
+  background-color: #1E293B !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 4px !important;
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.sector-tooltip::before {
+  border-top-color: #1E293B !important;
+}
+
+/* Quitar el rectángulo negro al hacer click en sectores (Leaflet focus) */
+.leaflet-interactive:focus {
+  outline: none !important;
+}
