@@ -3,7 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { IconButton, Tooltip, CircularProgress } from "@mui/material";
 import { supabase } from "@/lib/supabase";
+import { exportMultiSheetExcel } from "@/lib/utils/exportExcel";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import PollIcon from "@mui/icons-material/Poll";
 import HowToVoteIcon from "@mui/icons-material/HowToVote";
 import PeopleIcon from "@mui/icons-material/People";
@@ -89,7 +91,7 @@ function formatFecha(iso: string) {
 
 function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: React.ReactNode; color: string }) {
   return (
-    <div className="bg-white rounded-2xl shadow p-5 flex items-center gap-4">
+    <div className="stat-card bg-white rounded-2xl shadow p-5 flex items-center gap-4">
       <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: `${color}18` }}>
         <span style={{ color }}>{icon}</span>
       </div>
@@ -192,6 +194,20 @@ export default function EncuestasPage() {
   const totalEncuestas = Object.keys(ENCUESTAS).length;
   const ultimoVoto     = votos[0] ? formatFecha(votos[0].created_at) : "—";
 
+  const handleExport = () => {
+    const sheets = resultados.map((r) => ({
+      name: `Enc ${r.encuesta_id}`,
+      rows: r.opciones.map((op) => ({
+        "Pregunta":   r.pregunta,
+        "Opción":     op.label,
+        "Votos":      op.votos,
+        "Porcentaje": `${op.pct}%`,
+        "¿Líder?":    op.esLider && r.total > 0 ? "Sí" : "No",
+      })),
+    }));
+    exportMultiSheetExcel(sheets, `Encuestas_${new Date().toISOString().slice(0, 10)}`);
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-6">
 
@@ -201,11 +217,18 @@ export default function EncuestasPage() {
           <h1 className="text-2xl font-black" style={{ color: "#0d1b3e" }}>Resultados de Encuestas</h1>
           <p className="text-sm text-gray-400 mt-1">Resultados en tiempo real de las votaciones públicas</p>
         </div>
-        <Tooltip title="Actualizar">
-          <IconButton onClick={fetchData} disabled={loading}>
-            <RefreshIcon sx={{ color: loading ? "#d1d5db" : "#94a3b8" }} />
-          </IconButton>
-        </Tooltip>
+        <div className="flex items-center gap-1">
+          <Tooltip title="Exportar Excel">
+            <IconButton onClick={handleExport} disabled={loading || votos.length === 0}>
+              <FileDownloadIcon sx={{ color: votos.length > 0 ? "#1565c0" : "#d1d5db" }} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Actualizar">
+            <IconButton onClick={fetchData} disabled={loading}>
+              <RefreshIcon sx={{ color: loading ? "#d1d5db" : "#94a3b8" }} />
+            </IconButton>
+          </Tooltip>
+        </div>
       </div>
 
       {/* Stats */}

@@ -55,6 +55,10 @@ import {
   Explore,
   WhatsApp,
   Masks,
+  VolunteerActivism,
+  Badge,
+  Poll,
+  ChatBubble,
 } from "@mui/icons-material";
 
 interface DynamicIconProps {
@@ -121,6 +125,10 @@ const iconMap: Record<string, React.ReactNode> = {
   Explore: <Explore />,
   WhatsApp: <WhatsApp />,
   Masks: <Masks />,
+  VolunteerActivism: <VolunteerActivism />,
+  Badge: <Badge />,
+  Poll: <Poll />,
+  ChatBubble: <ChatBubble />,
 };
 
 export default function DynamicIcon({ iconName, className }: DynamicIconProps) {

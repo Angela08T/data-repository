@@ -2,8 +2,6 @@
 
 import { AppBar, IconButton, Toolbar } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import Image from "next/image";
-import logoSjlImg from "@/assets/logos/logo_sjl.png";
 
 interface HeaderProps {
   toggled: boolean;
@@ -13,25 +11,36 @@ interface HeaderProps {
 export default function Header({ toggled, setToggled }: HeaderProps) {
   return (
     <AppBar
-      sx={{ boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)" }}
-      className="top-0 shadow-sm md:!hidden"
       position="sticky"
-      color="inherit"
+      className="top-0 md:!hidden"
+      sx={{
+        background: "linear-gradient(135deg, #0d1b3e 0%, #1565c0 100%)",
+        boxShadow: "0 2px 16px rgba(13,27,62,0.3)",
+      }}
     >
-      <Toolbar className="flex justify-between">
-        <Image
-          src={logoSjlImg}
-          alt="Logo San Juan de Lurigancho"
-          width={150}
-          height={40}
-          className="h-10 w-auto object-contain"
-        />
+      <Toolbar className="flex justify-between" sx={{ minHeight: "56px !important" }}>
+        {/* Branding mobile */}
+        <div>
+          <div style={{ fontSize: "0.55rem", fontWeight: 700, color: "rgba(255,255,255,0.65)", letterSpacing: "0.2em", textTransform: "uppercase" }}>
+            Campaign
+          </div>
+          <div style={{ fontSize: "0.85rem", fontWeight: 900, color: "#ffffff", letterSpacing: "0.05em", textTransform: "uppercase", lineHeight: 1 }}>
+            Data Repository
+          </div>
+        </div>
+
         <IconButton
-          size="large"
+          size="medium"
           edge="end"
-          color="inherit"
           aria-label="menu"
           onClick={() => setToggled(!toggled)}
+          sx={{
+            color: "#fff",
+            background: "rgba(255,255,255,0.12)",
+            borderRadius: "10px",
+            "&:hover": { background: "rgba(255,255,255,0.22)" },
+            transition: "background 0.2s ease",
+          }}
         >
           <MenuIcon />
         </IconButton>

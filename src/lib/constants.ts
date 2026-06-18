@@ -175,6 +175,14 @@ export const MODULOS_PROGRAMAS_SOCIALES: MenuItem[] = [
     descripcion: "Visualización de resultados de encuestas",
     permisos: ["all_programas_sociales", "all"],
   },
+  {
+    id: "contactos-chat",
+    nombre: "Contactos del Chat",
+    ruta: "/programas-sociales/contactos-chat",
+    icono: "ChatBubble",
+    descripcion: "Personas registradas a través del chatbot",
+    permisos: ["all_programas_sociales", "all"],
+  },
 ];
 
 // Mantenido vacío — Servicios Sociales fue removido del sistema

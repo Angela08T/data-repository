@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { TextField, InputAdornment, IconButton, Tooltip, CircularProgress } from "@mui/material";
 import { supabase } from "@/lib/supabase";
+import { exportToExcel } from "@/lib/utils/exportExcel";
 import SearchIcon from "@mui/icons-material/Search";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -42,7 +43,7 @@ function SexoBadge({ sexo }: { sexo: string }) {
 
 function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: React.ReactNode; color: string }) {
   return (
-    <div className="bg-white rounded-2xl shadow p-5 flex items-center gap-4">
+    <div className="stat-card bg-white rounded-2xl shadow p-5 flex items-center gap-4">
       <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: `${color}18` }}>
         <span style={{ color }}>{icon}</span>
       </div>
@@ -89,6 +90,25 @@ export default function PersonerosPage() {
 
   const totalMujeres = data.filter((p) => p.sexo?.toUpperCase() === "F").length;
   const totalHombres = data.filter((p) => p.sexo?.toUpperCase() === "M").length;
+
+  const handleExport = () => {
+    const rows = filtrados.map((p) => ({
+      "Apellido Paterno":  p.apellido_paterno ?? "",
+      "Apellido Materno":  p.apellido_materno ?? "",
+      "Nombres":           p.nombres ?? "",
+      "DNI":               p.dni ?? "",
+      "Fecha Nacimiento":  p.fecha_nacimiento ?? "",
+      "Sexo":              p.sexo?.toUpperCase() === "F" ? "Femenino" : "Masculino",
+      "Lugar Nacimiento":  p.lugar_nacimiento ?? "",
+      "Región":            p.region ?? "",
+      "Provincia":         p.provincia ?? "",
+      "Distrito":          p.distrito ?? "",
+      "Dirección":         p.direccion ?? "",
+      "Teléfono":          p.telefono && p.telefono !== "EMPTY" ? p.telefono : "",
+      "Comuna":            p.comuna ?? "",
+    }));
+    exportToExcel(rows, `Personeros_${new Date().toISOString().slice(0, 10)}`, "Personeros");
+  };
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -149,8 +169,8 @@ export default function PersonerosPage() {
               </IconButton>
             </Tooltip>
             <Tooltip title="Exportar Excel">
-              <IconButton size="small">
-                <FileDownloadIcon sx={{ fontSize: 18, color: "#94a3b8" }} />
+              <IconButton size="small" onClick={handleExport} disabled={loading || filtrados.length === 0}>
+                <FileDownloadIcon sx={{ fontSize: 18, color: filtrados.length > 0 ? "#1565c0" : "#94a3b8" }} />
               </IconButton>
             </Tooltip>
           </div>
@@ -197,7 +217,7 @@ export default function PersonerosPage() {
                 filtrados.map((p, i) => (
                   <tr
                     key={p.id}
-                    className="border-t border-gray-50 hover:bg-blue-50 transition-colors"
+                    className="table-row-animate border-t border-gray-50 hover:bg-blue-50 transition-colors"
                     style={{ background: i % 2 === 0 ? "#ffffff" : "#fafbff" }}
                   >
                     <td className="px-4 py-3 whitespace-nowrap">

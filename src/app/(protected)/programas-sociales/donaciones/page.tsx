@@ -11,6 +11,7 @@ import VolunteerActivismIcon from "@mui/icons-material/VolunteerActivism";
 import PeopleIcon from "@mui/icons-material/People";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import { supabase } from "@/lib/supabase";
+import { exportToExcel } from "@/lib/utils/exportExcel";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
@@ -67,7 +68,7 @@ function MetodoBadge({ metodo }: { metodo: string }) {
 
 function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: React.ReactNode; color: string }) {
   return (
-    <div className="bg-white rounded-2xl shadow p-5 flex items-center gap-4">
+    <div className="stat-card bg-white rounded-2xl shadow p-5 flex items-center gap-4">
       <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: `${color}18` }}>
         <span style={{ color }}>{icon}</span>
       </div>
@@ -117,6 +118,21 @@ export default function DonacionesPage() {
 
   const totalRecaudado = data.filter((d) => d.estado === "procesado").reduce((acc, d) => acc + d.monto, 0);
   const procesadas     = data.filter((d) => d.estado === "procesado").length;
+
+  const handleExport = () => {
+    const rows = filtrados.map((d) => {
+      const { fecha, hora } = formatFecha(d.created_at);
+      return {
+        "ID":              d.id,
+        "Monto (S/)":      Number(d.monto).toFixed(2),
+        "Método de Pago":  d.metodo ?? "",
+        "Estado":          d.estado,
+        "Fecha":           fecha,
+        "Hora":            hora,
+      };
+    });
+    exportToExcel(rows, `Donaciones_${new Date().toISOString().slice(0, 10)}`, "Donaciones");
+  };
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -179,8 +195,8 @@ export default function DonacionesPage() {
             </Tooltip>
 
             <Tooltip title="Exportar Excel">
-              <IconButton size="small">
-                <FileDownloadIcon sx={{ fontSize: 18, color: "#94a3b8" }} />
+              <IconButton size="small" onClick={handleExport} disabled={loading || filtrados.length === 0}>
+                <FileDownloadIcon sx={{ fontSize: 18, color: filtrados.length > 0 ? "#1565c0" : "#94a3b8" }} />
               </IconButton>
             </Tooltip>
           </div>
@@ -229,7 +245,7 @@ export default function DonacionesPage() {
                   return (
                     <tr
                       key={d.id}
-                      className="border-t border-gray-50 hover:bg-blue-50 transition-colors"
+                      className="table-row-animate border-t border-gray-50 hover:bg-blue-50 transition-colors"
                       style={{ background: i % 2 === 0 ? "#ffffff" : "#fafbff" }}
                     >
                       <td className="px-5 py-4">

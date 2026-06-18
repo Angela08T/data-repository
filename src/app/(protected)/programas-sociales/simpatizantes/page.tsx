@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { TextField, InputAdornment, IconButton, Tooltip, CircularProgress } from "@mui/material";
 import { supabase } from "@/lib/supabase";
+import { exportToExcel } from "@/lib/utils/exportExcel";
 import SearchIcon from "@mui/icons-material/Search";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -27,7 +28,7 @@ function formatFecha(iso: string) {
 
 function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: React.ReactNode; color: string }) {
   return (
-    <div className="bg-white rounded-2xl shadow p-5 flex items-center gap-4">
+    <div className="stat-card bg-white rounded-2xl shadow p-5 flex items-center gap-4">
       <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: `${color}18` }}>
         <span style={{ color }}>{icon}</span>
       </div>
@@ -64,6 +65,20 @@ export default function SimpatizantesPage() {
     const texto = `${s.nombre} ${s.apellidos} ${s.telefono}`.toLowerCase();
     return texto.includes(search.toLowerCase());
   });
+
+  const handleExport = () => {
+    const rows = filtrados.map((s) => {
+      const { fecha, hora } = formatFecha(s.created_at);
+      return {
+        "Nombre":            s.nombre ?? "",
+        "Apellidos":         s.apellidos ?? "",
+        "Teléfono":          s.telefono ?? "",
+        "Fecha de Registro": fecha,
+        "Hora":              hora,
+      };
+    });
+    exportToExcel(rows, `Simpatizantes_${new Date().toISOString().slice(0, 10)}`, "Simpatizantes");
+  };
 
   // Registros del día de hoy
   const hoy = new Date().toLocaleDateString("es-PE");
@@ -113,8 +128,8 @@ export default function SimpatizantesPage() {
               </IconButton>
             </Tooltip>
             <Tooltip title="Exportar Excel">
-              <IconButton size="small">
-                <FileDownloadIcon sx={{ fontSize: 18, color: "#94a3b8" }} />
+              <IconButton size="small" onClick={handleExport} disabled={loading || filtrados.length === 0}>
+                <FileDownloadIcon sx={{ fontSize: 18, color: filtrados.length > 0 ? "#1565c0" : "#94a3b8" }} />
               </IconButton>
             </Tooltip>
           </div>
@@ -163,7 +178,7 @@ export default function SimpatizantesPage() {
                   return (
                     <tr
                       key={s.id}
-                      className="border-t border-gray-50 hover:bg-blue-50 transition-colors"
+                      className="table-row-animate border-t border-gray-50 hover:bg-blue-50 transition-colors"
                       style={{ background: i % 2 === 0 ? "#ffffff" : "#fafbff" }}
                     >
                       {/* Nombre */}

@@ -11,8 +11,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "SGDH - Sistema de Gerencia de Desarrollo Humano",
-  description: "Sistema de Gestión de Desarrollo Humano - San Juan de Lurigancho",
+  title: "Campaign Data Repository",
+  description: "Repositorio de datos de campaña — San Juan de Lurigancho",
 };
 
 export default function RootLayout({

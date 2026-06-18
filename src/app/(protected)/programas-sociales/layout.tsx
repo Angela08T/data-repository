@@ -30,8 +30,10 @@ export default function ProgramasSocialesLayout({ children }: { children: React.
       />
       <div className="flex-1 flex flex-col min-w-0 h-full">
         <Header toggled={toggled} setToggled={setToggled} />
-        <main className="bg-programas-sociales-light flex-1 overflow-auto p-4 md:p-6">
-          {children}
+        <main className="bg-programas-sociales-light flex-1 overflow-auto">
+          <div className="page-enter p-4 md:p-6">
+            {children}
+          </div>
         </main>
       </div>
     </div>

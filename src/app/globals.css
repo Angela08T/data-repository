@@ -1,15 +1,21 @@
 @import "tailwindcss";
 
+/* ─── Variables ─────────────────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f0f4ff;
+  --foreground: #0d1b3e;
 
-  /* Colores de las Subgerencias */
-  --programas-sociales: #d81b7e;
-  --programas-sociales-hover: #b81667;
-  --programas-sociales-bg: #fdf2f8;
-  --servicios-sociales: #00a3a8;
-  --servicios-sociales-hover: #008a8e;
+  --brand-navy:      #0d1b3e;
+  --brand-blue:      #1565c0;
+  --brand-blue-mid:  #1976d2;
+  --brand-blue-dark: #0d47a1;
+  --brand-light:     #eff6ff;
+
+  --programas-sociales:      #1565c0;
+  --programas-sociales-hover:#0d47a1;
+  --programas-sociales-bg:   #eff6ff;
+  --servicios-sociales:      #0d47a1;
+  --servicios-sociales-hover:#0a3880;
 }
 
 @theme inline {
@@ -18,50 +24,86 @@
   --font-sans: var(--font-poppins);
   --font-mono: var(--font-poppins);
 
-  /* Colores personalizados para las subgerencias */
-  --color-programas-sociales: var(--programas-sociales);
-  --color-programas-sociales-hover: var(--programas-sociales-hover);
-  --color-programas-sociales-bg: var(--programas-sociales-bg);
-  --color-servicios-sociales: var(--servicios-sociales);
-  --color-servicios-sociales-hover: var(--servicios-sociales-hover);
+  --color-programas-sociales:      var(--programas-sociales);
+  --color-programas-sociales-hover:var(--programas-sociales-hover);
+  --color-programas-sociales-bg:   var(--programas-sociales-bg);
+  --color-servicios-sociales:      var(--servicios-sociales);
+  --color-servicios-sociales-hover:var(--servicios-sociales-hover);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ─── Base ───────────────────────────────────────────────────────────────────── */
+* { font-family: inherit; box-sizing: border-box; }
 
 body {
   background: var(--background);
   color: var(--foreground);
 }
 
-/* Aplicar Poppins a todos los elementos */
-* {
-  font-family: inherit;
+/* ─── Custom Scrollbar ───────────────────────────────────────────────────────── */
+::-webkit-scrollbar              { width: 6px; height: 6px; }
+::-webkit-scrollbar-track        { background: transparent; }
+::-webkit-scrollbar-thumb        { background: #c7d2fe; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover  { background: #93c5fd; }
+
+/* ─── Keyframe Animations ────────────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-span,
-div,
-a,
-button,
-input,
-textarea,
-select,
-label {
-  font-family: inherit;
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Override MUI typography */
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+/* ─── Page Entry Animation ───────────────────────────────────────────────────── */
+.page-enter {
+  animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ─── Stat Cards ─────────────────────────────────────────────────────────────── */
+.stat-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(21, 101, 192, 0.14) !important;
+}
+
+/* ─── Table Rows ─────────────────────────────────────────────────────────────── */
+.table-row-animate {
+  animation: fadeIn 0.25s ease both;
+}
+.table-row-animate:nth-child(1)  { animation-delay: 0.02s; }
+.table-row-animate:nth-child(2)  { animation-delay: 0.04s; }
+.table-row-animate:nth-child(3)  { animation-delay: 0.06s; }
+.table-row-animate:nth-child(4)  { animation-delay: 0.08s; }
+.table-row-animate:nth-child(5)  { animation-delay: 0.10s; }
+.table-row-animate:nth-child(n+6){ animation-delay: 0.12s; }
+
+/* ─── Card Glass Effect ──────────────────────────────────────────────────────── */
+.glass-card {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ─── MUI Overrides ──────────────────────────────────────────────────────────── */
 .MuiTypography-root,
 .MuiButton-root,
 .MuiInputBase-root,
@@ -70,47 +112,23 @@ label {
   font-family: inherit !important;
 }
 
-/* Estilos globales para SweetAlert2 */
-.swal2-container {
-  z-index: 2000 !important;
-}
-
-/* Estilos para tablas */
-.table-container {
-  overflow-x: auto;
-}
-
-/* Clases utilitarias personalizadas */
-.bg-programas-sociales {
-  background-color: var(--programas-sociales);
-}
-
-.bg-programas-sociales-hover:hover {
-  background-color: var(--programas-sociales-hover);
-}
-
-.bg-servicios-sociales {
-  background-color: var(--servicios-sociales);
-}
-
-.bg-servicios-sociales-hover:hover {
-  background-color: var(--servicios-sociales-hover);
-}
-
-.text-programas-sociales {
-  color: var(--programas-sociales);
-}
-
-.text-servicios-sociales {
-  color: var(--servicios-sociales);
-}
-
+/* ─── Layout Background ──────────────────────────────────────────────────────── */
 .bg-programas-sociales-light {
-  background: linear-gradient(to bottom, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
+  background:
+    radial-gradient(ellipse 80% 60% at 80% -10%, rgba(21,101,192,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at -5% 90%,  rgba(13,27,62,0.04)  0%, transparent 50%),
+    linear-gradient(160deg, #f0f4ff 0%, #e8f0fe 50%, #dbeafe 100%);
   min-height: 100%;
 }
 
-/* Estilos para tooltips de sectores en el mapa */
+/* ─── SweetAlert2 ────────────────────────────────────────────────────────────── */
+.swal2-container { z-index: 2000 !important; }
+
+.swal2-popup {
+  animation: scaleIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) both !important;
+}
+
+/* ─── Leaflet ────────────────────────────────────────────────────────────────── */
 .sector-tooltip {
   background-color: #1E293B !important;
   color: white !important;
@@ -119,14 +137,14 @@ label {
   padding: 6px 10px !important;
   font-size: 12px !important;
   font-weight: 600 !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
 }
+.sector-tooltip::before { border-top-color: #1E293B !important; }
+.leaflet-interactive:focus { outline: none !important; }
 
-.sector-tooltip::before {
-  border-top-color: #1E293B !important;
-}
-
-/* Quitar el rectángulo negro al hacer click en sectores (Leaflet focus) */
-.leaflet-interactive:focus {
-  outline: none !important;
-}
+/* ─── Utility ────────────────────────────────────────────────────────────────── */
+.table-container            { overflow-x: auto; }
+.bg-programas-sociales      { background-color: var(--programas-sociales); }
+.bg-servicios-sociales      { background-color: var(--servicios-sociales); }
+.text-programas-sociales    { color: var(--programas-sociales); }
+.text-servicios-sociales    { color: var(--servicios-sociales); }
