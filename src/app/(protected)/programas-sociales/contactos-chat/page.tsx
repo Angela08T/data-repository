@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { TextField, InputAdornment, IconButton, Tooltip, CircularProgress } from "@mui/material";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import dayjs, { Dayjs } from "dayjs";
+import { TextField, InputAdornment, IconButton, Tooltip, CircularProgress, Checkbox, Button } from "@mui/material";
 import { supabase } from "@/lib/supabase";
 import { exportToExcel } from "@/lib/utils/exportExcel";
 import SearchIcon from "@mui/icons-material/Search";
@@ -16,6 +14,8 @@ import ChatBubbleIcon from "@mui/icons-material/ChatBubble";
 import PhoneIcon from "@mui/icons-material/Phone";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import CloseIcon from "@mui/icons-material/Close";
+import MessageIcon from "@mui/icons-material/Message";
+import SendMessageModal, { Contacto } from "@/components/messaging/SendMessageModal";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
@@ -33,7 +33,6 @@ interface ContactoChat {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-// Devuelve "YYYY-MM-DD" en zona horaria de Lima
 function toLocalDateStr(date: Date): string {
   return date.toLocaleDateString("en-CA", { timeZone: "America/Lima" });
 }
@@ -109,8 +108,6 @@ function StatCard({
   );
 }
 
-// ── Quick date options ─────────────────────────────────────────────────────────
-
 const QUICK_DATES = [
   { label: "Hoy",       value: () => offsetDate(0)  },
   { label: "Ayer",      value: () => offsetDate(-1) },
@@ -124,8 +121,11 @@ export default function ContactosChatPage() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
   const [search, setSearch]     = useState("");
-  const [filtroTipo, setFiltroTipo]   = useState<TipoContacto | "todos">("todos");
-  const [filtroFecha, setFiltroFecha] = useState<string | null>(null); // "YYYY-MM-DD" o null
+  const [filtroTipo, setFiltroTipo]         = useState<TipoContacto | "todos">("todos");
+  const [filtroFecha, setFiltroFecha]       = useState<string | null>(null);
+  const [selectedIds, setSelectedIds]       = useState<Set<string>>(new Set());
+  const [modalOpen, setModalOpen]           = useState(false);
+  const [modalContactos, setModalContactos] = useState<Contacto[]>([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -134,15 +134,14 @@ export default function ContactosChatPage() {
       .from("contactos_chat")
       .select("*")
       .order("created_at", { ascending: false });
-
     if (err) setError(err.message);
     else setData((rows as ContactoChat[]) ?? []);
     setLoading(false);
+    setSelectedIds(new Set());
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Aplicar filtros
   const filtrados = data.filter((c) => {
     const texto = `${c.nombre} ${c.apellido_materno} ${c.apellido_paterno} ${c.telefono}`.toLowerCase();
     const matchSearch = texto.includes(search.toLowerCase());
@@ -151,18 +150,47 @@ export default function ContactosChatPage() {
     return matchSearch && matchTipo && matchFecha;
   });
 
-  // Stats globales (sin filtro de fecha)
+  // Selección
+  const conTelefono = filtrados.filter((c) => !!c.telefono);
+  const allChecked  = conTelefono.length > 0 && conTelefono.every((c) => selectedIds.has(c.id));
+  const someChecked = filtrados.some((c) => selectedIds.has(c.id));
+
+  const toggleSelectAll = () => {
+    if (allChecked) setSelectedIds(new Set());
+    else setSelectedIds(new Set(conTelefono.map((c) => c.id)));
+  };
+
+  const toggleOne = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const openSendOne = (c: ContactoChat) => {
+    if (!c.telefono) return;
+    setModalContactos([{ nombre: `${c.nombre} ${c.apellido_paterno} ${c.apellido_materno}`, telefono: c.telefono }]);
+    setModalOpen(true);
+  };
+
+  const openSendBulk = () => {
+    const contactos = filtrados
+      .filter((c) => selectedIds.has(c.id) && c.telefono)
+      .map((c) => ({ nombre: `${c.nombre} ${c.apellido_paterno} ${c.apellido_materno}`, telefono: c.telefono }));
+    if (!contactos.length) return;
+    setModalContactos(contactos);
+    setModalOpen(true);
+  };
+
+  // Stats
   const totalPersoneros    = data.filter((c) => c.tipo === "personero").length;
   const totalSimpatizantes = data.filter((c) => c.tipo === "simpatizante").length;
-
-  // Stat de la fecha seleccionada
   const countFechaSeleccionada = filtroFecha
     ? data.filter((c) => toLocalDateStr(new Date(c.created_at)) === filtroFecha).length
     : data.filter((c) => toLocalDateStr(new Date(c.created_at)) === offsetDate(0)).length;
-
-  const fechaStatLabel = filtroFecha
-    ? formatDateLabel(filtroFecha)
-    : "Hoy";
+  const fechaStatLabel = filtroFecha ? formatDateLabel(filtroFecha) : "Hoy";
 
   const handleExport = () => {
     const rows = filtrados.map((c) => {
@@ -179,6 +207,9 @@ export default function ContactosChatPage() {
     });
     exportToExcel(rows, `ContactosChat_${filtroFecha ?? new Date().toISOString().slice(0, 10)}`, "Contactos Chat");
   };
+
+  const selCount = filtrados.filter((c) => selectedIds.has(c.id)).length;
+  const COLS = 7; // checkbox + 5 originales + acciones
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -237,6 +268,26 @@ export default function ContactosChatPage() {
           />
 
           <div className="flex items-center gap-2 flex-wrap">
+
+            {/* Botón envío masivo */}
+            {selCount > 0 && (
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<MessageIcon sx={{ fontSize: 16 }} />}
+                onClick={openSendBulk}
+                sx={{
+                  borderRadius: "10px", textTransform: "none", fontWeight: 700,
+                  fontFamily: "'Poppins', sans-serif", fontSize: "0.75rem",
+                  background: "linear-gradient(135deg, #1565c0, #1976d2)",
+                  boxShadow: "0 4px 12px rgba(21,101,192,0.35)",
+                  "&:hover": { background: "linear-gradient(135deg, #0d47a1, #1565c0)" },
+                }}
+              >
+                Enviar a {selCount} seleccionado{selCount !== 1 ? "s" : ""}
+              </Button>
+            )}
+
             {([
               { value: "todos",        label: "Todos" },
               { value: "personero",    label: "Personeros" },
@@ -278,7 +329,6 @@ export default function ContactosChatPage() {
           <CalendarTodayIcon sx={{ fontSize: 15, color: "#94a3b8" }} />
           <span className="text-xs font-semibold text-gray-400 mr-1">Filtrar por fecha:</span>
 
-          {/* Accesos rápidos */}
           {QUICK_DATES.map((q) => {
             const val = q.value();
             const active = filtroFecha === val;
@@ -298,43 +348,22 @@ export default function ContactosChatPage() {
             );
           })}
 
-          {/* Separador */}
           <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
 
-          {/* Selector de fecha calendario MUI */}
-          <DatePicker
-            value={filtroFecha ? dayjs(filtroFecha) : null}
-            onChange={(val: Dayjs | null) => setFiltroFecha(val ? val.format("YYYY-MM-DD") : null)}
-            maxDate={dayjs()}
-            label="Elegir fecha"
-            slotProps={{
-              textField: {
-                size: "small",
-                sx: {
-                  width: 160,
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: "50px",
-                    fontSize: "0.75rem",
-                    fontWeight: 600,
-                    color: filtroFecha && !QUICK_DATES.map(q => q.value()).includes(filtroFecha) ? "#7c3aed" : "#64748b",
-                    "& fieldset": {
-                      borderColor: filtroFecha && !QUICK_DATES.map(q => q.value()).includes(filtroFecha) ? "#7c3aed" : "#e2e8f0",
-                    },
-                    "&:hover fieldset": { borderColor: "#1565c0" },
-                    "&.Mui-focused fieldset": { borderColor: "#1565c0" },
-                    background: filtroFecha && !QUICK_DATES.map(q => q.value()).includes(filtroFecha) ? "#f5f3ff" : "#fff",
-                  },
-                  "& .MuiInputLabel-root": { fontSize: "0.72rem" },
-                  "& .MuiSvgIcon-root": {
-                    fontSize: 16,
-                    color: filtroFecha && !QUICK_DATES.map(q => q.value()).includes(filtroFecha) ? "#7c3aed" : "#94a3b8",
-                  },
-                },
-              },
+          <input
+            type="date"
+            value={filtroFecha ?? ""}
+            onChange={(e) => setFiltroFecha(e.target.value || null)}
+            max={offsetDate(0)}
+            className="text-xs border rounded-full px-3 py-1 outline-none transition-all cursor-pointer"
+            style={{
+              borderColor: filtroFecha && !QUICK_DATES.map(q => q.value()).includes(filtroFecha) ? "#7c3aed" : "#e2e8f0",
+              color: filtroFecha && !QUICK_DATES.map(q => q.value()).includes(filtroFecha) ? "#7c3aed" : "#64748b",
+              fontWeight: 600,
+              background: filtroFecha && !QUICK_DATES.map(q => q.value()).includes(filtroFecha) ? "#f5f3ff" : "#fff",
             }}
           />
 
-          {/* Limpiar filtro */}
           {filtroFecha && (
             <button
               onClick={() => setFiltroFecha(null)}
@@ -346,7 +375,6 @@ export default function ContactosChatPage() {
             </button>
           )}
 
-          {/* Etiqueta de fecha activa */}
           {filtroFecha && (
             <span className="ml-auto text-xs font-semibold" style={{ color: "#7c3aed" }}>
               Mostrando: {formatDateLabel(filtroFecha)}
@@ -355,10 +383,15 @@ export default function ContactosChatPage() {
         </div>
 
         {/* Contador */}
-        <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-50">
+        <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-50 flex items-center gap-2">
           {loading
             ? "Cargando..."
             : `${filtrados.length} registro${filtrados.length !== 1 ? "s" : ""}${filtroFecha ? ` el ${formatDateLabel(filtroFecha)}` : ""}`}
+          {selCount > 0 && (
+            <span className="font-semibold" style={{ color: "#1565c0" }}>
+              · {selCount} seleccionado{selCount !== 1 ? "s" : ""}
+            </span>
+          )}
         </div>
 
         {/* Table */}
@@ -366,7 +399,18 @@ export default function ContactosChatPage() {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ background: "#f8fafc" }}>
-                {["Nombre completo", "Apellidos", "Teléfono", "Tipo", "Fecha y hora"].map((h) => (
+                {/* Checkbox select-all */}
+                <th className="px-4 py-3 w-10">
+                  <Checkbox
+                    size="small"
+                    checked={allChecked}
+                    indeterminate={someChecked && !allChecked}
+                    onChange={toggleSelectAll}
+                    disabled={loading || conTelefono.length === 0}
+                    sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" }, "&.MuiCheckbox-indeterminate": { color: "#1565c0" } }}
+                  />
+                </th>
+                {["Nombre completo", "Apellidos", "Teléfono", "Tipo", "Fecha y hora", ""].map((h) => (
                   <th
                     key={h}
                     className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap"
@@ -380,20 +424,20 @@ export default function ContactosChatPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-16">
+                  <td colSpan={COLS} className="text-center py-16">
                     <CircularProgress size={28} sx={{ color: "#1565c0" }} />
                     <p className="text-gray-400 text-sm mt-3">Cargando registros...</p>
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-16 text-red-400 text-sm">
+                  <td colSpan={COLS} className="text-center py-16 text-red-400 text-sm">
                     Error al cargar datos: {error}
                   </td>
                 </tr>
               ) : filtrados.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-20">
+                  <td colSpan={COLS} className="text-center py-20">
                     <div className="flex flex-col items-center gap-3">
                       <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: "#f5f3ff" }}>
                         <CalendarTodayIcon sx={{ fontSize: 28, color: "#7c3aed" }} />
@@ -416,12 +460,24 @@ export default function ContactosChatPage() {
                   const { fecha, hora } = formatFecha(c.created_at);
                   const inicial = c.nombre?.charAt(0)?.toUpperCase() ?? "?";
                   const esPersonero = c.tipo === "personero";
+                  const checked = selectedIds.has(c.id);
                   return (
                     <tr
                       key={c.id}
                       className="table-row-animate border-t border-gray-50 hover:bg-blue-50 transition-colors"
-                      style={{ background: i % 2 === 0 ? "#ffffff" : "#fafbff" }}
+                      style={{ background: checked ? "#eff6ff" : i % 2 === 0 ? "#ffffff" : "#fafbff" }}
                     >
+                      {/* Checkbox */}
+                      <td className="px-4 py-4 w-10">
+                        <Checkbox
+                          size="small"
+                          checked={checked}
+                          onChange={() => toggleOne(c.id)}
+                          disabled={!c.telefono}
+                          sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" } }}
+                        />
+                      </td>
+
                       <td className="px-5 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <div
@@ -461,6 +517,25 @@ export default function ContactosChatPage() {
                           <span className="text-xs text-gray-400">{hora}</span>
                         </div>
                       </td>
+
+                      {/* Acciones */}
+                      <td className="px-4 py-4">
+                        <Tooltip title={c.telefono ? "Enviar mensaje" : "Sin teléfono"}>
+                          <span>
+                            <IconButton
+                              size="small"
+                              onClick={() => openSendOne(c)}
+                              disabled={!c.telefono}
+                              sx={{
+                                background: c.telefono ? "rgba(21,101,192,0.08)" : "transparent",
+                                "&:hover": { background: "rgba(21,101,192,0.18)" },
+                              }}
+                            >
+                              <MessageIcon sx={{ fontSize: 16, color: c.telefono ? "#1565c0" : "#cbd5e1" }} />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      </td>
                     </tr>
                   );
                 })
@@ -474,6 +549,12 @@ export default function ContactosChatPage() {
           <span style={{ color: "#1565c0", fontWeight: 600 }}>Campaign Data Repository</span>
         </div>
       </div>
+
+      <SendMessageModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        contactos={modalContactos}
+      />
     </div>
   );
 }
