@@ -46,7 +46,7 @@ export default function Sidebar({ toggled, setToggled, menuItems, color }: Sideb
         document.cookie = "auth_token=; path=/; max-age=0";
       }
       dispatch(logout());
-      router.push("/");
+      window.location.replace("/");
     }
   };
 
