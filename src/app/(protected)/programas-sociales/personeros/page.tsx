@@ -28,6 +28,7 @@ interface Personero {
   direccion: string;
   telefono: string;
   comuna: string;
+  sector?: string | null;
 }
 
 function hasPhone(p: Personero): boolean {
@@ -67,6 +68,8 @@ export default function PersonerosPage() {
   const [error, setError]         = useState<string | null>(null);
   const [search, setSearch]       = useState("");
   const [filtroSexo, setFiltroSexo]         = useState<"todos" | "M" | "F">("todos");
+  const [filtroComuna, setFiltroComuna]     = useState<string>("todos");
+  const [filtroSector, setFiltroSector]     = useState<string>("todos");
   const [selectedIds, setSelectedIds]       = useState<Set<string>>(new Set());
   const [modalOpen, setModalOpen]           = useState(false);
   const [modalContactos, setModalContactos] = useState<Contacto[]>([]);
@@ -86,6 +89,11 @@ export default function PersonerosPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Comunas únicas para el dropdown (ignorar vacíos)
+  const comunasUnicas = Array.from(
+    new Set(data.map((p) => p.comuna?.trim()).filter(Boolean))
+  ).sort() as string[];
+
   const filtrados = data.filter((p) => {
     const nombreCompleto = `${p.nombres} ${p.apellido_paterno} ${p.apellido_materno}`.toLowerCase();
     const matchSearch =
@@ -93,8 +101,10 @@ export default function PersonerosPage() {
       p.dni.includes(search) ||
       (p.distrito ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (p.comuna ?? "").toLowerCase().includes(search.toLowerCase());
-    const matchSexo = filtroSexo === "todos" || p.sexo?.toUpperCase() === filtroSexo;
-    return matchSearch && matchSexo;
+    const matchSexo   = filtroSexo === "todos" || p.sexo?.toUpperCase() === filtroSexo;
+    const matchComuna = filtroComuna === "todos" || (p.comuna?.trim() ?? "") === filtroComuna;
+    const matchSector = filtroSector === "todos" || (p.sector?.trim() ?? "") === filtroSector;
+    return matchSearch && matchSexo && matchComuna && matchSector;
   });
 
   // Selección
@@ -240,6 +250,75 @@ export default function PersonerosPage() {
               </IconButton>
             </Tooltip>
           </div>
+        </div>
+
+        {/* Barra de filtros: Comuna y Sector */}
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-gray-100" style={{ background: "#fafbff" }}>
+
+          {/* Filtro Comuna */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Comuna:</span>
+            <select
+              value={filtroComuna}
+              onChange={(e) => setFiltroComuna(e.target.value)}
+              className="text-xs border rounded-full px-3 py-1.5 outline-none cursor-pointer font-semibold transition-all"
+              style={{
+                borderColor: filtroComuna !== "todos" ? "#1565c0" : "#e2e8f0",
+                color: filtroComuna !== "todos" ? "#1565c0" : "#64748b",
+                background: filtroComuna !== "todos" ? "#eff6ff" : "#fff",
+                fontFamily: "'Poppins', sans-serif",
+              }}
+            >
+              <option value="todos">Todas</option>
+              {comunasUnicas.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filtro Sector */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Sector:</span>
+            <select
+              value={filtroSector}
+              onChange={(e) => setFiltroSector(e.target.value)}
+              className="text-xs border rounded-full px-3 py-1.5 outline-none cursor-pointer font-semibold transition-all"
+              style={{
+                borderColor: filtroSector !== "todos" ? "#1565c0" : "#e2e8f0",
+                color: filtroSector !== "todos" ? "#1565c0" : "#64748b",
+                background: filtroSector !== "todos" ? "#eff6ff" : "#fff",
+                fontFamily: "'Poppins', sans-serif",
+              }}
+            >
+              <option value="todos">Todos</option>
+              {Array.from({ length: 13 }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={String(n)}>Sector {n}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Limpiar filtros */}
+          {(filtroComuna !== "todos" || filtroSector !== "todos") && (
+            <button
+              onClick={() => { setFiltroComuna("todos"); setFiltroSector("todos"); }}
+              className="text-xs font-semibold px-3 py-1.5 rounded-full transition-all"
+              style={{ background: "#fee2e2", color: "#dc2626", border: "1px solid #fecaca" }}
+            >
+              Limpiar filtros
+            </button>
+          )}
+
+          {/* Indicadores activos */}
+          {filtroComuna !== "todos" && (
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: "#eff6ff", color: "#1565c0" }}>
+              {filtroComuna}
+            </span>
+          )}
+          {filtroSector !== "todos" && (
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: "#eff6ff", color: "#1565c0" }}>
+              Sector {filtroSector}
+            </span>
+          )}
         </div>
 
         {/* Contador */}
