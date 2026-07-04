@@ -11,6 +11,8 @@ import PeopleIcon from "@mui/icons-material/People";
 import MaleIcon from "@mui/icons-material/Male";
 import FemaleIcon from "@mui/icons-material/Female";
 import MessageIcon from "@mui/icons-material/Message";
+import HowToRegIcon from "@mui/icons-material/HowToReg";
+import PersonIcon from "@mui/icons-material/Person";
 import SendMessageModal, { Contacto } from "@/components/messaging/SendMessageModal";
 
 interface Personero {
@@ -28,22 +30,41 @@ interface Personero {
   direccion: string;
   telefono: string;
   comuna: string;
-  sector?: string | null;
+  email?: string | null;
+  created_at?: string | null;
+  registrador_nombres?: string | null;
+  registrador_apellidos?: string | null;
+  tipo_registro?: string | null;
 }
 
 function hasPhone(p: Personero): boolean {
   return !!p.telefono && p.telefono !== "EMPTY";
 }
 
+function esPorRegistrador(p: Personero): boolean {
+  return !!p.tipo_registro && p.tipo_registro.toLowerCase() !== "directo";
+}
+
 function SexoBadge({ sexo }: { sexo: string }) {
   const esMujer = sexo?.toUpperCase() === "F";
   return (
-    <span
-      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
-      style={esMujer ? { background: "#fce7f3", color: "#9d174d" } : { background: "#dbeafe", color: "#1e40af" }}
-    >
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+      style={esMujer ? { background: "#fce7f3", color: "#9d174d" } : { background: "#dbeafe", color: "#1e40af" }}>
       {esMujer ? <FemaleIcon sx={{ fontSize: 13 }} /> : <MaleIcon sx={{ fontSize: 13 }} />}
       {esMujer ? "Femenino" : "Masculino"}
+    </span>
+  );
+}
+
+function RegistroBadge({ tipo }: { tipo?: string | null }) {
+  const directo = !tipo || tipo.toLowerCase() === "directo";
+  return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+      style={directo
+        ? { background: "#f0fdf4", color: "#166534" }
+        : { background: "#fef3c7", color: "#92400e" }}>
+      {directo ? <PersonIcon sx={{ fontSize: 12 }} /> : <HowToRegIcon sx={{ fontSize: 12 }} />}
+      {directo ? "Directo" : "Registrador"}
     </span>
   );
 }
@@ -67,12 +88,12 @@ export default function PersonerosPage() {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
   const [search, setSearch]       = useState("");
-  const [filtroSexo, setFiltroSexo]         = useState<"todos" | "M" | "F">("todos");
-  const [filtroComuna, setFiltroComuna]     = useState<string>("todos");
-  const [filtroSector, setFiltroSector]     = useState<string>("todos");
-  const [selectedIds, setSelectedIds]       = useState<Set<string>>(new Set());
-  const [modalOpen, setModalOpen]           = useState(false);
-  const [modalContactos, setModalContactos] = useState<Contacto[]>([]);
+  const [filtroSexo, setFiltroSexo]               = useState<"todos" | "M" | "F">("todos");
+  const [filtroComuna, setFiltroComuna]           = useState<string>("todos");
+  const [filtroTipoRegistro, setFiltroTipoRegistro] = useState<"todos" | "directo" | "registrador">("todos");
+  const [selectedIds, setSelectedIds]             = useState<Set<string>>(new Set());
+  const [modalOpen, setModalOpen]                 = useState(false);
+  const [modalContactos, setModalContactos]       = useState<Contacto[]>([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -89,7 +110,7 @@ export default function PersonerosPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Comunas únicas para el dropdown (ignorar vacíos)
+  // Comunas únicas para el dropdown
   const comunasUnicas = Array.from(
     new Set(data.map((p) => p.comuna?.trim()).filter(Boolean))
   ).sort() as string[];
@@ -98,18 +119,23 @@ export default function PersonerosPage() {
     const nombreCompleto = `${p.nombres} ${p.apellido_paterno} ${p.apellido_materno}`.toLowerCase();
     const matchSearch =
       nombreCompleto.includes(search.toLowerCase()) ||
-      p.dni.includes(search) ||
+      (p.dni ?? "").includes(search) ||
       (p.distrito ?? "").toLowerCase().includes(search.toLowerCase()) ||
-      (p.comuna ?? "").toLowerCase().includes(search.toLowerCase());
+      (p.comuna ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (p.registrador_nombres ?? "").toLowerCase().includes(search.toLowerCase());
     const matchSexo   = filtroSexo === "todos" || p.sexo?.toUpperCase() === filtroSexo;
     const matchComuna = filtroComuna === "todos" || (p.comuna?.trim() ?? "") === filtroComuna;
-    const matchSector = filtroSector === "todos" || (p.sector?.trim() ?? "") === filtroSector;
-    return matchSearch && matchSexo && matchComuna && matchSector;
+    const matchTipo   = filtroTipoRegistro === "todos"
+      ? true
+      : filtroTipoRegistro === "directo"
+        ? !esPorRegistrador(p)
+        : esPorRegistrador(p);
+    return matchSearch && matchSexo && matchComuna && matchTipo;
   });
 
   // Selección
   const conTelefono = filtrados.filter(hasPhone);
-  const allChecked = conTelefono.length > 0 && conTelefono.every((p) => selectedIds.has(p.id));
+  const allChecked  = conTelefono.length > 0 && conTelefono.every((p) => selectedIds.has(p.id));
   const someChecked = filtrados.some((p) => selectedIds.has(p.id));
 
   const toggleSelectAll = () => {
@@ -141,30 +167,36 @@ export default function PersonerosPage() {
     setModalOpen(true);
   };
 
-  const totalMujeres = data.filter((p) => p.sexo?.toUpperCase() === "F").length;
-  const totalHombres = data.filter((p) => p.sexo?.toUpperCase() === "M").length;
+  const totalMujeres      = data.filter((p) => p.sexo?.toUpperCase() === "F").length;
+  const totalHombres      = data.filter((p) => p.sexo?.toUpperCase() === "M").length;
+  const porRegistrador    = data.filter(esPorRegistrador).length;
+  const selCount          = filtrados.filter((p) => selectedIds.has(p.id)).length;
+  const COLS              = 12; // checkbox + 9 cols + tipo + registrador + acciones
 
   const handleExport = () => {
     const rows = filtrados.map((p) => ({
-      "Apellido Paterno":  p.apellido_paterno ?? "",
-      "Apellido Materno":  p.apellido_materno ?? "",
-      "Nombres":           p.nombres ?? "",
-      "DNI":               p.dni ?? "",
-      "Fecha Nacimiento":  p.fecha_nacimiento ?? "",
-      "Sexo":              p.sexo?.toUpperCase() === "F" ? "Femenino" : "Masculino",
-      "Lugar Nacimiento":  p.lugar_nacimiento ?? "",
-      "Región":            p.region ?? "",
-      "Provincia":         p.provincia ?? "",
-      "Distrito":          p.distrito ?? "",
-      "Dirección":         p.direccion ?? "",
-      "Teléfono":          hasPhone(p) ? p.telefono : "",
-      "Comuna":            p.comuna ?? "",
+      "Apellido Paterno":      p.apellido_paterno ?? "",
+      "Apellido Materno":      p.apellido_materno ?? "",
+      "Nombres":               p.nombres ?? "",
+      "DNI":                   p.dni ?? "",
+      "Fecha Nacimiento":      p.fecha_nacimiento ?? "",
+      "Sexo":                  p.sexo?.toUpperCase() === "F" ? "Femenino" : "Masculino",
+      "Lugar Nacimiento":      p.lugar_nacimiento ?? "",
+      "Región":                p.region ?? "",
+      "Provincia":             p.provincia ?? "",
+      "Distrito":              p.distrito ?? "",
+      "Dirección":             p.direccion ?? "",
+      "Teléfono":              hasPhone(p) ? p.telefono : "",
+      "Comuna":                p.comuna ?? "",
+      "Email":                 p.email ?? "",
+      "Tipo de Registro":      p.tipo_registro ?? "directo",
+      "Registrador Nombres":   p.registrador_nombres ?? "",
+      "Registrador Apellidos": p.registrador_apellidos ?? "",
     }));
     exportToExcel(rows, `Personeros_${new Date().toISOString().slice(0, 10)}`, "Personeros");
   };
 
-  const selCount = filtrados.filter((p) => selectedIds.has(p.id)).length;
-  const COLS = 10; // checkbox + 8 originales + acciones
+  const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos";
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -174,22 +206,24 @@ export default function PersonerosPage() {
         <p className="text-sm text-gray-400 mt-1">Registro de personeros inscritos en la campaña</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard label="Total personeros" value={data.length}  icon={<PeopleIcon />}  color="#1565c0" />
-        <StatCard label="Mujeres"          value={totalMujeres} icon={<FemaleIcon />}  color="#9d174d" />
-        <StatCard label="Hombres"          value={totalHombres} icon={<MaleIcon />}    color="#1e40af" />
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatCard label="Total personeros"  value={data.length}      icon={<PeopleIcon />}    color="#1565c0" />
+        <StatCard label="Mujeres"           value={totalMujeres}     icon={<FemaleIcon />}    color="#9d174d" />
+        <StatCard label="Hombres"           value={totalHombres}     icon={<MaleIcon />}      color="#1e40af" />
+        <StatCard label="Por registrador"   value={porRegistrador}   icon={<HowToRegIcon />}  color="#d97706" />
       </div>
 
       <div className="bg-white rounded-2xl shadow overflow-hidden">
 
-        {/* Toolbar */}
+        {/* Toolbar principal */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b border-gray-100">
           <TextField
             size="small"
-            placeholder="Buscar por nombre, DNI, distrito o comuna..."
+            placeholder="Buscar por nombre, DNI, distrito, comuna o registrador..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            sx={{ minWidth: 300, "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
+            sx={{ minWidth: 320, "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
             slotProps={{
               input: {
                 startAdornment: (
@@ -201,12 +235,8 @@ export default function PersonerosPage() {
             }}
           />
           <div className="flex items-center gap-2 flex-wrap">
-
-            {/* Botón envío masivo */}
             {selCount > 0 && (
-              <Button
-                variant="contained"
-                size="small"
+              <Button variant="contained" size="small"
                 startIcon={<MessageIcon sx={{ fontSize: 16 }} />}
                 onClick={openSendBulk}
                 sx={{
@@ -215,27 +245,20 @@ export default function PersonerosPage() {
                   background: "linear-gradient(135deg, #1565c0, #1976d2)",
                   boxShadow: "0 4px 12px rgba(21,101,192,0.35)",
                   "&:hover": { background: "linear-gradient(135deg, #0d47a1, #1565c0)" },
-                }}
-              >
+                }}>
                 Enviar a {selCount} seleccionado{selCount !== 1 ? "s" : ""}
               </Button>
             )}
-
             {([
               { value: "todos", label: "Todos" },
               { value: "F",     label: "Femenino" },
               { value: "M",     label: "Masculino" },
             ] as const).map((f) => (
-              <button
-                key={f.value}
-                onClick={() => setFiltroSexo(f.value)}
+              <button key={f.value} onClick={() => setFiltroSexo(f.value)}
                 className="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all"
-                style={
-                  filtroSexo === f.value
-                    ? { background: "#1565c0", color: "#fff", borderColor: "#1565c0" }
-                    : { background: "transparent", color: "#64748b", borderColor: "#e2e8f0" }
-                }
-              >
+                style={filtroSexo === f.value
+                  ? { background: "#1565c0", color: "#fff", borderColor: "#1565c0" }
+                  : { background: "transparent", color: "#64748b", borderColor: "#e2e8f0" }}>
                 {f.label}
               </button>
             ))}
@@ -252,8 +275,29 @@ export default function PersonerosPage() {
           </div>
         </div>
 
-        {/* Barra de filtros: Comuna y Sector */}
+        {/* Barra de filtros: Tipo de registro + Comuna */}
         <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-gray-100" style={{ background: "#fafbff" }}>
+
+          {/* Filtro tipo de registro */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Registro:</span>
+            {([
+              { value: "todos",       label: "Todos" },
+              { value: "directo",     label: "Directo" },
+              { value: "registrador", label: "Por registrador" },
+            ] as const).map((f) => (
+              <button key={f.value} onClick={() => setFiltroTipoRegistro(f.value)}
+                className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
+                style={filtroTipoRegistro === f.value
+                  ? { background: "#d97706", color: "#fff", borderColor: "#d97706" }
+                  : { background: "#fff", color: "#64748b", borderColor: "#e2e8f0" }}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Separador */}
+          <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
 
           {/* Filtro Comuna */}
           <div className="flex items-center gap-2">
@@ -276,48 +320,14 @@ export default function PersonerosPage() {
             </select>
           </div>
 
-          {/* Filtro Sector */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Sector:</span>
-            <select
-              value={filtroSector}
-              onChange={(e) => setFiltroSector(e.target.value)}
-              className="text-xs border rounded-full px-3 py-1.5 outline-none cursor-pointer font-semibold transition-all"
-              style={{
-                borderColor: filtroSector !== "todos" ? "#1565c0" : "#e2e8f0",
-                color: filtroSector !== "todos" ? "#1565c0" : "#64748b",
-                background: filtroSector !== "todos" ? "#eff6ff" : "#fff",
-                fontFamily: "'Poppins', sans-serif",
-              }}
-            >
-              <option value="todos">Todos</option>
-              {Array.from({ length: 13 }, (_, i) => i + 1).map((n) => (
-                <option key={n} value={String(n)}>Sector {n}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Limpiar filtros */}
-          {(filtroComuna !== "todos" || filtroSector !== "todos") && (
+          {/* Limpiar */}
+          {hayFiltrosActivos && (
             <button
-              onClick={() => { setFiltroComuna("todos"); setFiltroSector("todos"); }}
-              className="text-xs font-semibold px-3 py-1.5 rounded-full transition-all"
-              style={{ background: "#fee2e2", color: "#dc2626", border: "1px solid #fecaca" }}
-            >
+              onClick={() => { setFiltroComuna("todos"); setFiltroTipoRegistro("todos"); }}
+              className="text-xs font-semibold px-3 py-1 rounded-full transition-all"
+              style={{ background: "#fee2e2", color: "#dc2626", border: "1px solid #fecaca" }}>
               Limpiar filtros
             </button>
-          )}
-
-          {/* Indicadores activos */}
-          {filtroComuna !== "todos" && (
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: "#eff6ff", color: "#1565c0" }}>
-              {filtroComuna}
-            </span>
-          )}
-          {filtroSector !== "todos" && (
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: "#eff6ff", color: "#1565c0" }}>
-              Sector {filtroSector}
-            </span>
           )}
         </div>
 
@@ -336,18 +346,12 @@ export default function PersonerosPage() {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ background: "#f8fafc" }}>
-                {/* Checkbox select-all */}
                 <th className="px-4 py-3 w-10">
-                  <Checkbox
-                    size="small"
-                    checked={allChecked}
-                    indeterminate={someChecked && !allChecked}
-                    onChange={toggleSelectAll}
-                    disabled={loading || conTelefono.length === 0}
-                    sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" }, "&.MuiCheckbox-indeterminate": { color: "#1565c0" } }}
-                  />
+                  <Checkbox size="small" checked={allChecked} indeterminate={someChecked && !allChecked}
+                    onChange={toggleSelectAll} disabled={loading || conTelefono.length === 0}
+                    sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" }, "&.MuiCheckbox-indeterminate": { color: "#1565c0" } }} />
                 </th>
-                {["Apellidos y Nombres", "DNI", "Nacimiento", "Sexo", "Distrito", "Dirección", "Teléfono", "Comuna", ""].map((h) => (
+                {["Apellidos y Nombres", "DNI", "Nacimiento", "Sexo", "Distrito", "Dirección", "Teléfono", "Comuna", "Tipo", "Registrador", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap" style={{ color: "#64748b" }}>
                     {h}
                   </th>
@@ -356,45 +360,36 @@ export default function PersonerosPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={COLS} className="text-center py-16">
-                    <CircularProgress size={28} sx={{ color: "#1565c0" }} />
-                    <p className="text-gray-400 text-sm mt-3">Cargando registros...</p>
-                  </td>
-                </tr>
+                <tr><td colSpan={COLS} className="text-center py-16">
+                  <CircularProgress size={28} sx={{ color: "#1565c0" }} />
+                  <p className="text-gray-400 text-sm mt-3">Cargando registros...</p>
+                </td></tr>
               ) : error ? (
-                <tr>
-                  <td colSpan={COLS} className="text-center py-16 text-red-400 text-sm">
-                    Error al cargar datos: {error}
-                  </td>
-                </tr>
+                <tr><td colSpan={COLS} className="text-center py-16 text-red-400 text-sm">
+                  Error al cargar datos: {error}
+                </td></tr>
               ) : filtrados.length === 0 ? (
-                <tr>
-                  <td colSpan={COLS} className="text-center py-16 text-gray-400 text-sm">
-                    No se encontraron registros
-                  </td>
-                </tr>
+                <tr><td colSpan={COLS} className="text-center py-16 text-gray-400 text-sm">
+                  No se encontraron registros
+                </td></tr>
               ) : (
                 filtrados.map((p, i) => {
-                  const checked = selectedIds.has(p.id);
-                  const tienePhone = hasPhone(p);
+                  const checked     = selectedIds.has(p.id);
+                  const tienePhone  = hasPhone(p);
+                  const registrador = esPorRegistrador(p);
                   return (
-                    <tr
-                      key={p.id}
+                    <tr key={p.id}
                       className="table-row-animate border-t border-gray-50 hover:bg-blue-50 transition-colors"
-                      style={{ background: checked ? "#eff6ff" : i % 2 === 0 ? "#ffffff" : "#fafbff" }}
-                    >
+                      style={{ background: checked ? "#eff6ff" : i % 2 === 0 ? "#ffffff" : "#fafbff" }}>
+
                       {/* Checkbox */}
                       <td className="px-4 py-3 w-10">
-                        <Checkbox
-                          size="small"
-                          checked={checked}
-                          onChange={() => toggleOne(p.id)}
+                        <Checkbox size="small" checked={checked} onChange={() => toggleOne(p.id)}
                           disabled={!tienePhone}
-                          sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" } }}
-                        />
+                          sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" } }} />
                       </td>
 
+                      {/* Nombre */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
@@ -407,46 +402,73 @@ export default function PersonerosPage() {
                           </div>
                         </div>
                       </td>
+
+                      {/* DNI */}
                       <td className="px-4 py-3">
-                        <span className="font-mono text-sm font-medium text-gray-700">{p.dni}</span>
+                        <span className="font-mono text-sm font-medium text-gray-700">{p.dni || "—"}</span>
                       </td>
+
+                      {/* Nacimiento */}
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-sm text-gray-600">{p.fecha_nacimiento}</span>
+                        <span className="text-sm text-gray-600">{p.fecha_nacimiento || "—"}</span>
                       </td>
+
+                      {/* Sexo */}
                       <td className="px-4 py-3">
                         <SexoBadge sexo={p.sexo} />
                       </td>
+
+                      {/* Distrito */}
                       <td className="px-4 py-3">
                         <div className="flex flex-col">
-                          <span className="text-sm font-medium text-gray-700">{p.distrito}</span>
+                          <span className="text-sm font-medium text-gray-700">{p.distrito || "—"}</span>
                           <span className="text-xs text-gray-400">{p.region}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className="text-sm text-gray-600">{p.direccion || "—"}</span>
+
+                      {/* Dirección */}
+                      <td className="px-4 py-3 max-w-[160px]">
+                        <span className="text-sm text-gray-600 truncate block">{p.direccion || "—"}</span>
                       </td>
+
+                      {/* Teléfono */}
                       <td className="px-4 py-3">
                         <span className="text-sm text-gray-600">{tienePhone ? p.telefono : "—"}</span>
                       </td>
+
+                      {/* Comuna */}
                       <td className="px-4 py-3">
                         <span className="inline-block px-2 py-0.5 rounded text-xs font-medium" style={{ background: "#f0fdf4", color: "#166534" }}>
                           {p.comuna || "—"}
                         </span>
                       </td>
 
+                      {/* Tipo de registro */}
+                      <td className="px-4 py-3">
+                        <RegistroBadge tipo={p.tipo_registro} />
+                      </td>
+
+                      {/* Registrador */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {registrador && (p.registrador_nombres || p.registrador_apellidos) ? (
+                          <div className="flex flex-col">
+                            <span className="text-xs font-semibold text-gray-700">
+                              {p.registrador_nombres} {p.registrador_apellidos}
+                            </span>
+                            <span className="text-xs text-gray-400">Registrador</span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-300 text-xs">—</span>
+                        )}
+                      </td>
+
                       {/* Acciones */}
                       <td className="px-4 py-3">
                         <Tooltip title={tienePhone ? "Enviar mensaje" : "Sin teléfono"}>
                           <span>
-                            <IconButton
-                              size="small"
-                              onClick={() => openSendOne(p)}
-                              disabled={!tienePhone}
-                              sx={{
-                                background: tienePhone ? "rgba(21,101,192,0.08)" : "transparent",
-                                "&:hover": { background: "rgba(21,101,192,0.18)" },
-                              }}
-                            >
+                            <IconButton size="small" onClick={() => openSendOne(p)} disabled={!tienePhone}
+                              sx={{ background: tienePhone ? "rgba(21,101,192,0.08)" : "transparent",
+                                "&:hover": { background: "rgba(21,101,192,0.18)" } }}>
                               <MessageIcon sx={{ fontSize: 16, color: tienePhone ? "#1565c0" : "#cbd5e1" }} />
                             </IconButton>
                           </span>
@@ -466,11 +488,7 @@ export default function PersonerosPage() {
         </div>
       </div>
 
-      <SendMessageModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        contactos={modalContactos}
-      />
+      <SendMessageModal open={modalOpen} onClose={() => setModalOpen(false)} contactos={modalContactos} />
     </div>
   );
 }
