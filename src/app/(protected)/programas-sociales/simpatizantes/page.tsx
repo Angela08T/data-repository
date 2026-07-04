@@ -11,13 +11,15 @@ import PeopleIcon from "@mui/icons-material/People";
 import PhoneIcon from "@mui/icons-material/Phone";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import MessageIcon from "@mui/icons-material/Message";
+import BadgeIcon from "@mui/icons-material/Badge";
 import SendMessageModal, { Contacto } from "@/components/messaging/SendMessageModal";
 
 interface Simpatizante {
   id: string;
   nombre: string;
-  apellidos: string;
+  apellidos: string | null;
   telefono: string;
+  dni: string | null;
   created_at: string;
 }
 
@@ -67,7 +69,7 @@ export default function SimpatizantesPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const filtrados = data.filter((s) => {
-    const texto = `${s.nombre} ${s.apellidos} ${s.telefono}`.toLowerCase();
+    const texto = `${s.nombre} ${s.apellidos ?? ""} ${s.telefono} ${s.dni ?? ""}`.toLowerCase();
     return texto.includes(search.toLowerCase());
   });
 
@@ -113,6 +115,7 @@ export default function SimpatizantesPage() {
       return {
         "Nombre":            s.nombre ?? "",
         "Apellidos":         s.apellidos ?? "",
+        "DNI":               s.dni ?? "",
         "Teléfono":          s.telefono ?? "",
         "Fecha de Registro": fecha,
         "Hora":              hora,
@@ -125,7 +128,7 @@ export default function SimpatizantesPage() {
   const hoy_count = data.filter((s) => new Date(s.created_at).toLocaleDateString("es-PE") === hoy).length;
   const selCount = filtrados.filter((s) => selectedIds.has(s.id)).length;
 
-  const COLS = 5; // checkbox + nombre + teléfono + fecha + acciones
+  const COLS = 6; // checkbox + nombre + dni + teléfono + fecha + acciones
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -135,10 +138,11 @@ export default function SimpatizantesPage() {
         <p className="text-sm text-gray-400 mt-1">Personas registradas como simpatizantes de la campaña</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard label="Total simpatizantes" value={data.length}  icon={<PeopleIcon />}     color="#1565c0" />
-        <StatCard label="Registrados hoy"     value={hoy_count}   icon={<PersonAddIcon />}  color="#16a34a" />
-        <StatCard label="Con teléfono"        value={data.filter(s => s.telefono).length} icon={<PhoneIcon />} color="#0d47a1" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatCard label="Total simpatizantes" value={data.length}                              icon={<PeopleIcon />}    color="#1565c0" />
+        <StatCard label="Registrados hoy"     value={hoy_count}                               icon={<PersonAddIcon />} color="#16a34a" />
+        <StatCard label="Con teléfono"        value={data.filter(s => s.telefono).length}     icon={<PhoneIcon />}     color="#0d47a1" />
+        <StatCard label="Con DNI"             value={data.filter(s => s.dni).length}          icon={<BadgeIcon />}     color="#7c3aed" />
       </div>
 
       <div className="bg-white rounded-2xl shadow overflow-hidden">
@@ -147,7 +151,7 @@ export default function SimpatizantesPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b border-gray-100">
           <TextField
             size="small"
-            placeholder="Buscar por nombre, apellidos o teléfono..."
+            placeholder="Buscar por nombre, apellidos, DNI o teléfono..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             sx={{ minWidth: 300, "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
@@ -221,7 +225,7 @@ export default function SimpatizantesPage() {
                     sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" }, "&.MuiCheckbox-indeterminate": { color: "#1565c0" } }}
                   />
                 </th>
-                {["Nombre y Apellidos", "Teléfono", "Fecha de registro", ""].map((h) => (
+                {["Nombre y Apellidos", "DNI", "Teléfono", "Fecha de registro", ""].map((h) => (
                   <th key={h} className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wide" style={{ color: "#64748b" }}>
                     {h}
                   </th>
@@ -280,6 +284,15 @@ export default function SimpatizantesPage() {
                           </div>
                           <p className="font-semibold text-gray-800">{s.nombre} {s.apellidos}</p>
                         </div>
+                      </td>
+
+                      {/* DNI */}
+                      <td className="px-5 py-4">
+                        {s.dni ? (
+                          <span className="font-mono text-sm font-medium text-gray-700">{s.dni}</span>
+                        ) : (
+                          <span className="text-gray-300 text-xs">—</span>
+                        )}
                       </td>
 
                       {/* Teléfono */}
