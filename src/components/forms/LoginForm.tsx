@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, CircularProgress, TextField, InputAdornment, IconButton } from "@mui/material";
+import { Alert, Button, CircularProgress, Collapse, TextField, InputAdornment, IconButton } from "@mui/material";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -10,7 +10,6 @@ import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { useAppDispatch } from "@/redux/hooks";
 import { loginSuccess, setLoading } from "@/redux/slices/authSlice";
 import { supabase } from "@/lib/supabase";
-import { showError } from "@/lib/utils/swalConfig";
 import type { SubgerenciaType } from "@/lib/constants";
 import type { User } from "@/types/auth";
 
@@ -25,54 +24,58 @@ export default function LoginForm({ subgerencia }: LoginFormProps) {
   const [password, setPassword]     = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading]   = useState(false);
+  const [errorMsg, setErrorMsg]     = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    setErrorMsg(null);
+
     if (!email || !password) {
-      showError("Campos requeridos", "Ingresa tu usuario y contraseña");
+      setErrorMsg("Ingresa tu usuario y contraseña");
       return;
     }
 
     setIsLoading(true);
     dispatch(setLoading(true));
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error || !data.session) {
-      showError("Error al iniciar sesión", "Usuario o contraseña incorrectos");
+      if (error || !data.session) {
+        setErrorMsg("Usuario o contraseña incorrectos");
+        return;
+      }
+
+      const session = data.session;
+      const supaUser = data.user;
+
+      const user: User = {
+        id: supaUser.id,
+        username: supaUser.email ?? "",
+        email: supaUser.email ?? "",
+        firstName: supaUser.user_metadata?.nombre ?? supaUser.email?.split("@")[0] ?? "Usuario",
+        lastName: supaUser.user_metadata?.apellido ?? "",
+        fullName: supaUser.user_metadata?.nombre_completo ?? supaUser.email?.split("@")[0] ?? "Usuario",
+        permissions: ["all"],
+        subgerencia,
+        cargo: supaUser.user_metadata?.cargo ?? "Operador",
+      };
+
+      dispatch(loginSuccess({ token: session.access_token, user }));
+
+      if (typeof document !== "undefined") {
+        document.cookie = `auth_token=${session.access_token}; path=/; max-age=86400; SameSite=Strict`;
+      }
+
+      router.push(`/${subgerencia}/donaciones`);
+    } finally {
       setIsLoading(false);
       dispatch(setLoading(false));
-      return;
     }
-
-    const session = data.session;
-    const supaUser = data.user;
-
-    const user: User = {
-      id: supaUser.id,
-      username: supaUser.email ?? "",
-      email: supaUser.email ?? "",
-      firstName: supaUser.user_metadata?.nombre ?? supaUser.email?.split("@")[0] ?? "Usuario",
-      lastName: supaUser.user_metadata?.apellido ?? "",
-      fullName: supaUser.user_metadata?.nombre_completo ?? supaUser.email?.split("@")[0] ?? "Usuario",
-      permissions: ["all"],
-      subgerencia,
-      cargo: supaUser.user_metadata?.cargo ?? "Operador",
-    };
-
-    dispatch(loginSuccess({ token: session.access_token, user }));
-
-    if (typeof document !== "undefined") {
-      document.cookie = `auth_token=${session.access_token}; path=/; max-age=86400; SameSite=Strict`;
-    }
-
-    router.push(`/${subgerencia}/donaciones`);
-    setIsLoading(false);
-    dispatch(setLoading(false));
   };
 
   return (
@@ -98,6 +101,16 @@ export default function LoginForm({ subgerencia }: LoginFormProps) {
         <h1 className="text-center font-black leading-none mb-8" style={{ fontSize: "2.4rem", color: "#1565c0" }}>
           Data Repository
         </h1>
+
+        <Collapse in={!!errorMsg}>
+          <Alert
+            severity="error"
+            onClose={() => setErrorMsg(null)}
+            sx={{ mb: 2, borderRadius: "12px" }}
+          >
+            {errorMsg}
+          </Alert>
+        </Collapse>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Email / Usuario */}
