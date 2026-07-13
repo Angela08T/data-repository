@@ -5,7 +5,6 @@ import { MapContainer, TileLayer, GeoJSON, Polygon, useMapEvents, Marker, Polyli
 import type { FeatureCollection, Feature, Geometry } from "geojson";
 import type { PathOptions, Layer, Path, LeafletMouseEvent, DragEndEvent } from "leaflet";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import { setupLeafletIcons } from "@/lib/utils/mapSetup";
 
 if (typeof window !== "undefined") setupLeafletIcons(L);
