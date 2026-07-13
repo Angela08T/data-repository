@@ -300,7 +300,7 @@ export default function SimpatizantesPage() {
                         {s.telefono ? (
                           <span className="inline-flex items-center gap-1.5 text-sm text-gray-700">
                             <PhoneIcon sx={{ fontSize: 14, color: "#94a3b8" }} />
-                            {s.telefono}
+                            {s.telefono.startsWith("+") ? s.telefono : `+51 ${s.telefono}`}
                           </span>
                         ) : (
                           <span className="text-gray-400 text-sm">—</span>

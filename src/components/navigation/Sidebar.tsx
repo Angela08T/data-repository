@@ -149,8 +149,8 @@ export default function Sidebar({ toggled, setToggled, menuItems, color }: Sideb
                   background: "rgba(21,101,192,0.15)",
                   border: "1px solid rgba(59,130,246,0.25)",
                 }}>
-                  <div style={{ fontSize: "0.6rem", fontWeight: 700, color: "#93c5fd", letterSpacing: "0.2em", textTransform: "uppercase" }}>Campaign</div>
-                  <div style={{ fontSize: "0.95rem", fontWeight: 900, color: "#ffffff", letterSpacing: "0.05em", textTransform: "uppercase", lineHeight: 1.2 }}>Data Repository</div>
+                  <div style={{ fontSize: "0.6rem", fontWeight: 700, color: "#93c5fd", letterSpacing: "0.2em", textTransform: "uppercase" }}>Datos generales</div>
+                  <div style={{ fontSize: "0.95rem", fontWeight: 900, color: "#ffffff", letterSpacing: "0.05em", textTransform: "uppercase", lineHeight: 1.2 }}>de campaña</div>
                 </div>
               </div>
             )}

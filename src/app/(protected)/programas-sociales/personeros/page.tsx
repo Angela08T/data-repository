@@ -35,6 +35,8 @@ interface Personero {
   registrador_nombres?: string | null;
   registrador_apellidos?: string | null;
   tipo_registro?: string | null;
+  colegio?: string | null;
+  numero_mesa?: string | null;
 }
 
 function hasPhone(p: Personero): boolean {
@@ -91,6 +93,7 @@ export default function PersonerosPage() {
   const [filtroSexo, setFiltroSexo]               = useState<"todos" | "M" | "F">("todos");
   const [filtroComuna, setFiltroComuna]           = useState<string>("todos");
   const [filtroTipoRegistro, setFiltroTipoRegistro] = useState<"todos" | "directo" | "registrador">("todos");
+  const [filtroColegio, setFiltroColegio]         = useState<string>("todos");
   const [selectedIds, setSelectedIds]             = useState<Set<string>>(new Set());
   const [modalOpen, setModalOpen]                 = useState(false);
   const [modalContactos, setModalContactos]       = useState<Contacto[]>([]);
@@ -115,6 +118,11 @@ export default function PersonerosPage() {
     new Set(data.map((p) => p.comuna?.trim()).filter(Boolean))
   ).sort() as string[];
 
+  // Colegios únicos para el dropdown
+  const colegiosUnicos = Array.from(
+    new Set(data.map((p) => p.colegio?.trim()).filter(Boolean))
+  ).sort() as string[];
+
   const filtrados = data.filter((p) => {
     const nombreCompleto = `${p.nombres} ${p.apellido_paterno} ${p.apellido_materno}`.toLowerCase();
     const matchSearch =
@@ -123,14 +131,15 @@ export default function PersonerosPage() {
       (p.distrito ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (p.comuna ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (p.registrador_nombres ?? "").toLowerCase().includes(search.toLowerCase());
-    const matchSexo   = filtroSexo === "todos" || p.sexo?.toUpperCase() === filtroSexo;
-    const matchComuna = filtroComuna === "todos" || (p.comuna?.trim() ?? "") === filtroComuna;
-    const matchTipo   = filtroTipoRegistro === "todos"
+    const matchSexo     = filtroSexo === "todos" || p.sexo?.toUpperCase() === filtroSexo;
+    const matchComuna   = filtroComuna === "todos" || (p.comuna?.trim() ?? "") === filtroComuna;
+    const matchColegio  = filtroColegio === "todos" || (p.colegio?.trim() ?? "") === filtroColegio;
+    const matchTipo     = filtroTipoRegistro === "todos"
       ? true
       : filtroTipoRegistro === "directo"
         ? !esPorRegistrador(p)
         : esPorRegistrador(p);
-    return matchSearch && matchSexo && matchComuna && matchTipo;
+    return matchSearch && matchSexo && matchComuna && matchColegio && matchTipo;
   });
 
   // Selección
@@ -171,7 +180,7 @@ export default function PersonerosPage() {
   const totalHombres      = data.filter((p) => p.sexo?.toUpperCase() === "M").length;
   const porRegistrador    = data.filter(esPorRegistrador).length;
   const selCount          = filtrados.filter((p) => selectedIds.has(p.id)).length;
-  const COLS              = 12; // checkbox + 9 cols + tipo + registrador + acciones
+  const COLS              = 14; // checkbox + cols + tipo + registrador + colegio + mesa + acciones
 
   const handleExport = () => {
     const rows = filtrados.map((p) => ({
@@ -192,11 +201,13 @@ export default function PersonerosPage() {
       "Tipo de Registro":      p.tipo_registro ?? "directo",
       "Registrador Nombres":   p.registrador_nombres ?? "",
       "Registrador Apellidos": p.registrador_apellidos ?? "",
+      "Colegio de Votación":   p.colegio ?? "",
+      "N° de Mesa":            p.numero_mesa ?? "",
     }));
     exportToExcel(rows, `Personeros_${new Date().toISOString().slice(0, 10)}`, "Personeros");
   };
 
-  const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos";
+  const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos";
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -320,10 +331,35 @@ export default function PersonerosPage() {
             </select>
           </div>
 
+          {/* Separador */}
+          <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
+
+          {/* Filtro Colegio */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Colegio:</span>
+            <select
+              value={filtroColegio}
+              onChange={(e) => setFiltroColegio(e.target.value)}
+              className="text-xs border rounded-full px-3 py-1.5 outline-none cursor-pointer font-semibold transition-all"
+              style={{
+                borderColor: filtroColegio !== "todos" ? "#7c3aed" : "#e2e8f0",
+                color: filtroColegio !== "todos" ? "#7c3aed" : "#64748b",
+                background: filtroColegio !== "todos" ? "#f5f3ff" : "#fff",
+                fontFamily: "'Poppins', sans-serif",
+                maxWidth: 220,
+              }}
+            >
+              <option value="todos">Todos</option>
+              {colegiosUnicos.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Limpiar */}
           {hayFiltrosActivos && (
             <button
-              onClick={() => { setFiltroComuna("todos"); setFiltroTipoRegistro("todos"); }}
+              onClick={() => { setFiltroComuna("todos"); setFiltroTipoRegistro("todos"); setFiltroColegio("todos"); }}
               className="text-xs font-semibold px-3 py-1 rounded-full transition-all"
               style={{ background: "#fee2e2", color: "#dc2626", border: "1px solid #fecaca" }}>
               Limpiar filtros
@@ -351,7 +387,7 @@ export default function PersonerosPage() {
                     onChange={toggleSelectAll} disabled={loading || conTelefono.length === 0}
                     sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" }, "&.MuiCheckbox-indeterminate": { color: "#1565c0" } }} />
                 </th>
-                {["Apellidos y Nombres", "DNI", "Nacimiento", "Sexo", "Distrito", "Dirección", "Teléfono", "Comuna", "Tipo", "Registrador", ""].map((h) => (
+                {["Apellidos y Nombres", "DNI", "Nacimiento", "Sexo", "Distrito", "Dirección", "Teléfono", "Comuna", "Tipo", "Registrador", "Colegio de Votación", "N° Mesa", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap" style={{ color: "#64748b" }}>
                     {h}
                   </th>
@@ -433,7 +469,7 @@ export default function PersonerosPage() {
 
                       {/* Teléfono */}
                       <td className="px-4 py-3">
-                        <span className="text-sm text-gray-600">{tienePhone ? p.telefono : "—"}</span>
+                        <span className="text-sm text-gray-600">{tienePhone ? (p.telefono.startsWith("+") ? p.telefono : `+51 ${p.telefono}`) : "—"}</span>
                       </td>
 
                       {/* Comuna */}
@@ -457,6 +493,27 @@ export default function PersonerosPage() {
                             </span>
                             <span className="text-xs text-gray-400">Registrador</span>
                           </div>
+                        ) : (
+                          <span className="text-gray-300 text-xs">—</span>
+                        )}
+                      </td>
+
+                      {/* Colegio de votación */}
+                      <td className="px-4 py-3 max-w-[180px]">
+                        {p.colegio ? (
+                          <span className="text-xs text-gray-700 block truncate" title={p.colegio}>{p.colegio}</span>
+                        ) : (
+                          <span className="text-gray-300 text-xs">—</span>
+                        )}
+                      </td>
+
+                      {/* N° de Mesa */}
+                      <td className="px-4 py-3 text-center">
+                        {p.numero_mesa ? (
+                          <span className="inline-block px-2 py-0.5 rounded font-mono text-xs font-bold"
+                            style={{ background: "#eff6ff", color: "#1565c0" }}>
+                            {p.numero_mesa}
+                          </span>
                         ) : (
                           <span className="text-gray-300 text-xs">—</span>
                         )}
