@@ -199,7 +199,7 @@ export default function ContactosChatPage() {
         "Nombre":           c.nombre ?? "",
         "Apellido Materno": c.apellido_materno ?? "",
         "Apellido Paterno": c.apellido_paterno ?? "",
-        "Teléfono":         c.telefono ?? "",
+        "Teléfono":         c.telefono ? (c.telefono.startsWith("+") ? c.telefono : `+51 ${c.telefono}`) : "",
         "Tipo":             c.tipo ?? "",
         "Fecha":            fecha,
         "Hora":             hora,

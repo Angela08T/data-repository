@@ -116,7 +116,7 @@ export default function SimpatizantesPage() {
         "Nombre":            s.nombre ?? "",
         "Apellidos":         s.apellidos ?? "",
         "DNI":               s.dni ?? "",
-        "Teléfono":          s.telefono ?? "",
+        "Teléfono":          s.telefono ? (s.telefono.startsWith("+") ? s.telefono : `+51 ${s.telefono}`) : "",
         "Fecha de Registro": fecha,
         "Hora":              hora,
       };

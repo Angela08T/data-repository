@@ -195,7 +195,7 @@ export default function PersonerosPage() {
       "Provincia":             p.provincia ?? "",
       "Distrito":              p.distrito ?? "",
       "Dirección":             p.direccion ?? "",
-      "Teléfono":              hasPhone(p) ? p.telefono : "",
+      "Teléfono":              hasPhone(p) ? (p.telefono.startsWith("+") ? p.telefono : `+51 ${p.telefono}`) : "",
       "Comuna":                p.comuna ?? "",
       "Email":                 p.email ?? "",
       "Tipo de Registro":      p.tipo_registro ?? "directo",
