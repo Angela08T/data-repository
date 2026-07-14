@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
 import { ReduxProvider } from "@/redux/providers";
@@ -13,6 +13,13 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: "Campaign Data Repository",
   description: "Repositorio de datos de campaña — San Juan de Lurigancho",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

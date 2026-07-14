@@ -148,9 +148,16 @@ export default function ReportarVotosPage() {
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", backgroundColor: "#f8fafc", py: 4 }}>
-      <Container maxWidth="sm">
-        <Paper sx={{ p: { xs: 3, md: 5 }, borderRadius: "16px", boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)" }}>
+    <Box
+      sx={{
+        minHeight: "100dvh",
+        backgroundColor: "#f8fafc",
+        pt: "max(env(safe-area-inset-top), 24px)",
+        pb: "max(env(safe-area-inset-bottom), 24px)",
+      }}
+    >
+      <Container maxWidth="sm" disableGutters sx={{ px: { xs: 2, sm: 3 } }}>
+        <Paper sx={{ p: { xs: 2.5, sm: 5 }, borderRadius: "16px", boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)" }}>
 
           <Box textAlign="center" mb={4}>
             <Box
@@ -238,7 +245,8 @@ export default function ReportarVotosPage() {
                   <img
                     src={fotoPreview}
                     alt="Vista previa del acta"
-                    className="mt-3 rounded-xl max-h-64 w-auto"
+                    className="mt-3 rounded-xl max-h-64 max-w-full w-auto"
+                    style={{ objectFit: "contain" }}
                   />
                 )}
               </Box>
