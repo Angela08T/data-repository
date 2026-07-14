@@ -35,7 +35,7 @@ interface Personero {
   registrador_nombres?: string | null;
   registrador_apellidos?: string | null;
   tipo_registro?: string | null;
-  colegio?: string | null;
+  colegio_votacion?: string | null;
   numero_mesa?: string | null;
 }
 
@@ -120,7 +120,7 @@ export default function PersonerosPage() {
 
   // Colegios únicos para el dropdown
   const colegiosUnicos = Array.from(
-    new Set(data.map((p) => p.colegio?.trim()).filter(Boolean))
+    new Set(data.map((p) => p.colegio_votacion?.trim()).filter(Boolean))
   ).sort() as string[];
 
   const filtrados = data.filter((p) => {
@@ -133,7 +133,7 @@ export default function PersonerosPage() {
       (p.registrador_nombres ?? "").toLowerCase().includes(search.toLowerCase());
     const matchSexo     = filtroSexo === "todos" || p.sexo?.toUpperCase() === filtroSexo;
     const matchComuna   = filtroComuna === "todos" || (p.comuna?.trim() ?? "") === filtroComuna;
-    const matchColegio  = filtroColegio === "todos" || (p.colegio?.trim() ?? "") === filtroColegio;
+    const matchColegio  = filtroColegio === "todos" || (p.colegio_votacion?.trim() ?? "") === filtroColegio;
     const matchTipo     = filtroTipoRegistro === "todos"
       ? true
       : filtroTipoRegistro === "directo"
@@ -201,7 +201,7 @@ export default function PersonerosPage() {
       "Tipo de Registro":      p.tipo_registro ?? "directo",
       "Registrador Nombres":   p.registrador_nombres ?? "",
       "Registrador Apellidos": p.registrador_apellidos ?? "",
-      "Colegio de Votación":   p.colegio ?? "",
+      "Colegio de Votación":   p.colegio_votacion ?? "",
       "N° de Mesa":            p.numero_mesa ?? "",
     }));
     exportToExcel(rows, `Personeros_${new Date().toISOString().slice(0, 10)}`, "Personeros");
@@ -500,8 +500,8 @@ export default function PersonerosPage() {
 
                       {/* Colegio de votación */}
                       <td className="px-4 py-3 max-w-[180px]">
-                        {p.colegio ? (
-                          <span className="text-xs text-gray-700 block truncate" title={p.colegio}>{p.colegio}</span>
+                        {p.colegio_votacion ? (
+                          <span className="text-xs text-gray-700 block truncate" title={p.colegio_votacion}>{p.colegio_votacion}</span>
                         ) : (
                           <span className="text-gray-300 text-xs">—</span>
                         )}

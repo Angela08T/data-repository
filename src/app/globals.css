@@ -72,6 +72,17 @@ body {
   50%       { opacity: 0.6; }
 }
 
+@keyframes shimmerSweep {
+  0%   { transform: translateX(-120%) rotate(8deg); }
+  100% { transform: translateX(120%) rotate(8deg); }
+}
+
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(0.9); }
+  60%  { opacity: 1; transform: scale(1.03); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
 /* ─── Page Entry Animation ───────────────────────────────────────────────────── */
 .page-enter {
   animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -96,6 +107,38 @@ body {
 .table-row-animate:nth-child(4)  { animation-delay: 0.08s; }
 .table-row-animate:nth-child(5)  { animation-delay: 0.10s; }
 .table-row-animate:nth-child(n+6){ animation-delay: 0.12s; }
+
+/* ─── KPI Cards (staggered entrance) ─────────────────────────────────────────── */
+.kpi-enter {
+  animation: slideUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.kpi-enter:nth-child(1) { animation-delay: 0.06s; }
+.kpi-enter:nth-child(2) { animation-delay: 0.14s; }
+.kpi-enter:nth-child(3) { animation-delay: 0.22s; }
+.kpi-enter:nth-child(4) { animation-delay: 0.30s; }
+
+/* ─── Hero Figure ────────────────────────────────────────────────────────────── */
+.hero-card {
+  position: relative;
+  overflow: hidden;
+  animation: popIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.hero-card::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -20%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.16) 50%, transparent 70%);
+  animation: shimmerSweep 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ─── Live indicator ─────────────────────────────────────────────────────────── */
+.live-dot {
+  animation: pulse-soft 1.6s ease-in-out infinite;
+}
 
 /* ─── Card Glass Effect ──────────────────────────────────────────────────────── */
 .glass-card {

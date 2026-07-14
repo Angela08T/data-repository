@@ -23,6 +23,19 @@ interface Simpatizante {
   created_at: string;
 }
 
+function nombreCompleto(nombre: string, apellidos: string | null) {
+  const n = (nombre ?? "").trim();
+  const a = (apellidos ?? "").trim();
+  if (!a) return n;
+  if (!n) return a;
+  const nLower = n.toLowerCase();
+  const aLower = a.toLowerCase();
+  if (nLower === aLower) return n;
+  if (nLower.includes(aLower)) return n;
+  if (aLower.includes(nLower)) return a;
+  return `${n} ${a}`;
+}
+
 function formatFecha(iso: string) {
   const d = new Date(iso);
   const fecha = d.toLocaleDateString("es-PE", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -96,14 +109,14 @@ export default function SimpatizantesPage() {
 
   const openSendOne = (s: Simpatizante) => {
     if (!s.telefono) return;
-    setModalContactos([{ nombre: `${s.nombre} ${s.apellidos}`, telefono: s.telefono }]);
+    setModalContactos([{ nombre: nombreCompleto(s.nombre, s.apellidos), telefono: s.telefono }]);
     setModalOpen(true);
   };
 
   const openSendBulk = () => {
     const contactos = filtrados
       .filter((s) => selectedIds.has(s.id) && s.telefono)
-      .map((s) => ({ nombre: `${s.nombre} ${s.apellidos}`, telefono: s.telefono }));
+      .map((s) => ({ nombre: nombreCompleto(s.nombre, s.apellidos), telefono: s.telefono }));
     if (!contactos.length) return;
     setModalContactos(contactos);
     setModalOpen(true);
@@ -282,7 +295,7 @@ export default function SimpatizantesPage() {
                           >
                             {s.nombre?.charAt(0)?.toUpperCase() ?? "?"}
                           </div>
-                          <p className="font-semibold text-gray-800">{s.nombre} {s.apellidos}</p>
+                          <p className="font-semibold text-gray-800">{nombreCompleto(s.nombre, s.apellidos)}</p>
                         </div>
                       </td>
 

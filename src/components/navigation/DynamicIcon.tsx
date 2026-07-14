@@ -59,6 +59,9 @@ import {
   Badge,
   Poll,
   ChatBubble,
+  HowToVote,
+  FactCheck,
+  BarChart,
 } from "@mui/icons-material";
 
 interface DynamicIconProps {
@@ -129,6 +132,9 @@ const iconMap: Record<string, React.ReactNode> = {
   Badge: <Badge />,
   Poll: <Poll />,
   ChatBubble: <ChatBubble />,
+  HowToVote: <HowToVote />,
+  FactCheck: <FactCheck />,
+  BarChart: <BarChart />,
 };
 
 export default function DynamicIcon({ iconName, className }: DynamicIconProps) {

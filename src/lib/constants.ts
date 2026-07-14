@@ -176,6 +176,31 @@ export const MODULOS_PROGRAMAS_SOCIALES: MenuItem[] = [
     permisos: ["all_programas_sociales", "all"],
   },
   {
+    id: "conteo-votos",
+    nombre: "Conteo de Votos",
+    icono: "HowToVote",
+    descripcion: "Verificación de actas y resultados del conteo paralelo",
+    permisos: ["all_programas_sociales", "all"],
+    children: [
+      {
+        id: "conteo-votos-verificacion",
+        nombre: "Registro de Votos",
+        ruta: "/programas-sociales/conteo-votos/verificacion",
+        icono: "FactCheck",
+        descripcion: "Listado de votos reportados por los personeros, con su foto de respaldo",
+        permisos: ["all_programas_sociales", "all"],
+      },
+      {
+        id: "conteo-votos-resultados",
+        nombre: "Resultados en Vivo",
+        ruta: "/programas-sociales/conteo-votos/resultados",
+        icono: "BarChart",
+        descripcion: "Conteo paralelo de votos por candidato a la alcaldía",
+        permisos: ["all_programas_sociales", "all"],
+      },
+    ],
+  },
+  {
     id: "contactos-chat",
     nombre: "Contactos del Chat",
     ruta: "/programas-sociales/contactos-chat",
@@ -313,7 +338,7 @@ export const MAP_LAYERS = {
 // ============================================
 // RUTAS Y CONFIGURACIÓN
 // ============================================
-export const PUBLIC_ROUTES = ["/", "/login/programas-sociales"];
+export const PUBLIC_ROUTES = ["/", "/login/programas-sociales", "/reportar-votos"];
 
 export enum CRUDOperation {
   CREATE = "create",
