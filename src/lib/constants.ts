@@ -160,6 +160,14 @@ export const MODULOS_PROGRAMAS_SOCIALES: MenuItem[] = [
     permisos: ["all_programas_sociales", "all"],
   },
   {
+    id: "ciudadanos",
+    nombre: "Ciudadanos",
+    ruta: "/programas-sociales/ciudadanos",
+    icono: "People",
+    descripcion: "Padrón general de ciudadanos",
+    permisos: ["all_programas_sociales", "all"],
+  },
+  {
     id: "simpatizantes",
     nombre: "Simpatizantes",
     ruta: "/programas-sociales/simpatizantes",

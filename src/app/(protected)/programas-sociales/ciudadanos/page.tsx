@@ -46,7 +46,7 @@ function cumpleEnFecha(fechaNacimiento: string, objetivo: Dayjs): boolean {
   return partes.dia === objetivo.date() && partes.mes === objetivo.month() + 1;
 }
 
-interface Personero {
+interface Ciudadano {
   id: string;
   apellido_paterno: string;
   apellido_materno: string;
@@ -70,11 +70,11 @@ interface Personero {
   numero_mesa?: string | null;
 }
 
-function hasPhone(p: Personero): boolean {
+function hasPhone(p: Ciudadano): boolean {
   return !!p.telefono && p.telefono !== "EMPTY";
 }
 
-function esPorRegistrador(p: Personero): boolean {
+function esPorRegistrador(p: Ciudadano): boolean {
   return !!p.tipo_registro && p.tipo_registro.toLowerCase() !== "directo";
 }
 
@@ -116,12 +116,11 @@ function StatCard({ label, value, icon, color }: { label: string; value: string 
   );
 }
 
-export default function PersonerosPage() {
-  const [data, setData]           = useState<Personero[]>([]);
+export default function CiudadanosPage() {
+  const [data, setData]           = useState<Ciudadano[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
   const [search, setSearch]       = useState("");
-  const [filtroSexo, setFiltroSexo]               = useState<"todos" | "M" | "F">("todos");
   const [filtroComuna, setFiltroComuna]           = useState<string>("todos");
   const [filtroTipoRegistro, setFiltroTipoRegistro] = useState<"todos" | "directo" | "registrador">("todos");
   const [filtroColegio, setFiltroColegio]         = useState<string>("todos");
@@ -134,11 +133,11 @@ export default function PersonerosPage() {
     setLoading(true);
     setError(null);
     const { data: rows, error: err } = await supabase
-      .from("personeros")
+      .from("ciudadanos")
       .select("*")
       .order("apellido_paterno", { ascending: true });
     if (err) setError(err.message);
-    else setData((rows as Personero[]) ?? []);
+    else setData((rows as Ciudadano[]) ?? []);
     setLoading(false);
     setSelectedIds(new Set());
   }, []);
@@ -163,7 +162,6 @@ export default function PersonerosPage() {
       (p.distrito ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (p.comuna ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (p.registrador_nombres ?? "").toLowerCase().includes(search.toLowerCase());
-    const matchSexo     = filtroSexo === "todos" || p.sexo?.toUpperCase() === filtroSexo;
     const matchComuna   = filtroComuna === "todos" || (p.comuna?.trim() ?? "") === filtroComuna;
     const matchColegio  = filtroColegio === "todos" || (p.colegio_votacion?.trim() ?? "") === filtroColegio;
     const matchTipo     = filtroTipoRegistro === "todos"
@@ -172,7 +170,7 @@ export default function PersonerosPage() {
         ? !esPorRegistrador(p)
         : esPorRegistrador(p);
     const matchCumple   = !filtroFechaCumple || cumpleEnFecha(p.fecha_nacimiento, filtroFechaCumple);
-    return matchSearch && matchSexo && matchComuna && matchColegio && matchTipo && matchCumple;
+    return matchSearch && matchComuna && matchColegio && matchTipo && matchCumple;
   });
 
   // Selección
@@ -194,7 +192,7 @@ export default function PersonerosPage() {
     });
   };
 
-  const openSendOne = (p: Personero) => {
+  const openSendOne = (p: Ciudadano) => {
     if (!hasPhone(p)) return;
     setModalContactos([{ nombre: `${p.nombres} ${p.apellido_paterno} ${p.apellido_materno}`, telefono: p.telefono }]);
     setModalOpen(true);
@@ -237,7 +235,7 @@ export default function PersonerosPage() {
       "Colegio de Votación":   p.colegio_votacion ?? "",
       "N° de Mesa":            p.numero_mesa ?? "",
     }));
-    exportToExcel(rows, `Personeros_${new Date().toISOString().slice(0, 10)}`, "Personeros");
+    exportToExcel(rows, `Ciudadanos_${new Date().toISOString().slice(0, 10)}`, "Ciudadanos");
   };
 
   const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos" || !!filtroFechaCumple;
@@ -246,13 +244,13 @@ export default function PersonerosPage() {
     <div className="p-4 md:p-6 space-y-6">
 
       <div>
-        <h1 className="text-2xl font-black" style={{ color: "#0d1b3e" }}>Personeros</h1>
-        <p className="text-sm text-gray-400 mt-1">Registro de personeros inscritos en la campaña</p>
+        <h1 className="text-2xl font-black" style={{ color: "#0d1b3e" }}>Ciudadanos</h1>
+        <p className="text-sm text-gray-400 mt-1">Padrón general de ciudadanos registrados</p>
       </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard label="Total personeros"  value={data.length}      icon={<PeopleIcon />}    color="#1565c0" />
+        <StatCard label="Total ciudadanos"  value={data.length}      icon={<PeopleIcon />}    color="#1565c0" />
         <StatCard label="Mujeres"           value={totalMujeres}     icon={<FemaleIcon />}    color="#9d174d" />
         <StatCard label="Hombres"           value={totalHombres}     icon={<MaleIcon />}      color="#1e40af" />
         <StatCard label="Por registrador"   value={porRegistrador}   icon={<HowToRegIcon />}  color="#d97706" />
@@ -293,19 +291,6 @@ export default function PersonerosPage() {
                 Enviar a {selCount} seleccionado{selCount !== 1 ? "s" : ""}
               </Button>
             )}
-            {([
-              { value: "todos", label: "Todos" },
-              { value: "F",     label: "Femenino" },
-              { value: "M",     label: "Masculino" },
-            ] as const).map((f) => (
-              <button key={f.value} onClick={() => setFiltroSexo(f.value)}
-                className="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all"
-                style={filtroSexo === f.value
-                  ? { background: "#1565c0", color: "#fff", borderColor: "#1565c0" }
-                  : { background: "transparent", color: "#64748b", borderColor: "#e2e8f0" }}>
-                {f.label}
-              </button>
-            ))}
             <Tooltip title="Actualizar">
               <IconButton size="small" onClick={fetchData} disabled={loading}>
                 <RefreshIcon sx={{ fontSize: 18, color: "#94a3b8" }} />
