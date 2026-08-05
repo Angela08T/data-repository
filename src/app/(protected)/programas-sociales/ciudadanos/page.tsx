@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { TextField, InputAdornment, IconButton, Tooltip, CircularProgress, Checkbox, Button } from "@mui/material";
+import { TextField, InputAdornment, IconButton, Tooltip, CircularProgress, Checkbox, Button, TablePagination } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -59,6 +59,7 @@ interface Ciudadano {
   provincia: string;
   distrito: string;
   direccion: string;
+  direccion_completa?: string | null;
   telefono: string;
   comuna: string;
   email?: string | null;
@@ -68,6 +69,7 @@ interface Ciudadano {
   tipo_registro?: string | null;
   colegio_votacion?: string | null;
   numero_mesa?: string | null;
+  encargado?: string | null;
 }
 
 function hasPhone(p: Ciudadano): boolean {
@@ -124,20 +126,45 @@ export default function CiudadanosPage() {
   const [filtroComuna, setFiltroComuna]           = useState<string>("todos");
   const [filtroTipoRegistro, setFiltroTipoRegistro] = useState<"todos" | "directo" | "registrador">("todos");
   const [filtroColegio, setFiltroColegio]         = useState<string>("todos");
+  const [filtroEncargado, setFiltroEncargado]     = useState<string>("todos");
   const [filtroFechaCumple, setFiltroFechaCumple] = useState<Dayjs | null>(null);
   const [selectedIds, setSelectedIds]             = useState<Set<string>>(new Set());
   const [modalOpen, setModalOpen]                 = useState(false);
   const [modalContactos, setModalContactos]       = useState<Contacto[]>([]);
+  const [page, setPage]                           = useState(0);
+  const [rowsPerPage, setRowsPerPage]             = useState(25);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const { data: rows, error: err } = await supabase
-      .from("ciudadanos")
-      .select("*")
-      .order("apellido_paterno", { ascending: true });
-    if (err) setError(err.message);
-    else setData((rows as Ciudadano[]) ?? []);
+
+    // Supabase/PostgREST limita cada consulta a 1000 filas por defecto,
+    // así que hay que traer la tabla completa paginando con .range().
+    const PAGE_SIZE = 1000;
+    const todos: Ciudadano[] = [];
+    let from = 0;
+    let hayError: string | null = null;
+
+    while (true) {
+      const { data: rows, error: err } = await supabase
+        .from("ciudadanos")
+        .select("*")
+        .order("apellido_paterno", { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (err) { hayError = err.message; break; }
+      const lote = (rows as Ciudadano[]) ?? [];
+      todos.push(...lote);
+      // Si el servidor devuelve un lote vacío, ya no queda nada más por traer.
+      // No asumimos que cada lote trae exactamente PAGE_SIZE filas: Supabase puede
+      // recortar el tamaño de página por su cuenta, y si avanzáramos por PAGE_SIZE fijo
+      // en vez de por lo que realmente llegó, se saltarían filas o se cortaría antes de tiempo.
+      if (lote.length === 0) break;
+      from += lote.length;
+    }
+
+    if (hayError) setError(hayError);
+    else setData(todos);
     setLoading(false);
     setSelectedIds(new Set());
   }, []);
@@ -152,6 +179,11 @@ export default function CiudadanosPage() {
   // Colegios únicos para el dropdown
   const colegiosUnicos = Array.from(
     new Set(data.map((p) => p.colegio_votacion?.trim()).filter(Boolean))
+  ).sort() as string[];
+
+  // Encargados únicos para el dropdown (quién recolectó cada registro)
+  const encargadosUnicos = Array.from(
+    new Set(data.map((p) => p.encargado?.trim()).filter(Boolean))
   ).sort() as string[];
 
   const filtrados = data.filter((p) => {
@@ -169,14 +201,19 @@ export default function CiudadanosPage() {
       : filtroTipoRegistro === "directo"
         ? !esPorRegistrador(p)
         : esPorRegistrador(p);
-    const matchCumple   = !filtroFechaCumple || cumpleEnFecha(p.fecha_nacimiento, filtroFechaCumple);
-    return matchSearch && matchComuna && matchColegio && matchTipo && matchCumple;
+    const matchCumple    = !filtroFechaCumple || cumpleEnFecha(p.fecha_nacimiento, filtroFechaCumple);
+    const matchEncargado = filtroEncargado === "todos" || (p.encargado?.trim() ?? "") === filtroEncargado;
+    return matchSearch && matchComuna && matchColegio && matchTipo && matchCumple && matchEncargado;
   });
 
-  // Selección
-  const conTelefono = filtrados.filter(hasPhone);
+  useEffect(() => { setPage(0); }, [search, filtroComuna, filtroTipoRegistro, filtroColegio, filtroEncargado, filtroFechaCumple]);
+
+  const paginados = filtrados.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+  // Selección (aplica solo a la página visible)
+  const conTelefono = paginados.filter(hasPhone);
   const allChecked  = conTelefono.length > 0 && conTelefono.every((p) => selectedIds.has(p.id));
-  const someChecked = filtrados.some((p) => selectedIds.has(p.id));
+  const someChecked = paginados.some((p) => selectedIds.has(p.id));
 
   const toggleSelectAll = () => {
     if (allChecked) setSelectedIds(new Set());
@@ -211,7 +248,7 @@ export default function CiudadanosPage() {
   const totalHombres      = data.filter((p) => p.sexo?.toUpperCase() === "M").length;
   const porRegistrador    = data.filter(esPorRegistrador).length;
   const selCount          = filtrados.filter((p) => selectedIds.has(p.id)).length;
-  const COLS              = 14; // checkbox + cols + tipo + registrador + colegio + mesa + acciones
+  const COLS              = 16; // checkbox + cols + tipo + registrador + colegio + mesa + encargado + acciones
 
   const handleExport = () => {
     const rows = filtrados.map((p) => ({
@@ -226,6 +263,7 @@ export default function CiudadanosPage() {
       "Provincia":             p.provincia ?? "",
       "Distrito":              p.distrito ?? "",
       "Dirección":             p.direccion ?? "",
+      "Dirección Completa":    p.direccion_completa ?? "",
       "Teléfono":              hasPhone(p) ? (p.telefono.startsWith("+") ? p.telefono : `+51 ${p.telefono}`) : "",
       "Comuna":                p.comuna ?? "",
       "Email":                 p.email ?? "",
@@ -234,11 +272,12 @@ export default function CiudadanosPage() {
       "Registrador Apellidos": p.registrador_apellidos ?? "",
       "Colegio de Votación":   p.colegio_votacion ?? "",
       "N° de Mesa":            p.numero_mesa ?? "",
+      "Encargado":             p.encargado ?? "",
     }));
     exportToExcel(rows, `Ciudadanos_${new Date().toISOString().slice(0, 10)}`, "Ciudadanos");
   };
 
-  const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos" || !!filtroFechaCumple;
+  const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos" || filtroEncargado !== "todos" || !!filtroFechaCumple;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -377,6 +416,31 @@ export default function CiudadanosPage() {
           {/* Separador */}
           <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
 
+          {/* Filtro Encargado (quién recolectó la data) */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Encargado:</span>
+            <select
+              value={filtroEncargado}
+              onChange={(e) => setFiltroEncargado(e.target.value)}
+              className="text-xs border rounded-full px-3 py-1.5 outline-none cursor-pointer font-semibold transition-all"
+              style={{
+                borderColor: filtroEncargado !== "todos" ? "#0f766e" : "#e2e8f0",
+                color: filtroEncargado !== "todos" ? "#0f766e" : "#64748b",
+                background: filtroEncargado !== "todos" ? "#f0fdfa" : "#fff",
+                fontFamily: "'Poppins', sans-serif",
+                maxWidth: 200,
+              }}
+            >
+              <option value="todos">Todos</option>
+              {encargadosUnicos.map((e) => (
+                <option key={e} value={e}>{e}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Separador */}
+          <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
+
           {/* Filtro Cumpleaños (calendario) */}
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide flex items-center gap-1">
@@ -387,12 +451,13 @@ export default function CiudadanosPage() {
                 value={filtroFechaCumple}
                 onChange={(nuevo) => setFiltroFechaCumple(nuevo)}
                 format="DD [de] MMMM"
+                enableAccessibleFieldDOMStructure={false}
                 slotProps={{
                   textField: {
                     size: "small",
-                    placeholder: "Elegir día",
+                    placeholder: "Elegir fecha",
                     sx: {
-                      width: 190,
+                      width: 176,
                       "& .MuiOutlinedInput-root": {
                         borderRadius: "999px",
                         height: 32,
@@ -400,13 +465,15 @@ export default function CiudadanosPage() {
                         fontWeight: 600,
                         background: filtroFechaCumple ? "#fdf2f8" : "#fff",
                         transition: "all 0.15s ease",
-                        "& fieldset": { borderColor: filtroFechaCumple ? "#f9a8d4" : "#e2e8f0" },
+                        "& fieldset": { borderColor: filtroFechaCumple ? "#f472b6" : "#e2e8f0" },
                         "&:hover fieldset": { borderColor: "#db2777" },
+                        "&.Mui-focused": { boxShadow: "0 0 0 3px rgba(219,39,119,0.12)" },
                         "&.Mui-focused fieldset": { borderColor: "#db2777", borderWidth: "1.5px" },
                       },
                       "& .MuiOutlinedInput-input": {
-                        padding: "0 4px 0 14px",
+                        padding: "0 2px 0 6px",
                         color: filtroFechaCumple ? "#db2777" : "#334155",
+                        "&::placeholder": { color: "#94a3b8", opacity: 1 },
                       },
                     },
                   },
@@ -415,23 +482,31 @@ export default function CiudadanosPage() {
                     sx: {
                       color: filtroFechaCumple ? "#db2777" : "#94a3b8",
                       marginRight: "2px",
-                      "& .MuiSvgIcon-root": { fontSize: 18 },
+                      "& .MuiSvgIcon-root": { fontSize: 17 },
                     },
                   },
                 }}
               />
             </LocalizationProvider>
-            <button onClick={() => setFiltroFechaCumple(dayjs())}
-              className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
-              style={{ background: "#fff", color: "#db2777", borderColor: "#fbcfe8" }}>
-              Hoy
-            </button>
+            {filtroFechaCumple ? (
+              <button onClick={() => setFiltroFechaCumple(null)}
+                className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
+                style={{ background: "#fdf2f8", color: "#db2777", borderColor: "#f9a8d4" }}>
+                ✕ Quitar
+              </button>
+            ) : (
+              <button onClick={() => setFiltroFechaCumple(dayjs())}
+                className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
+                style={{ background: "#fff", color: "#db2777", borderColor: "#fbcfe8" }}>
+                Hoy
+              </button>
+            )}
           </div>
 
           {/* Limpiar */}
           {hayFiltrosActivos && (
             <button
-              onClick={() => { setFiltroComuna("todos"); setFiltroTipoRegistro("todos"); setFiltroColegio("todos"); setFiltroFechaCumple(null); }}
+              onClick={() => { setFiltroComuna("todos"); setFiltroTipoRegistro("todos"); setFiltroColegio("todos"); setFiltroEncargado("todos"); setFiltroFechaCumple(null); }}
               className="text-xs font-semibold px-3 py-1 rounded-full transition-all"
               style={{ background: "#fee2e2", color: "#dc2626", border: "1px solid #fecaca" }}>
               Limpiar filtros
@@ -459,7 +534,7 @@ export default function CiudadanosPage() {
                     onChange={toggleSelectAll} disabled={loading || conTelefono.length === 0}
                     sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" }, "&.MuiCheckbox-indeterminate": { color: "#1565c0" } }} />
                 </th>
-                {["Apellidos y Nombres", "DNI", "Nacimiento", "Sexo", "Distrito", "Dirección", "Teléfono", "Comuna", "Tipo", "Registrador", "Colegio de Votación", "N° Mesa", ""].map((h) => (
+                {["Apellidos y Nombres", "DNI", "Nacimiento", "Sexo", "Distrito", "Dirección", "Dirección Completa", "Teléfono", "Comuna", "Tipo", "Registrador", "Colegio de Votación", "N° Mesa", "Encargado", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap" style={{ color: "#64748b" }}>
                     {h}
                   </th>
@@ -481,7 +556,7 @@ export default function CiudadanosPage() {
                   No se encontraron registros
                 </td></tr>
               ) : (
-                filtrados.map((p, i) => {
+                paginados.map((p, i) => {
                   const checked     = selectedIds.has(p.id);
                   const tienePhone  = hasPhone(p);
                   const registrador = esPorRegistrador(p);
@@ -539,6 +614,11 @@ export default function CiudadanosPage() {
                         <span className="text-sm text-gray-600 truncate block">{p.direccion || "—"}</span>
                       </td>
 
+                      {/* Dirección Completa */}
+                      <td className="px-4 py-3 max-w-[200px]">
+                        <span className="text-sm text-gray-600 truncate block" title={p.direccion_completa ?? ""}>{p.direccion_completa || "—"}</span>
+                      </td>
+
                       {/* Teléfono */}
                       <td className="px-4 py-3">
                         <span className="text-sm text-gray-600">{tienePhone ? (p.telefono.startsWith("+") ? p.telefono : `+51 ${p.telefono}`) : "—"}</span>
@@ -591,6 +671,17 @@ export default function CiudadanosPage() {
                         )}
                       </td>
 
+                      {/* Encargado */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {p.encargado ? (
+                          <span className="inline-block px-2 py-0.5 rounded text-xs font-medium" style={{ background: "#f0fdfa", color: "#0f766e" }}>
+                            {p.encargado}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300 text-xs">—</span>
+                        )}
+                      </td>
+
                       {/* Acciones */}
                       <td className="px-4 py-3">
                         <Tooltip title={tienePhone ? "Enviar mensaje" : "Sin teléfono"}>
@@ -610,6 +701,21 @@ export default function CiudadanosPage() {
             </tbody>
           </table>
         </div>
+
+        {!loading && filtrados.length > 0 && (
+          <TablePagination
+            component="div"
+            count={filtrados.length}
+            page={page}
+            onPageChange={(_, nuevaPagina) => setPage(nuevaPagina)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+            rowsPerPageOptions={[25, 50, 100, 250]}
+            labelRowsPerPage="Filas por página:"
+            labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+            sx={{ borderTop: "1px solid #e2e8f0", "& .MuiTablePagination-selectIcon": { color: "#64748b" } }}
+          />
+        )}
 
         <div className="px-5 py-3 border-t border-gray-100 flex justify-between items-center text-xs text-gray-400">
           <span>{!loading && `Mostrando ${filtrados.length} de ${data.length} registros`}</span>

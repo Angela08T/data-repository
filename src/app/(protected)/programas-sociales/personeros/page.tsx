@@ -402,12 +402,13 @@ export default function PersonerosPage() {
                 value={filtroFechaCumple}
                 onChange={(nuevo) => setFiltroFechaCumple(nuevo)}
                 format="DD [de] MMMM"
+                enableAccessibleFieldDOMStructure={false}
                 slotProps={{
                   textField: {
                     size: "small",
-                    placeholder: "Elegir día",
+                    placeholder: "Elegir fecha",
                     sx: {
-                      width: 190,
+                      width: 176,
                       "& .MuiOutlinedInput-root": {
                         borderRadius: "999px",
                         height: 32,
@@ -415,13 +416,15 @@ export default function PersonerosPage() {
                         fontWeight: 600,
                         background: filtroFechaCumple ? "#fdf2f8" : "#fff",
                         transition: "all 0.15s ease",
-                        "& fieldset": { borderColor: filtroFechaCumple ? "#f9a8d4" : "#e2e8f0" },
+                        "& fieldset": { borderColor: filtroFechaCumple ? "#f472b6" : "#e2e8f0" },
                         "&:hover fieldset": { borderColor: "#db2777" },
+                        "&.Mui-focused": { boxShadow: "0 0 0 3px rgba(219,39,119,0.12)" },
                         "&.Mui-focused fieldset": { borderColor: "#db2777", borderWidth: "1.5px" },
                       },
                       "& .MuiOutlinedInput-input": {
-                        padding: "0 4px 0 14px",
+                        padding: "0 2px 0 6px",
                         color: filtroFechaCumple ? "#db2777" : "#334155",
+                        "&::placeholder": { color: "#94a3b8", opacity: 1 },
                       },
                     },
                   },
@@ -430,17 +433,25 @@ export default function PersonerosPage() {
                     sx: {
                       color: filtroFechaCumple ? "#db2777" : "#94a3b8",
                       marginRight: "2px",
-                      "& .MuiSvgIcon-root": { fontSize: 18 },
+                      "& .MuiSvgIcon-root": { fontSize: 17 },
                     },
                   },
                 }}
               />
             </LocalizationProvider>
-            <button onClick={() => setFiltroFechaCumple(dayjs())}
-              className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
-              style={{ background: "#fff", color: "#db2777", borderColor: "#fbcfe8" }}>
-              Hoy
-            </button>
+            {filtroFechaCumple ? (
+              <button onClick={() => setFiltroFechaCumple(null)}
+                className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
+                style={{ background: "#fdf2f8", color: "#db2777", borderColor: "#f9a8d4" }}>
+                ✕ Quitar
+              </button>
+            ) : (
+              <button onClick={() => setFiltroFechaCumple(dayjs())}
+                className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
+                style={{ background: "#fff", color: "#db2777", borderColor: "#fbcfe8" }}>
+                Hoy
+              </button>
+            )}
           </div>
 
           {/* Limpiar */}
