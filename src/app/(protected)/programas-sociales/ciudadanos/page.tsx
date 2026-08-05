@@ -80,8 +80,14 @@ function esPorRegistrador(p: Ciudadano): boolean {
   return !!p.tipo_registro && p.tipo_registro.toLowerCase() !== "directo";
 }
 
-function SexoBadge({ sexo }: { sexo: string }) {
-  const esMujer = sexo?.toUpperCase() === "F";
+function SexoBadge({ sexo }: { sexo?: string | null }) {
+  const valor = sexo?.trim().toUpperCase();
+  // La data de ciudadanos no siempre incluye el sexo real; si no es "M" ni "F"
+  // no se debe adivinar (antes esto se mostraba como "Masculino" por defecto).
+  if (valor !== "F" && valor !== "M") {
+    return <span className="text-gray-300 text-xs">—</span>;
+  }
+  const esMujer = valor === "F";
   return (
     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
       style={esMujer ? { background: "#fce7f3", color: "#9d174d" } : { background: "#dbeafe", color: "#1e40af" }}>
@@ -257,7 +263,7 @@ export default function CiudadanosPage() {
       "Nombres":               p.nombres ?? "",
       "DNI":                   p.dni ?? "",
       "Fecha Nacimiento":      p.fecha_nacimiento ?? "",
-      "Sexo":                  p.sexo?.toUpperCase() === "F" ? "Femenino" : "Masculino",
+      "Sexo":                  p.sexo?.trim().toUpperCase() === "F" ? "Femenino" : p.sexo?.trim().toUpperCase() === "M" ? "Masculino" : "",
       "Lugar Nacimiento":      p.lugar_nacimiento ?? "",
       "Región":                p.region ?? "",
       "Provincia":             p.provincia ?? "",
@@ -576,7 +582,7 @@ export default function CiudadanosPage() {
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                            style={{ background: p.sexo?.toUpperCase() === "F" ? "#9d174d" : "#1565c0" }}>
+                            style={{ background: p.sexo?.trim().toUpperCase() === "F" ? "#9d174d" : p.sexo?.trim().toUpperCase() === "M" ? "#1565c0" : "#94a3b8" }}>
                             {p.nombres?.charAt(0) ?? "?"}
                           </div>
                           <div>
