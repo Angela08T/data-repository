@@ -160,6 +160,14 @@ export const MODULOS_PROGRAMAS_SOCIALES: MenuItem[] = [
     permisos: ["all_programas_sociales", "all"],
   },
   {
+    id: "dirigentes",
+    nombre: "Dirigentes",
+    ruta: "/programas-sociales/dirigentes",
+    icono: "AssignmentInd",
+    descripcion: "Registro de dirigentes y promotores por comuna",
+    permisos: ["all_programas_sociales", "all"],
+  },
+  {
     id: "ciudadanos",
     nombre: "Ciudadanos",
     ruta: "/programas-sociales/ciudadanos",
