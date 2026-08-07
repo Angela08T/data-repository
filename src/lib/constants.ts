@@ -182,6 +182,14 @@ export const MODULOS_PROGRAMAS_SOCIALES: MenuItem[] = [
     permisos: ["all_programas_sociales", "all", "campo"],
   },
   {
+    id: "participantes-actividades",
+    nombre: "Participantes de Actividades",
+    ruta: "/programas-sociales/participantes-actividades",
+    icono: "Event",
+    descripcion: "Registro de participantes en actividades",
+    permisos: ["all_programas_sociales", "all", "campo"],
+  },
+  {
     id: "simpatizantes",
     nombre: "Simpatizantes",
     ruta: "/programas-sociales/simpatizantes",
