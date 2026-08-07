@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { TextField, InputAdornment, IconButton, Tooltip, CircularProgress, Checkbox, Button } from "@mui/material";
+import { TextField, InputAdornment, IconButton, Tooltip, CircularProgress, Checkbox, Button, Popover, Slider, Typography, Box } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -45,6 +45,34 @@ function cumpleEnFecha(fechaNacimiento: string, objetivo: Dayjs): boolean {
   if (!partes) return false;
   return partes.dia === objetivo.date() && partes.mes === objetivo.month() + 1;
 }
+
+// A diferencia de cumpleEnFecha, para calcular la edad sí necesitamos un año válido
+// (entre 1900 y el año actual). Si el año está corrupto (ej. "19986"), la edad
+// queda como desconocida en vez de mostrar un número inventado.
+function calcularEdad(fechaNacimiento: string): number | null {
+  if (!fechaNacimiento) return null;
+  const partes = fechaNacimiento.trim().split(/[/-]/);
+  if (partes.length < 3) return null;
+
+  const esFormatoConSlash = fechaNacimiento.includes("/"); // DD/MM/YYYY
+  const dia  = parseInt(esFormatoConSlash ? partes[0] : partes[2], 10);
+  const mes  = parseInt(partes[1], 10);
+  const anio = parseInt(esFormatoConSlash ? partes[2] : partes[0], 10);
+
+  if (!Number.isInteger(dia) || !Number.isInteger(mes) || !Number.isInteger(anio)) return null;
+  if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
+
+  const anioActual = dayjs().year();
+  if (anio < 1900 || anio > anioActual) return null;
+
+  const nacimiento = dayjs(`${anio}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`);
+  if (!nacimiento.isValid()) return null;
+
+  const edad = dayjs().diff(nacimiento, "year");
+  return edad >= 0 ? edad : null;
+}
+
+const EDAD_MAX = 100;
 
 interface Personero {
   id: string;
@@ -126,6 +154,9 @@ export default function PersonerosPage() {
   const [filtroTipoRegistro, setFiltroTipoRegistro] = useState<"todos" | "directo" | "registrador">("todos");
   const [filtroColegio, setFiltroColegio]         = useState<string>("todos");
   const [filtroFechaCumple, setFiltroFechaCumple] = useState<Dayjs | null>(null);
+  const [edadRange, setEdadRange]                 = useState<number[]>([0, EDAD_MAX]);
+  const [edadRangeDraft, setEdadRangeDraft]       = useState<number[]>([0, EDAD_MAX]);
+  const [edadAnchor, setEdadAnchor]               = useState<HTMLElement | null>(null);
   const [selectedIds, setSelectedIds]             = useState<Set<string>>(new Set());
   const [modalOpen, setModalOpen]                 = useState(false);
   const [modalContactos, setModalContactos]       = useState<Contacto[]>([]);
@@ -155,6 +186,8 @@ export default function PersonerosPage() {
     new Set(data.map((p) => p.colegio_votacion?.trim()).filter(Boolean))
   ).sort() as string[];
 
+  const isEdadFiltered = edadRange[0] > 0 || edadRange[1] < EDAD_MAX;
+
   const filtrados = data.filter((p) => {
     const nombreCompleto = `${p.nombres} ${p.apellido_paterno} ${p.apellido_materno}`.toLowerCase();
     const matchSearch =
@@ -172,7 +205,13 @@ export default function PersonerosPage() {
         ? !esPorRegistrador(p)
         : esPorRegistrador(p);
     const matchCumple   = !filtroFechaCumple || cumpleEnFecha(p.fecha_nacimiento, filtroFechaCumple);
-    return matchSearch && matchSexo && matchComuna && matchColegio && matchTipo && matchCumple;
+    const matchEdad     = (() => {
+      if (!isEdadFiltered) return true;
+      const edad = calcularEdad(p.fecha_nacimiento);
+      if (edad === null) return false;
+      return edad >= edadRange[0] && edad <= edadRange[1];
+    })();
+    return matchSearch && matchSexo && matchComuna && matchColegio && matchTipo && matchCumple && matchEdad;
   });
 
   // Selección
@@ -213,7 +252,7 @@ export default function PersonerosPage() {
   const totalHombres      = data.filter((p) => p.sexo?.toUpperCase() === "M").length;
   const porRegistrador    = data.filter(esPorRegistrador).length;
   const selCount          = filtrados.filter((p) => selectedIds.has(p.id)).length;
-  const COLS              = 14; // checkbox + cols + tipo + registrador + colegio + mesa + acciones
+  const COLS              = 15; // checkbox + cols + tipo + registrador + colegio + mesa + acciones
 
   const handleExport = () => {
     const rows = filtrados.map((p) => ({
@@ -222,6 +261,7 @@ export default function PersonerosPage() {
       "Nombres":               p.nombres ?? "",
       "DNI":                   p.dni ?? "",
       "Fecha Nacimiento":      p.fecha_nacimiento ?? "",
+      "Edad":                  calcularEdad(p.fecha_nacimiento) ?? "",
       "Sexo":                  p.sexo?.toUpperCase() === "F" ? "Femenino" : "Masculino",
       "Lugar Nacimiento":      p.lugar_nacimiento ?? "",
       "Región":                p.region ?? "",
@@ -240,7 +280,7 @@ export default function PersonerosPage() {
     exportToExcel(rows, `Personeros_${new Date().toISOString().slice(0, 10)}`, "Personeros");
   };
 
-  const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos" || !!filtroFechaCumple;
+  const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos" || !!filtroFechaCumple || isEdadFiltered;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -454,10 +494,107 @@ export default function PersonerosPage() {
             )}
           </div>
 
+          {/* Separador */}
+          <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
+
+          {/* Filtro Edad (calculada a partir de fecha_nacimiento) */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Edad:</span>
+            <button
+              onClick={(e) => { setEdadRangeDraft(edadRange); setEdadAnchor(e.currentTarget); }}
+              className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
+              style={isEdadFiltered
+                ? { background: "#ecfeff", color: "#0891b2", borderColor: "#0891b2" }
+                : { background: "#fff", color: "#64748b", borderColor: "#e2e8f0" }}>
+              {isEdadFiltered ? `${edadRange[0]} - ${edadRange[1]} años` : "Todas"}
+            </button>
+          </div>
+
+          <Popover
+            open={!!edadAnchor}
+            anchorEl={edadAnchor}
+            onClose={() => setEdadAnchor(null)}
+            anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+            transformOrigin={{ vertical: "top", horizontal: "left" }}
+            sx={{ mt: 1 }}
+            slotProps={{
+              paper: {
+                sx: {
+                  borderRadius: "16px",
+                  boxShadow: "0 16px 40px rgba(15,23,42,0.16)",
+                  border: "1px solid #e2e8f0",
+                },
+              },
+            }}
+          >
+            <Box sx={{ p: 3, width: 300 }}>
+              <Typography variant="subtitle2" fontWeight={700} color="#0d1b3e" sx={{ fontFamily: "'Poppins', sans-serif" }}>
+                Rango de edad
+              </Typography>
+              <Typography variant="caption" color="#94a3b8" sx={{ display: "block", mt: 0.25, mb: 2 }}>
+                Calculada a partir de la fecha de nacimiento
+              </Typography>
+
+              <Box sx={{ display: "flex", justifyContent: "center", mb: 2.5 }}>
+                <Box sx={{ px: 2, py: 0.5, borderRadius: "999px", background: "#ecfeff", border: "1px solid #a5f3fc" }}>
+                  <Typography variant="body2" fontWeight={700} color="#0891b2">
+                    {edadRangeDraft[0]} - {edadRangeDraft[1]} años
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Slider
+                value={edadRangeDraft}
+                onChange={(_e, v) => setEdadRangeDraft(v as number[])}
+                valueLabelDisplay="auto"
+                min={0}
+                max={EDAD_MAX}
+                sx={{
+                  color: "#0891b2",
+                  height: 6,
+                  "& .MuiSlider-thumb": {
+                    width: 18,
+                    height: 18,
+                    backgroundColor: "#fff",
+                    border: "3px solid #0891b2",
+                    boxShadow: "0 2px 8px rgba(8,145,178,0.4)",
+                    "&:hover, &.Mui-focusVisible": { boxShadow: "0 0 0 8px rgba(8,145,178,0.16)" },
+                    "&.Mui-active": { boxShadow: "0 0 0 10px rgba(8,145,178,0.2)" },
+                  },
+                  "& .MuiSlider-track": { backgroundColor: "#0891b2", border: "none" },
+                  "& .MuiSlider-rail": { backgroundColor: "#e2e8f0", opacity: 1 },
+                  "& .MuiSlider-valueLabel": { backgroundColor: "#0891b2", borderRadius: "6px", fontSize: "0.7rem", fontWeight: 700 },
+                }}
+              />
+              <Box display="flex" justifyContent="space-between" mt={0.5}>
+                <Typography variant="caption" color="#94a3b8" fontWeight={600}>0 años</Typography>
+                <Typography variant="caption" color="#94a3b8" fontWeight={600}>{EDAD_MAX} años</Typography>
+              </Box>
+
+              <Box display="flex" justifyContent="flex-end" mt={3} gap={1}>
+                <Button size="small"
+                  onClick={() => { setEdadRangeDraft([0, EDAD_MAX]); setEdadRange([0, EDAD_MAX]); }}
+                  sx={{ color: "#64748b", textTransform: "none", fontWeight: 600, fontFamily: "'Poppins', sans-serif", "&:hover": { background: "#f1f5f9" } }}>
+                  Limpiar todo
+                </Button>
+                <Button size="small" variant="contained"
+                  onClick={() => { setEdadRange(edadRangeDraft); setEdadAnchor(null); }}
+                  sx={{
+                    borderRadius: "999px", textTransform: "none", fontWeight: 700, fontFamily: "'Poppins', sans-serif",
+                    background: "linear-gradient(135deg, #0891b2, #06b6d4)",
+                    boxShadow: "0 4px 12px rgba(8,145,178,0.35)",
+                    "&:hover": { background: "linear-gradient(135deg, #0e7490, #0891b2)" },
+                  }}>
+                  Aplicar
+                </Button>
+              </Box>
+            </Box>
+          </Popover>
+
           {/* Limpiar */}
           {hayFiltrosActivos && (
             <button
-              onClick={() => { setFiltroComuna("todos"); setFiltroTipoRegistro("todos"); setFiltroColegio("todos"); setFiltroFechaCumple(null); }}
+              onClick={() => { setFiltroComuna("todos"); setFiltroTipoRegistro("todos"); setFiltroColegio("todos"); setFiltroFechaCumple(null); setEdadRange([0, EDAD_MAX]); setEdadRangeDraft([0, EDAD_MAX]); }}
               className="text-xs font-semibold px-3 py-1 rounded-full transition-all"
               style={{ background: "#fee2e2", color: "#dc2626", border: "1px solid #fecaca" }}>
               Limpiar filtros
@@ -485,7 +622,7 @@ export default function PersonerosPage() {
                     onChange={toggleSelectAll} disabled={loading || conTelefono.length === 0}
                     sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" }, "&.MuiCheckbox-indeterminate": { color: "#1565c0" } }} />
                 </th>
-                {["Apellidos y Nombres", "DNI", "Nacimiento", "Sexo", "Distrito", "Dirección", "Teléfono", "Comuna", "Tipo", "Registrador", "Colegio de Votación", "N° Mesa", ""].map((h) => (
+                {["Apellidos y Nombres", "DNI", "Nacimiento", "Edad", "Sexo", "Distrito", "Dirección", "Teléfono", "Comuna", "Tipo", "Registrador", "Colegio de Votación", "N° Mesa", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap" style={{ color: "#64748b" }}>
                     {h}
                   </th>
@@ -545,6 +682,20 @@ export default function PersonerosPage() {
                       {/* Nacimiento */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-sm text-gray-600">{p.fecha_nacimiento || "—"}</span>
+                      </td>
+
+                      {/* Edad */}
+                      <td className="px-4 py-3 text-center">
+                        {(() => {
+                          const edad = calcularEdad(p.fecha_nacimiento);
+                          return edad !== null ? (
+                            <span className="inline-block px-2 py-0.5 rounded text-xs font-bold" style={{ background: "#ecfeff", color: "#0891b2" }}>
+                              {edad}
+                            </span>
+                          ) : (
+                            <span className="text-gray-300 text-xs">—</span>
+                          );
+                        })()}
                       </td>
 
                       {/* Sexo */}

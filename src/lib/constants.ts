@@ -30,6 +30,7 @@ export enum RoleType {
   USUARIO_ULE = "usuario_ule",
   USUARIO_OMAPED = "usuario_omaped",
   USUARIO_CIAM = "usuario_ciam",
+  USUARIO_CAMPO = "usuario_campo",
   // Roles de áreas - Servicios Sociales
   USUARIO_PARTICIPACION = "usuario_participacion",
   USUARIO_DEPORTES = "usuario_deportes",
@@ -87,6 +88,11 @@ export const ROLES = {
     nombre: "Usuario CIAM",
     descripcion: "Acceso al área de CIAM",
     permisos: ["ciam", "mapa_ciam"],
+  },
+  [RoleType.USUARIO_CAMPO]: {
+    nombre: "Usuario de Campo",
+    descripcion: "Acceso a Personeros, Dirigentes y Ciudadanos",
+    permisos: ["campo"],
   },
   [RoleType.USUARIO_PARTICIPACION]: {
     nombre: "Usuario Participación Vecinal",
@@ -157,7 +163,7 @@ export const MODULOS_PROGRAMAS_SOCIALES: MenuItem[] = [
     ruta: "/programas-sociales/personeros",
     icono: "Badge",
     descripcion: "Gestión de personeros de campaña",
-    permisos: ["all_programas_sociales", "all"],
+    permisos: ["all_programas_sociales", "all", "campo"],
   },
   {
     id: "dirigentes",
@@ -165,7 +171,7 @@ export const MODULOS_PROGRAMAS_SOCIALES: MenuItem[] = [
     ruta: "/programas-sociales/dirigentes",
     icono: "AssignmentInd",
     descripcion: "Registro de dirigentes y promotores por comuna",
-    permisos: ["all_programas_sociales", "all"],
+    permisos: ["all_programas_sociales", "all", "campo"],
   },
   {
     id: "ciudadanos",
@@ -173,7 +179,7 @@ export const MODULOS_PROGRAMAS_SOCIALES: MenuItem[] = [
     ruta: "/programas-sociales/ciudadanos",
     icono: "People",
     descripcion: "Padrón general de ciudadanos",
-    permisos: ["all_programas_sociales", "all"],
+    permisos: ["all_programas_sociales", "all", "campo"],
   },
   {
     id: "simpatizantes",

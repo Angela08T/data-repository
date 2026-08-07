@@ -10,7 +10,8 @@ import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { useAppDispatch } from "@/redux/hooks";
 import { loginSuccess, setLoading } from "@/redux/slices/authSlice";
 import { supabase } from "@/lib/supabase";
-import type { SubgerenciaType } from "@/lib/constants";
+import { MODULOS_PROGRAMAS_SOCIALES, type SubgerenciaType } from "@/lib/constants";
+import { filterMenuItemsFunction } from "@/lib/hooks/usePermissions";
 import type { User } from "@/types/auth";
 
 interface LoginFormProps {
@@ -53,6 +54,16 @@ export default function LoginForm({ subgerencia }: LoginFormProps) {
       const session = data.session;
       const supaUser = data.user;
 
+      // Los usuarios normales no traen "permissions" en su metadata y siguen
+      // teniendo acceso total ("all"), como siempre. Solo las cuentas restringidas
+      // (ej. el usuario compartido de campo) tienen este campo seteado en Supabase
+      // Auth -> Users -> User Metadata, ej: { "permissions": ["campo"] }.
+      const metadataPermissions = supaUser.user_metadata?.permissions;
+      const permissions: string[] =
+        Array.isArray(metadataPermissions) && metadataPermissions.length > 0
+          ? metadataPermissions
+          : ["all"];
+
       const user: User = {
         id: supaUser.id,
         username: supaUser.email ?? "",
@@ -60,7 +71,7 @@ export default function LoginForm({ subgerencia }: LoginFormProps) {
         firstName: supaUser.user_metadata?.nombre ?? supaUser.email?.split("@")[0] ?? "Usuario",
         lastName: supaUser.user_metadata?.apellido ?? "",
         fullName: supaUser.user_metadata?.nombre_completo ?? supaUser.email?.split("@")[0] ?? "Usuario",
-        permissions: ["all"],
+        permissions,
         subgerencia,
         cargo: supaUser.user_metadata?.cargo ?? "Operador",
       };
@@ -71,7 +82,11 @@ export default function LoginForm({ subgerencia }: LoginFormProps) {
         document.cookie = `auth_token=${session.access_token}; path=/; max-age=86400; SameSite=Strict`;
       }
 
-      router.push(`/${subgerencia}/donaciones`);
+      // Redirige a "donaciones" por defecto, o al primer módulo al que el
+      // usuario sí tenga acceso si "donaciones" le está restringido.
+      const accesibles = filterMenuItemsFunction(user, MODULOS_PROGRAMAS_SOCIALES);
+      const primerModuloAccesible = accesibles.find((m) => m.ruta)?.ruta;
+      router.push(primerModuloAccesible ?? `/${subgerencia}/donaciones`);
     } finally {
       setIsLoading(false);
       dispatch(setLoading(false));
