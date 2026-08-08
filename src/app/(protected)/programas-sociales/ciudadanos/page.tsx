@@ -9,6 +9,7 @@ import dayjs, { Dayjs } from "dayjs";
 import "dayjs/locale/es";
 import { supabase } from "@/lib/supabase";
 import { exportToExcel } from "@/lib/utils/exportExcel";
+import { showConfirm, showError } from "@/lib/utils/swalConfig";
 import SearchIcon from "@mui/icons-material/Search";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -19,7 +20,10 @@ import MessageIcon from "@mui/icons-material/Message";
 import HowToRegIcon from "@mui/icons-material/HowToReg";
 import PersonIcon from "@mui/icons-material/Person";
 import CakeIcon from "@mui/icons-material/Cake";
+import PhoneInTalkIcon from "@mui/icons-material/PhoneInTalk";
+import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import SendMessageModal, { Contacto } from "@/components/messaging/SendMessageModal";
+import SuccessToast from "@/components/feedback/SuccessToast";
 
 dayjs.locale("es");
 
@@ -98,6 +102,8 @@ interface Ciudadano {
   colegio_votacion?: string | null;
   numero_mesa?: string | null;
   encargado?: string | null;
+  llamado?: boolean | null;
+  fecha_llamada?: string | null;
 }
 
 function hasPhone(p: Ciudadano): boolean {
@@ -138,6 +144,18 @@ function RegistroBadge({ tipo }: { tipo?: string | null }) {
   );
 }
 
+function LlamadoBadge({ llamado }: { llamado?: boolean | null }) {
+  return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+      style={llamado
+        ? { background: "#f0fdf4", color: "#166534" }
+        : { background: "#f1f5f9", color: "#64748b" }}>
+      {llamado ? <PhoneInTalkIcon sx={{ fontSize: 12 }} /> : <PendingActionsIcon sx={{ fontSize: 12 }} />}
+      {llamado ? "Llamado" : "Pendiente"}
+    </span>
+  );
+}
+
 function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: React.ReactNode; color: string }) {
   return (
     <div className="stat-card bg-white rounded-2xl shadow p-5 flex items-center gap-4">
@@ -162,12 +180,14 @@ export default function CiudadanosPage() {
   const [filtroColegio, setFiltroColegio]         = useState<string>("todos");
   const [filtroEncargado, setFiltroEncargado]     = useState<string>("todos");
   const [filtroFechaCumple, setFiltroFechaCumple] = useState<Dayjs | null>(null);
+  const [filtroLlamado, setFiltroLlamado]         = useState<"todos" | "llamados" | "pendientes">("todos");
   const [edadRange, setEdadRange]                 = useState<number[]>([0, EDAD_MAX]);
   const [edadRangeDraft, setEdadRangeDraft]       = useState<number[]>([0, EDAD_MAX]);
   const [edadAnchor, setEdadAnchor]               = useState<HTMLElement | null>(null);
   const [selectedIds, setSelectedIds]             = useState<Set<string>>(new Set());
   const [modalOpen, setModalOpen]                 = useState(false);
   const [modalContactos, setModalContactos]       = useState<Contacto[]>([]);
+  const [successMsg, setSuccessMsg]               = useState<string | null>(null);
   const [page, setPage]                           = useState(0);
   const [rowsPerPage, setRowsPerPage]             = useState(25);
 
@@ -248,10 +268,15 @@ export default function CiudadanosPage() {
       if (edad === null) return false;
       return edad >= edadRange[0] && edad <= edadRange[1];
     })();
-    return matchSearch && matchComuna && matchColegio && matchTipo && matchCumple && matchEncargado && matchEdad;
+    const matchLlamado = filtroLlamado === "todos"
+      ? true
+      : filtroLlamado === "llamados"
+        ? !!p.llamado
+        : !p.llamado;
+    return matchSearch && matchComuna && matchColegio && matchTipo && matchCumple && matchEncargado && matchEdad && matchLlamado;
   });
 
-  useEffect(() => { setPage(0); }, [search, filtroComuna, filtroTipoRegistro, filtroColegio, filtroEncargado, filtroFechaCumple]);
+  useEffect(() => { setPage(0); }, [search, filtroComuna, filtroTipoRegistro, filtroColegio, filtroEncargado, filtroFechaCumple, filtroLlamado]);
 
   const paginados = filtrados.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
@@ -293,9 +318,9 @@ export default function CiudadanosPage() {
   const totalHombres      = data.filter((p) => p.sexo?.toUpperCase() === "M").length;
   const porRegistrador    = data.filter(esPorRegistrador).length;
   const selCount          = filtrados.filter((p) => selectedIds.has(p.id)).length;
-  const COLS              = 17; // checkbox + cols + tipo + registrador + colegio + mesa + encargado + acciones
+  const COLS              = 18; // checkbox + cols + tipo + registrador + colegio + mesa + encargado + llamado + acciones
 
-  const handleExport = () => {
+  const handleExport = async () => {
     const rows = filtrados.map((p) => ({
       "Apellido Paterno":      p.apellido_paterno ?? "",
       "Apellido Materno":      p.apellido_materno ?? "",
@@ -319,11 +344,36 @@ export default function CiudadanosPage() {
       "Colegio de Votación":   p.colegio_votacion ?? "",
       "N° de Mesa":            p.numero_mesa ?? "",
       "Encargado":             p.encargado ?? "",
+      "Llamado":               p.llamado ? "Sí" : "No",
     }));
     exportToExcel(rows, `Ciudadanos_${new Date().toISOString().slice(0, 10)}`, "Ciudadanos");
+
+    // Si la descarga se hizo con el filtro de cumpleaños activo, es la lista que se
+    // entrega a callcenter: se ofrece marcar a esos contactos como "llamados".
+    if (filtroFechaCumple && filtrados.length > 0) {
+      const result = await showConfirm(
+        "¿Marcar como llamados?",
+        `Vas a descargar ${filtrados.length} contacto${filtrados.length !== 1 ? "s" : ""} filtrado${filtrados.length !== 1 ? "s" : ""} por cumpleaños. ¿Deseas marcarlos como "Llamados" para el callcenter?`
+      );
+      if (result.isConfirmed) {
+        const ids = filtrados.map((p) => p.id);
+        const ahora = new Date().toISOString();
+        const { error: updateError } = await supabase
+          .from("ciudadanos")
+          .update({ llamado: true, fecha_llamada: ahora })
+          .in("id", ids);
+
+        if (updateError) {
+          showError("No se pudo actualizar", updateError.message);
+        } else {
+          setData((prev) => prev.map((p) => (ids.includes(p.id) ? { ...p, llamado: true, fecha_llamada: ahora } : p)));
+          setSuccessMsg(`${ids.length} contacto${ids.length !== 1 ? "s" : ""} marcado${ids.length !== 1 ? "s" : ""} como llamado${ids.length !== 1 ? "s" : ""}.`);
+        }
+      }
+    }
   };
 
-  const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos" || filtroEncargado !== "todos" || !!filtroFechaCumple || isEdadFiltered;
+  const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos" || filtroEncargado !== "todos" || filtroLlamado !== "todos" || !!filtroFechaCumple || isEdadFiltered;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -552,6 +602,27 @@ export default function CiudadanosPage() {
           {/* Separador */}
           <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
 
+          {/* Filtro Llamado (para seguimiento de callcenter) */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Llamado:</span>
+            {([
+              { value: "todos",      label: "Todos" },
+              { value: "llamados",   label: "Llamados" },
+              { value: "pendientes", label: "Pendientes" },
+            ] as const).map((f) => (
+              <button key={f.value} onClick={() => setFiltroLlamado(f.value)}
+                className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
+                style={filtroLlamado === f.value
+                  ? { background: "#166534", color: "#fff", borderColor: "#166534" }
+                  : { background: "#fff", color: "#64748b", borderColor: "#e2e8f0" }}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Separador */}
+          <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
+
           {/* Filtro Edad (calculada a partir de fecha_nacimiento) */}
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Edad:</span>
@@ -649,7 +720,7 @@ export default function CiudadanosPage() {
           {/* Limpiar */}
           {hayFiltrosActivos && (
             <button
-              onClick={() => { setFiltroComuna("todos"); setFiltroTipoRegistro("todos"); setFiltroColegio("todos"); setFiltroEncargado("todos"); setFiltroFechaCumple(null); setEdadRange([0, EDAD_MAX]); setEdadRangeDraft([0, EDAD_MAX]); }}
+              onClick={() => { setFiltroComuna("todos"); setFiltroTipoRegistro("todos"); setFiltroColegio("todos"); setFiltroEncargado("todos"); setFiltroFechaCumple(null); setFiltroLlamado("todos"); setEdadRange([0, EDAD_MAX]); setEdadRangeDraft([0, EDAD_MAX]); }}
               className="text-xs font-semibold px-3 py-1 rounded-full transition-all"
               style={{ background: "#fee2e2", color: "#dc2626", border: "1px solid #fecaca" }}>
               Limpiar filtros
@@ -677,7 +748,7 @@ export default function CiudadanosPage() {
                     onChange={toggleSelectAll} disabled={loading || conTelefono.length === 0}
                     sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" }, "&.MuiCheckbox-indeterminate": { color: "#1565c0" } }} />
                 </th>
-                {["Apellidos y Nombres", "DNI", "Nacimiento", "Edad", "Sexo", "Distrito", "Dirección", "Dirección Completa", "Teléfono", "Comuna", "Tipo", "Registrador", "Colegio de Votación", "N° Mesa", "Encargado", ""].map((h) => (
+                {["Apellidos y Nombres", "DNI", "Nacimiento", "Edad", "Sexo", "Distrito", "Dirección", "Dirección Completa", "Teléfono", "Comuna", "Tipo", "Registrador", "Colegio de Votación", "N° Mesa", "Encargado", "Llamado", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap" style={{ color: "#64748b" }}>
                     {h}
                   </th>
@@ -839,6 +910,13 @@ export default function CiudadanosPage() {
                         )}
                       </td>
 
+                      {/* Llamado */}
+                      <td className="px-4 py-3">
+                        <Tooltip title={p.fecha_llamada ? `Llamado el ${dayjs(p.fecha_llamada).format("DD/MM/YYYY HH:mm")}` : "Aún no ha sido llamado"}>
+                          <span><LlamadoBadge llamado={p.llamado} /></span>
+                        </Tooltip>
+                      </td>
+
                       {/* Acciones */}
                       <td className="px-4 py-3">
                         <Tooltip title={tienePhone ? "Enviar mensaje" : "Sin teléfono"}>
@@ -881,6 +959,7 @@ export default function CiudadanosPage() {
       </div>
 
       <SendMessageModal open={modalOpen} onClose={() => setModalOpen(false)} contactos={modalContactos} />
+      <SuccessToast open={!!successMsg} message={successMsg ?? ""} onClose={() => setSuccessMsg(null)} />
     </div>
   );
 }

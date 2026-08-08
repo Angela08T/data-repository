@@ -9,6 +9,7 @@ import dayjs, { Dayjs } from "dayjs";
 import "dayjs/locale/es";
 import { supabase } from "@/lib/supabase";
 import { exportToExcel } from "@/lib/utils/exportExcel";
+import { showError } from "@/lib/utils/swalConfig";
 import SearchIcon from "@mui/icons-material/Search";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -19,7 +20,10 @@ import MessageIcon from "@mui/icons-material/Message";
 import HowToRegIcon from "@mui/icons-material/HowToReg";
 import PersonIcon from "@mui/icons-material/Person";
 import CakeIcon from "@mui/icons-material/Cake";
+import PhoneInTalkIcon from "@mui/icons-material/PhoneInTalk";
+import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import SendMessageModal, { Contacto } from "@/components/messaging/SendMessageModal";
+import SuccessToast from "@/components/feedback/SuccessToast";
 
 dayjs.locale("es");
 
@@ -96,6 +100,8 @@ interface Personero {
   tipo_registro?: string | null;
   colegio_votacion?: string | null;
   numero_mesa?: string | null;
+  llamado?: boolean | null;
+  fecha_llamada?: string | null;
 }
 
 function hasPhone(p: Personero): boolean {
@@ -130,6 +136,18 @@ function RegistroBadge({ tipo }: { tipo?: string | null }) {
   );
 }
 
+function LlamadoBadge({ llamado }: { llamado?: boolean | null }) {
+  return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+      style={llamado
+        ? { background: "#f0fdf4", color: "#166534" }
+        : { background: "#f1f5f9", color: "#64748b" }}>
+      {llamado ? <PhoneInTalkIcon sx={{ fontSize: 12 }} /> : <PendingActionsIcon sx={{ fontSize: 12 }} />}
+      {llamado ? "Llamado" : "Pendiente"}
+    </span>
+  );
+}
+
 function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: React.ReactNode; color: string }) {
   return (
     <div className="stat-card bg-white rounded-2xl shadow p-5 flex items-center gap-4">
@@ -154,12 +172,16 @@ export default function PersonerosPage() {
   const [filtroTipoRegistro, setFiltroTipoRegistro] = useState<"todos" | "directo" | "registrador">("todos");
   const [filtroColegio, setFiltroColegio]         = useState<string>("todos");
   const [filtroFechaCumple, setFiltroFechaCumple] = useState<Dayjs | null>(null);
+  const [filtroLlamado, setFiltroLlamado]         = useState<"todos" | "llamados" | "pendientes">("todos");
   const [edadRange, setEdadRange]                 = useState<number[]>([0, EDAD_MAX]);
   const [edadRangeDraft, setEdadRangeDraft]       = useState<number[]>([0, EDAD_MAX]);
   const [edadAnchor, setEdadAnchor]               = useState<HTMLElement | null>(null);
+  const [exportAnchor, setExportAnchor]           = useState<HTMLElement | null>(null);
+  const [cantidadDescarga, setCantidadDescarga]   = useState<string>("");
   const [selectedIds, setSelectedIds]             = useState<Set<string>>(new Set());
   const [modalOpen, setModalOpen]                 = useState(false);
   const [modalContactos, setModalContactos]       = useState<Contacto[]>([]);
+  const [successMsg, setSuccessMsg]               = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -211,7 +233,12 @@ export default function PersonerosPage() {
       if (edad === null) return false;
       return edad >= edadRange[0] && edad <= edadRange[1];
     })();
-    return matchSearch && matchSexo && matchComuna && matchColegio && matchTipo && matchCumple && matchEdad;
+    const matchLlamado = filtroLlamado === "todos"
+      ? true
+      : filtroLlamado === "llamados"
+        ? !!p.llamado
+        : !p.llamado;
+    return matchSearch && matchSexo && matchComuna && matchColegio && matchTipo && matchCumple && matchEdad && matchLlamado;
   });
 
   // Selección
@@ -252,10 +279,24 @@ export default function PersonerosPage() {
   const totalHombres      = data.filter((p) => p.sexo?.toUpperCase() === "M").length;
   const porRegistrador    = data.filter(esPorRegistrador).length;
   const selCount          = filtrados.filter((p) => selectedIds.has(p.id)).length;
-  const COLS              = 15; // checkbox + cols + tipo + registrador + colegio + mesa + acciones
+  const COLS              = 16; // checkbox + cols + tipo + registrador + colegio + mesa + llamado + acciones
 
-  const handleExport = () => {
-    const rows = filtrados.map((p) => ({
+  // Solo se puede descargar/marcar en lote a quienes aún están pendientes
+  // (respetando los demás filtros activos: búsqueda, sexo, comuna, colegio, tipo, cumpleaños, edad, llamado).
+  const pendientesDisponibles = filtrados.filter((p) => !p.llamado);
+
+  const abrirExportar = (e: React.MouseEvent<HTMLElement>) => {
+    setCantidadDescarga(String(pendientesDisponibles.length));
+    setExportAnchor(e.currentTarget);
+  };
+
+  const confirmarExportar = async () => {
+    const max = pendientesDisponibles.length;
+    const n = Math.max(1, Math.min(parseInt(cantidadDescarga, 10) || 0, max));
+    if (n <= 0) return;
+
+    const lote = pendientesDisponibles.slice(0, n);
+    const rows = lote.map((p) => ({
       "Apellido Paterno":      p.apellido_paterno ?? "",
       "Apellido Materno":      p.apellido_materno ?? "",
       "Nombres":               p.nombres ?? "",
@@ -276,11 +317,27 @@ export default function PersonerosPage() {
       "Registrador Apellidos": p.registrador_apellidos ?? "",
       "Colegio de Votación":   p.colegio_votacion ?? "",
       "N° de Mesa":            p.numero_mesa ?? "",
+      "Llamado":               p.llamado ? "Sí" : "No",
     }));
-    exportToExcel(rows, `Personeros_${new Date().toISOString().slice(0, 10)}`, "Personeros");
+    exportToExcel(rows, `Personeros_Lote_${new Date().toISOString().slice(0, 10)}`, "Personeros");
+    setExportAnchor(null);
+
+    const ids = lote.map((p) => p.id);
+    const ahora = new Date().toISOString();
+    const { error: updateError } = await supabase
+      .from("personeros")
+      .update({ llamado: true, fecha_llamada: ahora })
+      .in("id", ids);
+
+    if (updateError) {
+      showError("No se pudo actualizar", updateError.message);
+    } else {
+      setData((prev) => prev.map((p) => (ids.includes(p.id) ? { ...p, llamado: true, fecha_llamada: ahora } : p)));
+      setSuccessMsg(`${ids.length} contacto${ids.length !== 1 ? "s" : ""} descargado${ids.length !== 1 ? "s" : ""} y marcado${ids.length !== 1 ? "s" : ""} como llamado${ids.length !== 1 ? "s" : ""}.`);
+    }
   };
 
-  const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos" || !!filtroFechaCumple || isEdadFiltered;
+  const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos" || filtroLlamado !== "todos" || !!filtroFechaCumple || isEdadFiltered;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -351,12 +408,77 @@ export default function PersonerosPage() {
                 <RefreshIcon sx={{ fontSize: 18, color: "#94a3b8" }} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Exportar Excel">
-              <IconButton size="small" onClick={handleExport} disabled={loading || filtrados.length === 0}>
-                <FileDownloadIcon sx={{ fontSize: 18, color: filtrados.length > 0 ? "#1565c0" : "#94a3b8" }} />
+            <Tooltip title="Descargar por lotes">
+              <IconButton size="small" onClick={abrirExportar} disabled={loading || pendientesDisponibles.length === 0}>
+                <FileDownloadIcon sx={{ fontSize: 18, color: pendientesDisponibles.length > 0 ? "#1565c0" : "#94a3b8" }} />
               </IconButton>
             </Tooltip>
           </div>
+
+          <Popover
+            open={!!exportAnchor}
+            anchorEl={exportAnchor}
+            onClose={() => setExportAnchor(null)}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+            sx={{ mt: 1 }}
+            slotProps={{
+              paper: {
+                sx: {
+                  borderRadius: "16px",
+                  boxShadow: "0 16px 40px rgba(15,23,42,0.16)",
+                  border: "1px solid #e2e8f0",
+                },
+              },
+            }}
+          >
+            <Box sx={{ p: 3, width: 300 }}>
+              <Typography variant="subtitle2" fontWeight={700} color="#0d1b3e" sx={{ fontFamily: "'Poppins', sans-serif" }}>
+                Descargar por lotes
+              </Typography>
+              <Typography variant="caption" color="#94a3b8" sx={{ display: "block", mt: 0.25, mb: 2 }}>
+                Se descargan los primeros N pendientes (según los filtros activos) y quedan marcados como llamados
+              </Typography>
+
+              <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+                <Box sx={{ px: 2, py: 0.5, borderRadius: "999px", background: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+                  <Typography variant="body2" fontWeight={700} color="#166534">
+                    {pendientesDisponibles.length} pendiente{pendientesDisponibles.length !== 1 ? "s" : ""} disponible{pendientesDisponibles.length !== 1 ? "s" : ""}
+                  </Typography>
+                </Box>
+              </Box>
+
+              <TextField
+                fullWidth
+                size="small"
+                type="number"
+                label="Cantidad a descargar"
+                value={cantidadDescarga}
+                onChange={(e) => setCantidadDescarga(e.target.value)}
+                slotProps={{ htmlInput: { min: 1, max: pendientesDisponibles.length } }}
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
+              />
+
+              <Box display="flex" justifyContent="flex-end" mt={3} gap={1}>
+                <Button size="small"
+                  onClick={() => setExportAnchor(null)}
+                  sx={{ color: "#64748b", textTransform: "none", fontWeight: 600, fontFamily: "'Poppins', sans-serif", "&:hover": { background: "#f1f5f9" } }}>
+                  Cancelar
+                </Button>
+                <Button size="small" variant="contained"
+                  onClick={confirmarExportar}
+                  disabled={pendientesDisponibles.length === 0 || !cantidadDescarga || Number(cantidadDescarga) < 1}
+                  sx={{
+                    borderRadius: "999px", textTransform: "none", fontWeight: 700, fontFamily: "'Poppins', sans-serif",
+                    background: "linear-gradient(135deg, #1565c0, #1976d2)",
+                    boxShadow: "0 4px 12px rgba(21,101,192,0.35)",
+                    "&:hover": { background: "linear-gradient(135deg, #0d47a1, #1565c0)" },
+                  }}>
+                  Descargar y marcar
+                </Button>
+              </Box>
+            </Box>
+          </Popover>
         </div>
 
         {/* Barra de filtros: Tipo de registro + Comuna */}
@@ -497,6 +619,27 @@ export default function PersonerosPage() {
           {/* Separador */}
           <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
 
+          {/* Filtro Llamado (para seguimiento de callcenter) */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Llamado:</span>
+            {([
+              { value: "todos",      label: "Todos" },
+              { value: "llamados",   label: "Llamados" },
+              { value: "pendientes", label: "Pendientes" },
+            ] as const).map((f) => (
+              <button key={f.value} onClick={() => setFiltroLlamado(f.value)}
+                className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
+                style={filtroLlamado === f.value
+                  ? { background: "#166534", color: "#fff", borderColor: "#166534" }
+                  : { background: "#fff", color: "#64748b", borderColor: "#e2e8f0" }}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Separador */}
+          <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
+
           {/* Filtro Edad (calculada a partir de fecha_nacimiento) */}
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Edad:</span>
@@ -594,7 +737,7 @@ export default function PersonerosPage() {
           {/* Limpiar */}
           {hayFiltrosActivos && (
             <button
-              onClick={() => { setFiltroComuna("todos"); setFiltroTipoRegistro("todos"); setFiltroColegio("todos"); setFiltroFechaCumple(null); setEdadRange([0, EDAD_MAX]); setEdadRangeDraft([0, EDAD_MAX]); }}
+              onClick={() => { setFiltroComuna("todos"); setFiltroTipoRegistro("todos"); setFiltroColegio("todos"); setFiltroFechaCumple(null); setFiltroLlamado("todos"); setEdadRange([0, EDAD_MAX]); setEdadRangeDraft([0, EDAD_MAX]); }}
               className="text-xs font-semibold px-3 py-1 rounded-full transition-all"
               style={{ background: "#fee2e2", color: "#dc2626", border: "1px solid #fecaca" }}>
               Limpiar filtros
@@ -622,7 +765,7 @@ export default function PersonerosPage() {
                     onChange={toggleSelectAll} disabled={loading || conTelefono.length === 0}
                     sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" }, "&.MuiCheckbox-indeterminate": { color: "#1565c0" } }} />
                 </th>
-                {["Apellidos y Nombres", "DNI", "Nacimiento", "Edad", "Sexo", "Distrito", "Dirección", "Teléfono", "Comuna", "Tipo", "Registrador", "Colegio de Votación", "N° Mesa", ""].map((h) => (
+                {["Apellidos y Nombres", "DNI", "Nacimiento", "Edad", "Sexo", "Distrito", "Dirección", "Teléfono", "Comuna", "Tipo", "Registrador", "Colegio de Votación", "N° Mesa", "Llamado", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap" style={{ color: "#64748b" }}>
                     {h}
                   </th>
@@ -768,6 +911,13 @@ export default function PersonerosPage() {
                         )}
                       </td>
 
+                      {/* Llamado */}
+                      <td className="px-4 py-3">
+                        <Tooltip title={p.fecha_llamada ? `Llamado el ${dayjs(p.fecha_llamada).format("DD/MM/YYYY HH:mm")}` : "Aún no ha sido llamado"}>
+                          <span><LlamadoBadge llamado={p.llamado} /></span>
+                        </Tooltip>
+                      </td>
+
                       {/* Acciones */}
                       <td className="px-4 py-3">
                         <Tooltip title={tienePhone ? "Enviar mensaje" : "Sin teléfono"}>
@@ -795,6 +945,7 @@ export default function PersonerosPage() {
       </div>
 
       <SendMessageModal open={modalOpen} onClose={() => setModalOpen(false)} contactos={modalContactos} />
+      <SuccessToast open={!!successMsg} message={successMsg ?? ""} onClose={() => setSuccessMsg(null)} />
     </div>
   );
 }

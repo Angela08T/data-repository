@@ -24,8 +24,7 @@ export const showSuccess = (title: string, text?: string) => {
     icon: "success",
     title,
     text,
-    timer: 3000,
-    showConfirmButton: false,
+    confirmButtonText: "Aceptar",
   });
 };
 
