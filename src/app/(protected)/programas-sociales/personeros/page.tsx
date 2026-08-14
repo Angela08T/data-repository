@@ -10,8 +10,10 @@ import "dayjs/locale/es";
 import { supabase } from "@/lib/supabase";
 import { exportToExcel } from "@/lib/utils/exportExcel";
 import { showError } from "@/lib/utils/swalConfig";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 import SearchIcon from "@mui/icons-material/Search";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import PeopleIcon from "@mui/icons-material/People";
 import MaleIcon from "@mui/icons-material/Male";
@@ -104,6 +106,32 @@ interface Personero {
   fecha_llamada?: string | null;
 }
 
+function personeroToRow(p: Personero) {
+  return {
+    "Apellido Paterno":      p.apellido_paterno ?? "",
+    "Apellido Materno":      p.apellido_materno ?? "",
+    "Nombres":               p.nombres ?? "",
+    "DNI":                   p.dni ?? "",
+    "Fecha Nacimiento":      p.fecha_nacimiento ?? "",
+    "Edad":                  calcularEdad(p.fecha_nacimiento) ?? "",
+    "Sexo":                  p.sexo?.toUpperCase() === "F" ? "Femenino" : "Masculino",
+    "Lugar Nacimiento":      p.lugar_nacimiento ?? "",
+    "Región":                p.region ?? "",
+    "Provincia":             p.provincia ?? "",
+    "Distrito":              p.distrito ?? "",
+    "Dirección":             p.direccion ?? "",
+    "Teléfono":              hasPhone(p) ? (p.telefono.startsWith("+") ? p.telefono : `+51 ${p.telefono}`) : "",
+    "Comuna":                p.comuna ?? "",
+    "Email":                 p.email ?? "",
+    "Tipo de Registro":      p.tipo_registro ?? "directo",
+    "Registrador Nombres":   p.registrador_nombres ?? "",
+    "Registrador Apellidos": p.registrador_apellidos ?? "",
+    "Colegio de Votación":   p.colegio_votacion ?? "",
+    "N° de Mesa":            p.numero_mesa ?? "",
+    "Llamado":               p.llamado ? "Sí" : "No",
+  };
+}
+
 function hasPhone(p: Personero): boolean {
   return !!p.telefono && p.telefono !== "EMPTY";
 }
@@ -163,6 +191,7 @@ function StatCard({ label, value, icon, color }: { label: string; value: string 
 }
 
 export default function PersonerosPage() {
+  const { isAdmin } = usePermissions();
   const [data, setData]           = useState<Personero[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
@@ -296,29 +325,7 @@ export default function PersonerosPage() {
     if (n <= 0) return;
 
     const lote = pendientesDisponibles.slice(0, n);
-    const rows = lote.map((p) => ({
-      "Apellido Paterno":      p.apellido_paterno ?? "",
-      "Apellido Materno":      p.apellido_materno ?? "",
-      "Nombres":               p.nombres ?? "",
-      "DNI":                   p.dni ?? "",
-      "Fecha Nacimiento":      p.fecha_nacimiento ?? "",
-      "Edad":                  calcularEdad(p.fecha_nacimiento) ?? "",
-      "Sexo":                  p.sexo?.toUpperCase() === "F" ? "Femenino" : "Masculino",
-      "Lugar Nacimiento":      p.lugar_nacimiento ?? "",
-      "Región":                p.region ?? "",
-      "Provincia":             p.provincia ?? "",
-      "Distrito":              p.distrito ?? "",
-      "Dirección":             p.direccion ?? "",
-      "Teléfono":              hasPhone(p) ? (p.telefono.startsWith("+") ? p.telefono : `+51 ${p.telefono}`) : "",
-      "Comuna":                p.comuna ?? "",
-      "Email":                 p.email ?? "",
-      "Tipo de Registro":      p.tipo_registro ?? "directo",
-      "Registrador Nombres":   p.registrador_nombres ?? "",
-      "Registrador Apellidos": p.registrador_apellidos ?? "",
-      "Colegio de Votación":   p.colegio_votacion ?? "",
-      "N° de Mesa":            p.numero_mesa ?? "",
-      "Llamado":               p.llamado ? "Sí" : "No",
-    }));
+    const rows = lote.map(personeroToRow);
     exportToExcel(rows, `Personeros_Lote_${new Date().toISOString().slice(0, 10)}`, "Personeros");
     setExportAnchor(null);
 
@@ -335,6 +342,15 @@ export default function PersonerosPage() {
       setData((prev) => prev.map((p) => (ids.includes(p.id) ? { ...p, llamado: true, fecha_llamada: ahora } : p)));
       setSuccessMsg(`${ids.length} contacto${ids.length !== 1 ? "s" : ""} descargado${ids.length !== 1 ? "s" : ""} y marcado${ids.length !== 1 ? "s" : ""} como llamado${ids.length !== 1 ? "s" : ""}.`);
     }
+  };
+
+  // Descarga completa (solo usuarios con acceso total): exporta todo lo que cumple
+  // los filtros activos, llamados y pendientes, sin marcar nada como llamado ni
+  // tocar la tabla de Supabase — para que no interfiera con el seguimiento del call center.
+  const exportarCompleto = () => {
+    const rows = filtrados.map(personeroToRow);
+    exportToExcel(rows, `Personeros_Completo_${new Date().toISOString().slice(0, 10)}`, "Personeros");
+    setSuccessMsg(`${rows.length} contacto${rows.length !== 1 ? "s" : ""} descargado${rows.length !== 1 ? "s" : ""} (no se marcaron como llamados).`);
   };
 
   const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos" || filtroLlamado !== "todos" || !!filtroFechaCumple || isEdadFiltered;
@@ -408,11 +424,18 @@ export default function PersonerosPage() {
                 <RefreshIcon sx={{ fontSize: 18, color: "#94a3b8" }} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Descargar por lotes">
+            <Tooltip title="Descargar por lotes (marca como llamado)">
               <IconButton size="small" onClick={abrirExportar} disabled={loading || pendientesDisponibles.length === 0}>
                 <FileDownloadIcon sx={{ fontSize: 18, color: pendientesDisponibles.length > 0 ? "#1565c0" : "#94a3b8" }} />
               </IconButton>
             </Tooltip>
+            {isAdmin() && (
+              <Tooltip title="Descargar Excel completo (no marca como llamado)">
+                <IconButton size="small" onClick={exportarCompleto} disabled={loading || filtrados.length === 0}>
+                  <CloudDownloadIcon sx={{ fontSize: 18, color: filtrados.length > 0 ? "#7c3aed" : "#94a3b8" }} />
+                </IconButton>
+              </Tooltip>
+            )}
           </div>
 
           <Popover
