@@ -24,8 +24,10 @@ import PersonIcon from "@mui/icons-material/Person";
 import CakeIcon from "@mui/icons-material/Cake";
 import PhoneInTalkIcon from "@mui/icons-material/PhoneInTalk";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import SendMessageModal, { Contacto } from "@/components/messaging/SendMessageModal";
 import SuccessToast from "@/components/feedback/SuccessToast";
+import AgregarPersoneroModal, { PersoneroCreado } from "@/components/personeros/AgregarPersoneroModal";
 
 dayjs.locale("es");
 
@@ -79,6 +81,18 @@ function calcularEdad(fechaNacimiento: string): number | null {
 }
 
 const EDAD_MAX = 100;
+const COMUNAS = Array.from({ length: 18 }, (_, i) => i + 1);
+
+// El texto libre de "comuna" viene con inconsistencias (mayúsculas, espacios,
+// "No sé / No conozco mi comuna", etc.), así que el filtro compara por el
+// número extraído en vez de por texto exacto.
+function extraerNumeroComuna(comuna?: string | null): number | null {
+  if (!comuna) return null;
+  const match = comuna.match(/\d+/);
+  if (!match) return null;
+  const n = parseInt(match[0], 10);
+  return n >= 1 && n <= 18 ? n : null;
+}
 
 interface Personero {
   id: string;
@@ -191,7 +205,11 @@ function StatCard({ label, value, icon, color }: { label: string; value: string 
 }
 
 export default function PersonerosPage() {
-  const { isAdmin } = usePermissions();
+  const { isAdmin, hasPermission, user } = usePermissions();
+  // El botón de agregar personero es solo para el admin (acceso total) y el usuario
+  // restringido exclusivo de Personeros — no para el usuario "campo" (que también
+  // ve Dirigentes/Ciudadanos/Participantes) ni otros roles.
+  const puedeAgregar = isAdmin() || hasPermission("personeros");
   const [data, setData]           = useState<Personero[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
@@ -210,6 +228,7 @@ export default function PersonerosPage() {
   const [selectedIds, setSelectedIds]             = useState<Set<string>>(new Set());
   const [modalOpen, setModalOpen]                 = useState(false);
   const [modalContactos, setModalContactos]       = useState<Contacto[]>([]);
+  const [agregarOpen, setAgregarOpen]             = useState(false);
   const [successMsg, setSuccessMsg]               = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -227,11 +246,6 @@ export default function PersonerosPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Comunas únicas para el dropdown
-  const comunasUnicas = Array.from(
-    new Set(data.map((p) => p.comuna?.trim()).filter(Boolean))
-  ).sort() as string[];
-
   // Colegios únicos para el dropdown
   const colegiosUnicos = Array.from(
     new Set(data.map((p) => p.colegio_votacion?.trim()).filter(Boolean))
@@ -248,7 +262,7 @@ export default function PersonerosPage() {
       (p.comuna ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (p.registrador_nombres ?? "").toLowerCase().includes(search.toLowerCase());
     const matchSexo     = filtroSexo === "todos" || p.sexo?.toUpperCase() === filtroSexo;
-    const matchComuna   = filtroComuna === "todos" || (p.comuna?.trim() ?? "") === filtroComuna;
+    const matchComuna   = filtroComuna === "todos" || extraerNumeroComuna(p.comuna) === Number(filtroComuna);
     const matchColegio  = filtroColegio === "todos" || (p.colegio_votacion?.trim() ?? "") === filtroColegio;
     const matchTipo     = filtroTipoRegistro === "todos"
       ? true
@@ -353,6 +367,12 @@ export default function PersonerosPage() {
     setSuccessMsg(`${rows.length} contacto${rows.length !== 1 ? "s" : ""} descargado${rows.length !== 1 ? "s" : ""} (no se marcaron como llamados).`);
   };
 
+  const handlePersoneroCreado = (nuevo: PersoneroCreado) => {
+    setData((prev) => [nuevo as Personero, ...prev]);
+    setAgregarOpen(false);
+    setSuccessMsg("Personero agregado correctamente.");
+  };
+
   const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos" || filtroLlamado !== "todos" || !!filtroFechaCumple || isEdadFiltered;
 
   return (
@@ -392,6 +412,20 @@ export default function PersonerosPage() {
             }}
           />
           <div className="flex items-center gap-2 flex-wrap">
+            {puedeAgregar && (
+              <Button variant="contained" size="small"
+                startIcon={<PersonAddIcon sx={{ fontSize: 16 }} />}
+                onClick={() => setAgregarOpen(true)}
+                sx={{
+                  borderRadius: "10px", textTransform: "none", fontWeight: 700,
+                  fontFamily: "'Poppins', sans-serif", fontSize: "0.75rem",
+                  background: "linear-gradient(135deg, #166534, #16a34a)",
+                  boxShadow: "0 4px 12px rgba(22,101,52,0.35)",
+                  "&:hover": { background: "linear-gradient(135deg, #14532d, #166534)" },
+                }}>
+                Agregar personero
+              </Button>
+            )}
             {selCount > 0 && (
               <Button variant="contained" size="small"
                 startIcon={<MessageIcon sx={{ fontSize: 16 }} />}
@@ -543,8 +577,8 @@ export default function PersonerosPage() {
               }}
             >
               <option value="todos">Todas</option>
-              {comunasUnicas.map((c) => (
-                <option key={c} value={c}>{c}</option>
+              {COMUNAS.map((n) => (
+                <option key={n} value={n}>Comuna {n}</option>
               ))}
             </select>
           </div>
@@ -968,6 +1002,13 @@ export default function PersonerosPage() {
       </div>
 
       <SendMessageModal open={modalOpen} onClose={() => setModalOpen(false)} contactos={modalContactos} />
+      <AgregarPersoneroModal
+        open={puedeAgregar && agregarOpen}
+        onClose={() => setAgregarOpen(false)}
+        onCreated={handlePersoneroCreado}
+        registradorNombres={user?.firstName ?? ""}
+        registradorApellidos={user?.lastName ?? ""}
+      />
       <SuccessToast open={!!successMsg} message={successMsg ?? ""} onClose={() => setSuccessMsg(null)} />
     </div>
   );

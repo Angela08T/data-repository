@@ -163,7 +163,7 @@ export const MODULOS_PROGRAMAS_SOCIALES: MenuItem[] = [
     ruta: "/programas-sociales/personeros",
     icono: "Badge",
     descripcion: "Gestión de personeros de campaña",
-    permisos: ["all_programas_sociales", "all", "campo"],
+    permisos: ["all_programas_sociales", "all", "campo", "personeros"],
   },
   {
     id: "dirigentes",

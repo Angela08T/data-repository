@@ -18,6 +18,19 @@ import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import SendMessageModal, { Contacto } from "@/components/messaging/SendMessageModal";
 import SuccessToast from "@/components/feedback/SuccessToast";
 
+const COMUNAS = Array.from({ length: 18 }, (_, i) => i + 1);
+
+// El texto libre de "comuna" viene con inconsistencias (mayúsculas, espacios,
+// "No sé / No conozco mi comuna", etc.), así que el filtro compara por el
+// número extraído en vez de por texto exacto.
+function extraerNumeroComuna(comuna?: string | null): number | null {
+  if (!comuna) return null;
+  const match = comuna.match(/\d+/);
+  if (!match) return null;
+  const n = parseInt(match[0], 10);
+  return n >= 1 && n <= 18 ? n : null;
+}
+
 interface Dirigente {
   id: string;
   comuna: string;
@@ -111,11 +124,6 @@ export default function DirigentesPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Comunas únicas para el dropdown
-  const comunasUnicas = Array.from(
-    new Set(data.map((d) => d.comuna?.trim()).filter(Boolean))
-  ).sort() as string[];
-
   // Promotores únicos para el dropdown
   const promotoresUnicos = Array.from(
     new Set(data.map((d) => d.promotor?.trim()).filter(Boolean))
@@ -129,7 +137,7 @@ export default function DirigentesPage() {
       (d.comuna ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (d.promotor ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (d.celular ?? "").includes(search);
-    const matchComuna   = filtroComuna === "todos" || (d.comuna?.trim() ?? "") === filtroComuna;
+    const matchComuna   = filtroComuna === "todos" || extraerNumeroComuna(d.comuna) === Number(filtroComuna);
     const matchPromotor = filtroPromotor === "todos" || (d.promotor?.trim() ?? "") === filtroPromotor;
     const matchLlamado  = filtroLlamado === "todos"
       ? true
@@ -373,8 +381,8 @@ export default function DirigentesPage() {
               }}
             >
               <option value="todos">Todas</option>
-              {comunasUnicas.map((c) => (
-                <option key={c} value={c}>{c}</option>
+              {COMUNAS.map((n) => (
+                <option key={n} value={n}>Comuna {n}</option>
               ))}
             </select>
           </div>

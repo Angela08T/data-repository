@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { TextField, InputAdornment, IconButton, Tooltip, CircularProgress, Checkbox, Button, TablePagination, Popover, Slider, Typography, Box } from "@mui/material";
-import dayjs from "dayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import dayjs, { Dayjs } from "dayjs";
+import "dayjs/locale/es";
 import { supabase } from "@/lib/supabase";
 import { exportToExcel } from "@/lib/utils/exportExcel";
 import { showError } from "@/lib/utils/swalConfig";
@@ -15,10 +19,25 @@ import PhoneDisabledIcon from "@mui/icons-material/PhoneDisabled";
 import MessageIcon from "@mui/icons-material/Message";
 import PhoneInTalkIcon from "@mui/icons-material/PhoneInTalk";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
+import CakeIcon from "@mui/icons-material/Cake";
 import SendMessageModal, { Contacto } from "@/components/messaging/SendMessageModal";
 import SuccessToast from "@/components/feedback/SuccessToast";
 
+dayjs.locale("es");
+
 const EDAD_MAX = 100;
+const COMUNAS = Array.from({ length: 18 }, (_, i) => i + 1);
+
+// El texto libre de "comuna" viene con inconsistencias (mayúsculas, espacios,
+// "No sé / No conozco mi comuna", etc.), así que el filtro compara por el
+// número extraído en vez de por texto exacto.
+function extraerNumeroComuna(comuna?: string | null): number | null {
+  if (!comuna) return null;
+  const match = comuna.match(/\d+/);
+  if (!match) return null;
+  const n = parseInt(match[0], 10);
+  return n >= 1 && n <= 18 ? n : null;
+}
 
 interface Participante {
   id: string;
@@ -26,9 +45,32 @@ interface Participante {
   telefono?: string | null;
   edad?: number | null;
   direccion?: string | null;
+  comuna?: string | null;
+  fecha_nacimiento?: string | null;
   llamado?: boolean | null;
   fecha_llamada?: string | null;
   created_at?: string | null;
+}
+
+// fecha_nacimiento viene como texto: "DD/MM/YYYY" o, en algunos registros, "YYYY-MM-DD".
+function extraerDiaMes(fechaNacimiento: string): { dia: number; mes: number } | null {
+  if (!fechaNacimiento) return null;
+  const partes = fechaNacimiento.trim().split(/[/-]/);
+  if (partes.length < 3) return null;
+
+  const esFormatoConSlash = fechaNacimiento.includes("/"); // DD/MM/YYYY
+  const dia = parseInt(esFormatoConSlash ? partes[0] : partes[2], 10);
+  const mes = parseInt(partes[1], 10);
+
+  if (!Number.isInteger(dia) || !Number.isInteger(mes)) return null;
+  if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
+  return { dia, mes };
+}
+
+function cumpleEnFecha(fechaNacimiento: string, objetivo: Dayjs): boolean {
+  const partes = extraerDiaMes(fechaNacimiento);
+  if (!partes) return false;
+  return partes.dia === objetivo.date() && partes.mes === objetivo.month() + 1;
 }
 
 function hasPhone(p: Participante): boolean {
@@ -67,6 +109,8 @@ export default function ParticipantesActividadesPage() {
   const [error, setError]     = useState<string | null>(null);
   const [search, setSearch]   = useState("");
   const [filtroCelular, setFiltroCelular]         = useState<"todos" | "con" | "sin">("todos");
+  const [filtroComuna, setFiltroComuna]           = useState<string>("todos");
+  const [filtroFechaCumple, setFiltroFechaCumple] = useState<Dayjs | null>(null);
   const [filtroLlamado, setFiltroLlamado]         = useState<"todos" | "llamados" | "pendientes">("todos");
   const [edadRange, setEdadRange]                 = useState<number[]>([0, EDAD_MAX]);
   const [edadRangeDraft, setEdadRangeDraft]       = useState<number[]>([0, EDAD_MAX]);
@@ -119,12 +163,15 @@ export default function ParticipantesActividadesPage() {
     const matchSearch =
       nombreCompleto.includes(search.toLowerCase()) ||
       (p.telefono ?? "").includes(search) ||
-      (p.direccion ?? "").toLowerCase().includes(search.toLowerCase());
+      (p.direccion ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (p.comuna ?? "").toLowerCase().includes(search.toLowerCase());
     const matchCelular = filtroCelular === "todos"
       ? true
       : filtroCelular === "con"
         ? hasPhone(p)
         : !hasPhone(p);
+    const matchComuna = filtroComuna === "todos" || extraerNumeroComuna(p.comuna) === Number(filtroComuna);
+    const matchCumple = !filtroFechaCumple || cumpleEnFecha(p.fecha_nacimiento ?? "", filtroFechaCumple);
     const matchEdad = (() => {
       if (!isEdadFiltered) return true;
       if (p.edad == null) return false;
@@ -135,10 +182,10 @@ export default function ParticipantesActividadesPage() {
       : filtroLlamado === "llamados"
         ? !!p.llamado
         : !p.llamado;
-    return matchSearch && matchCelular && matchEdad && matchLlamado;
+    return matchSearch && matchCelular && matchComuna && matchCumple && matchEdad && matchLlamado;
   });
 
-  useEffect(() => { setPage(0); }, [search, filtroCelular, edadRange, filtroLlamado]);
+  useEffect(() => { setPage(0); }, [search, filtroCelular, filtroComuna, filtroFechaCumple, edadRange, filtroLlamado]);
 
   const paginados = filtrados.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
@@ -180,7 +227,7 @@ export default function ParticipantesActividadesPage() {
   const totalSinCelular = data.length - totalConCelular;
   const totalLlamados   = useMemo(() => data.filter((p) => p.llamado).length, [data]);
   const selCount         = filtrados.filter((p) => selectedIds.has(p.id)).length;
-  const COLS             = 7; // checkbox + nombres + celular + edad + dirección + llamado + acciones
+  const COLS             = 9; // checkbox + nombres + celular + edad + nacimiento + dirección + comuna + llamado + acciones
 
   // Solo se puede descargar/marcar en lote a quienes aún están pendientes
   // (respetando los demás filtros activos: búsqueda, celular, edad).
@@ -201,7 +248,9 @@ export default function ParticipantesActividadesPage() {
       "Nombres y Apellidos": p.nombre_completo ?? "",
       "Número de Contacto":  hasPhone(p) ? (p.telefono!.startsWith("+") ? p.telefono : `+51 ${p.telefono}`) : "",
       "Edad":                p.edad ?? "",
+      "Fecha Nacimiento":    p.fecha_nacimiento ?? "",
       "Dirección":           p.direccion ?? "",
+      "Comuna":              p.comuna ?? "",
     }));
     exportToExcel(rows, `Participantes_Actividades_Lote_${new Date().toISOString().slice(0, 10)}`, "Participantes");
     setExportAnchor(null);
@@ -221,7 +270,7 @@ export default function ParticipantesActividadesPage() {
     }
   };
 
-  const hayFiltrosActivos = filtroCelular !== "todos" || filtroLlamado !== "todos" || isEdadFiltered;
+  const hayFiltrosActivos = filtroCelular !== "todos" || filtroComuna !== "todos" || !!filtroFechaCumple || filtroLlamado !== "todos" || isEdadFiltered;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -376,6 +425,95 @@ export default function ParticipantesActividadesPage() {
           {/* Separador */}
           <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
 
+          {/* Filtro Comuna */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Comuna:</span>
+            <select
+              value={filtroComuna}
+              onChange={(e) => setFiltroComuna(e.target.value)}
+              className="text-xs border rounded-full px-3 py-1.5 outline-none cursor-pointer font-semibold transition-all"
+              style={{
+                borderColor: filtroComuna !== "todos" ? "#1565c0" : "#e2e8f0",
+                color: filtroComuna !== "todos" ? "#1565c0" : "#64748b",
+                background: filtroComuna !== "todos" ? "#eff6ff" : "#fff",
+                fontFamily: "'Poppins', sans-serif",
+              }}
+            >
+              <option value="todos">Todas</option>
+              {COMUNAS.map((n) => (
+                <option key={n} value={n}>Comuna {n}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Separador */}
+          <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
+
+          {/* Filtro Cumpleaños (calendario) */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide flex items-center gap-1">
+              <CakeIcon sx={{ fontSize: 14 }} /> Cumpleaños:
+            </span>
+            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
+              <DatePicker
+                value={filtroFechaCumple}
+                onChange={(nuevo) => setFiltroFechaCumple(nuevo)}
+                format="DD [de] MMMM"
+                enableAccessibleFieldDOMStructure={false}
+                slotProps={{
+                  textField: {
+                    size: "small",
+                    placeholder: "Elegir fecha",
+                    sx: {
+                      width: 176,
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "999px",
+                        height: 32,
+                        fontSize: "0.78rem",
+                        fontWeight: 600,
+                        background: filtroFechaCumple ? "#fdf2f8" : "#fff",
+                        transition: "all 0.15s ease",
+                        "& fieldset": { borderColor: filtroFechaCumple ? "#f472b6" : "#e2e8f0" },
+                        "&:hover fieldset": { borderColor: "#db2777" },
+                        "&.Mui-focused": { boxShadow: "0 0 0 3px rgba(219,39,119,0.12)" },
+                        "&.Mui-focused fieldset": { borderColor: "#db2777", borderWidth: "1.5px" },
+                      },
+                      "& .MuiOutlinedInput-input": {
+                        padding: "0 2px 0 6px",
+                        color: filtroFechaCumple ? "#db2777" : "#334155",
+                        "&::placeholder": { color: "#94a3b8", opacity: 1 },
+                      },
+                    },
+                  },
+                  openPickerButton: {
+                    size: "small",
+                    sx: {
+                      color: filtroFechaCumple ? "#db2777" : "#94a3b8",
+                      marginRight: "2px",
+                      "& .MuiSvgIcon-root": { fontSize: 17 },
+                    },
+                  },
+                }}
+              />
+            </LocalizationProvider>
+            {filtroFechaCumple ? (
+              <button onClick={() => setFiltroFechaCumple(null)}
+                className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
+                style={{ background: "#fdf2f8", color: "#db2777", borderColor: "#f9a8d4" }}>
+                ✕ Quitar
+              </button>
+            ) : (
+              <button onClick={() => setFiltroFechaCumple(dayjs())}
+                className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
+                style={{ background: "#fff", color: "#db2777", borderColor: "#fbcfe8" }}>
+                Hoy
+              </button>
+            )}
+          </div>
+
+          {/* Separador */}
+          <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
+
           {/* Filtro Edad (calculada a partir de fecha_nacimiento) */}
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Edad:</span>
@@ -494,7 +632,7 @@ export default function ParticipantesActividadesPage() {
           {/* Limpiar */}
           {hayFiltrosActivos && (
             <button
-              onClick={() => { setFiltroCelular("todos"); setFiltroLlamado("todos"); setEdadRange([0, EDAD_MAX]); setEdadRangeDraft([0, EDAD_MAX]); }}
+              onClick={() => { setFiltroCelular("todos"); setFiltroComuna("todos"); setFiltroFechaCumple(null); setFiltroLlamado("todos"); setEdadRange([0, EDAD_MAX]); setEdadRangeDraft([0, EDAD_MAX]); }}
               className="text-xs font-semibold px-3 py-1 rounded-full transition-all"
               style={{ background: "#fee2e2", color: "#dc2626", border: "1px solid #fecaca" }}>
               Limpiar filtros
@@ -522,7 +660,7 @@ export default function ParticipantesActividadesPage() {
                     onChange={toggleSelectAll} disabled={loading || conTelefono.length === 0}
                     sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" }, "&.MuiCheckbox-indeterminate": { color: "#1565c0" } }} />
                 </th>
-                {["Nombres y Apellidos", "Número de Contacto", "Edad", "Dirección", "Llamado", ""].map((h) => (
+                {["Nombres y Apellidos", "Número de Contacto", "Edad", "Nacimiento", "Dirección", "Comuna", "Llamado", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap" style={{ color: "#64748b" }}>
                     {h}
                   </th>
@@ -587,9 +725,21 @@ export default function ParticipantesActividadesPage() {
                         )}
                       </td>
 
+                      {/* Nacimiento */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-sm text-gray-600">{p.fecha_nacimiento || "—"}</span>
+                      </td>
+
                       {/* Dirección */}
                       <td className="px-4 py-3 max-w-[220px]">
                         <span className="text-sm text-gray-600 truncate block">{p.direccion || "—"}</span>
+                      </td>
+
+                      {/* Comuna */}
+                      <td className="px-4 py-3">
+                        <span className="inline-block px-2 py-0.5 rounded text-xs font-medium" style={{ background: "#f0fdf4", color: "#166534" }}>
+                          {p.comuna || "—"}
+                        </span>
                       </td>
 
                       {/* Llamado */}
