@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { IconButton, Tooltip, CircularProgress } from "@mui/material";
 import { supabase } from "@/lib/supabase";
 import { exportMultiSheetExcel } from "@/lib/utils/exportExcel";
+import { fetchCandidatosActivos, CandidatoAlcaldia } from "@/lib/candidatos-alcaldia";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import BarChartIcon from "@mui/icons-material/BarChart";
@@ -12,9 +13,7 @@ import LocationCityIcon from "@mui/icons-material/LocationCity";
 import BoltIcon from "@mui/icons-material/Bolt";
 import SensorsIcon from "@mui/icons-material/Sensors";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
-
-// TODO: mismo nombre usado en src/app/reportar-votos/page.tsx
-const NOMBRE_PARTIDO = "Jesús Maldonado";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 
 const REFRESH_MS = 20000;
 const RITMO_VENTANA_MS = 5 * 60 * 1000;
@@ -25,10 +24,30 @@ const HORA_INICIO_VOTACION = 8; // apertura de mesas
 // techo del eje Y (con pocos votos de prueba el gráfico se vería plano).
 const ELECTORES_ESTIMADOS_SJL = 794417;
 
+const COLORES_CANDIDATOS = ["#1565c0", "#7c3aed", "#16a34a", "#d97706", "#db2777", "#0891b2", "#dc2626", "#4f46e5"];
+
 interface ActaMesa {
+  id: string;
   numero_mesa: string;
   created_at: string;
+  votos_blancos: number | null;
+  votos_nulos: number | null;
+  votos_impugnados: number | null;
   personeros: { comuna: string | null } | null;
+}
+
+interface VotoCandidatoRow {
+  acta_id: string;
+  candidato_id: string;
+  votos: number | null;
+}
+
+interface ResultadoCandidato {
+  numero: number;
+  nombre: string;
+  partido: string;
+  votos: number;
+  pct: number;
 }
 
 const numberFmt = new Intl.NumberFormat("es-PE");
@@ -53,14 +72,22 @@ function claveDiaLima(d: Date): string {
   return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
 }
 
-function buildEvolucionHoy(actas: ActaMesa[]): PuntoEvolucion[] {
+// El total de votos válidos de una mesa vive en votos_candidato (tabla normalizada,
+// no una columna en actas_mesa), así que se pasa el mapa acta_id -> suma de votos
+// por candidato, precalculado una vez por fetch en vez de recorrer votos_candidato
+// por cada mesa.
+function totalVotosActa(a: ActaMesa, votosPorActa: Record<string, number>): number {
+  return (votosPorActa[a.id] ?? 0) + (a.votos_blancos ?? 0) + (a.votos_nulos ?? 0) + (a.votos_impugnados ?? 0);
+}
+
+function buildEvolucionHoy(actas: ActaMesa[], votosPorActa: Record<string, number>): PuntoEvolucion[] {
   const ahoraLima = aHoraLima(new Date());
   const horaFin = Math.max(ahoraLima.getUTCHours(), HORA_INICIO_VOTACION);
   const hoyKey = claveDiaLima(ahoraLima);
 
   const actasHoyLima = actas
-    .map((a) => aHoraLima(new Date(a.created_at)))
-    .filter((d) => claveDiaLima(d) === hoyKey);
+    .map((a) => ({ fechaLima: aHoraLima(new Date(a.created_at)), total: totalVotosActa(a, votosPorActa) }))
+    .filter((a) => claveDiaLima(a.fechaLima) === hoyKey);
 
   const puntos: PuntoEvolucion[] = [];
   for (let h = HORA_INICIO_VOTACION; h <= horaFin; h++) {
@@ -68,7 +95,9 @@ function buildEvolucionHoy(actas: ActaMesa[]): PuntoEvolucion[] {
     const limiteLima = esUltimo
       ? ahoraLima
       : new Date(Date.UTC(ahoraLima.getUTCFullYear(), ahoraLima.getUTCMonth(), ahoraLima.getUTCDate(), h, 59, 59, 999));
-    const votos = actasHoyLima.filter((d) => d.getTime() <= limiteLima.getTime()).length;
+    const votos = actasHoyLima
+      .filter((a) => a.fechaLima.getTime() <= limiteLima.getTime())
+      .reduce((sum, a) => sum + a.total, 0);
     puntos.push({ label: esUltimo ? "Ahora" : `${String(h).padStart(2, "0")}:00`, votos });
   }
   return puntos;
@@ -249,6 +278,35 @@ function ComunaBar({ comuna, votos, mesas, pct, delay }: {
   );
 }
 
+function CandidatoBar({ resultado, color, delay }: { resultado: ResultadoCandidato; color: string; delay: number }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), delay);
+    return () => clearTimeout(t);
+  }, [delay]);
+
+  return (
+    <div className="px-6 py-3">
+      <div className="flex justify-between items-center gap-3 mb-1.5">
+        <div className="min-w-0">
+          <span className="text-sm font-semibold text-gray-700 truncate block">{resultado.numero}. {resultado.nombre}</span>
+          <span className="text-xs text-gray-400 truncate block">{resultado.partido}</span>
+        </div>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <span className="text-xs text-gray-400 tabular-nums">{resultado.pct.toFixed(1)}%</span>
+          <span className="text-sm font-bold tabular-nums" style={{ color }}>{numberFmt.format(resultado.votos)}</span>
+        </div>
+      </div>
+      <div className="h-2.5 rounded-full overflow-hidden" style={{ background: `${color}18` }}>
+        <div
+          className="h-full rounded-full transition-all duration-700 ease-out"
+          style={{ width: mounted ? `${resultado.pct}%` : "0%", background: color }}
+        />
+      </div>
+    </div>
+  );
+}
+
 function EvolucionChart({ puntos }: { puntos: PuntoEvolucion[] }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const raf = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(raf); }, []);
@@ -351,27 +409,37 @@ function EvolucionChart({ puntos }: { puntos: PuntoEvolucion[] }) {
 
 export default function ResultadosVotosPage() {
   const [actas, setActas] = useState<ActaMesa[]>([]);
+  const [votosCandidato, setVotosCandidato] = useState<VotoCandidatoRow[]>([]);
+  const [candidatos, setCandidatos] = useState<CandidatoAlcaldia[]>([]);
   const [mesasAsignadas, setMesasAsignadas] = useState(0);
   const [historial, setHistorial] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
   const [ultimaActualizacion, setUltimaActualizacion] = useState<Date | null>(null);
+  const [mostrarTodos, setMostrarTodos] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    fetchCandidatosActivos().then(setCandidatos).catch((e) => setError(e instanceof Error ? e.message : "No se pudo cargar la lista de candidatos."));
+  }, []);
 
   const fetchData = useCallback(async () => {
     setError(null);
 
-    const [resActas, resPersoneros] = await Promise.all([
+    const [resActas, resVotos, resPersoneros] = await Promise.all([
       supabase
         .from("actas_mesa")
-        .select("numero_mesa, created_at, personeros(comuna)"),
+        .select("id, numero_mesa, created_at, votos_blancos, votos_nulos, votos_impugnados, personeros(comuna)"),
+      supabase.from("votos_candidato").select("acta_id, candidato_id, votos"),
       supabase.from("personeros").select("numero_mesa").not("numero_mesa", "is", null),
     ]);
 
     if (resActas.error) { setError(resActas.error.message); setLoading(false); return; }
+    if (resVotos.error) { setError(resVotos.error.message); setLoading(false); return; }
 
     const rows = (resActas.data as unknown as ActaMesa[]) ?? [];
     setActas(rows);
+    setVotosCandidato((resVotos.data as VotoCandidatoRow[]) ?? []);
     setHistorial((prev) => {
       const next = [...prev, rows.length];
       return next.length > HISTORIAL_MAX ? next.slice(next.length - HISTORIAL_MAX) : next;
@@ -390,44 +458,72 @@ export default function ResultadosVotosPage() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [fetchData]);
 
-  const totalVotosPartido = actas.length;
-  const mesasReportadas = new Set(actas.map((a) => a.numero_mesa)).size;
+  // Total de votos por candidato de todas las mesas, y total por mesa (para
+  // evolución, cobertura y comuna) — precalculados una vez por fetch.
+  const votosPorCandidatoId: Record<string, number> = {};
+  const votosPorActa: Record<string, number> = {};
+  for (const v of votosCandidato) {
+    const cantidad = Number(v.votos) || 0;
+    votosPorCandidatoId[v.candidato_id] = (votosPorCandidatoId[v.candidato_id] ?? 0) + cantidad;
+    votosPorActa[v.acta_id] = (votosPorActa[v.acta_id] ?? 0) + cantidad;
+  }
+
+  // 1 fila de actas_mesa = 1 mesa reportada (ya no 1 fila = 1 voto).
+  const mesasReportadas = actas.length;
   const coberturaPct = mesasAsignadas > 0 ? Math.round((mesasReportadas / mesasAsignadas) * 100) : 0;
-  const promedioPorMesa = mesasReportadas > 0 ? Math.round((totalVotosPartido / mesasReportadas) * 10) / 10 : 0;
+  const totalVotosValidos = actas.reduce((sum, a) => sum + totalVotosActa(a, votosPorActa), 0);
+  const promedioPorMesa = mesasReportadas > 0 ? Math.round((totalVotosValidos / mesasReportadas) * 10) / 10 : 0;
 
   const ahora = ultimaActualizacion?.getTime() ?? 0;
   const ritmoReciente = ahora
     ? actas.filter((a) => ahora - new Date(a.created_at).getTime() <= RITMO_VENTANA_MS).length
     : 0;
 
-  const porComunaMap = actas.reduce<Record<string, { mesas: Set<string>; votos: number }>>((acc, a) => {
+  const resultados: ResultadoCandidato[] = candidatos.map((c) => {
+    const votos = votosPorCandidatoId[c.id] ?? 0;
+    return { numero: c.numero_lista, nombre: c.nombre, partido: c.partido, votos, pct: 0 };
+  });
+  const totalVotosCandidatos = resultados.reduce((sum, r) => sum + r.votos, 0);
+  resultados.forEach((r) => { r.pct = totalVotosCandidatos > 0 ? (r.votos / totalVotosCandidatos) * 100 : 0; });
+  resultados.sort((a, b) => b.votos - a.votos);
+  const lider = resultados[0];
+
+  const porComunaMap = actas.reduce<Record<string, { mesas: number; votos: number }>>((acc, a) => {
     const comuna = a.personeros?.comuna?.trim() || "Sin comuna";
-    if (!acc[comuna]) acc[comuna] = { mesas: new Set(), votos: 0 };
-    acc[comuna].mesas.add(a.numero_mesa);
-    acc[comuna].votos += 1;
+    if (!acc[comuna]) acc[comuna] = { mesas: 0, votos: 0 };
+    acc[comuna].mesas += 1;
+    acc[comuna].votos += totalVotosActa(a, votosPorActa);
     return acc;
   }, {});
 
   const porComuna = Object.entries(porComunaMap)
-    .map(([comuna, r]) => ({ comuna, votos: r.votos, mesas: r.mesas.size }))
+    .map(([comuna, r]) => ({ comuna, votos: r.votos, mesas: r.mesas }))
     .sort((a, b) => b.votos - a.votos);
   const maxComunaVotos = Math.max(...porComuna.map((c) => c.votos), 1);
 
-  const puntosEvolucion = buildEvolucionHoy(actas);
+  const puntosEvolucion = buildEvolucionHoy(actas, votosPorActa);
 
   const handleExport = () => {
     const sheets = [
       {
         name: "Resumen",
         rows: [{
-          "Partido": NOMBRE_PARTIDO,
-          "Total de votos": totalVotosPartido,
+          "Candidato líder": lider ? `${lider.nombre} (${lider.partido})` : "",
+          "Votos del líder": lider?.votos ?? 0,
+          "Total de votos válidos": totalVotosValidos,
           "Mesas reportadas": mesasReportadas,
           "Mesas asignadas": mesasAsignadas,
           "% cobertura": `${coberturaPct}%`,
           "Promedio por mesa": promedioPorMesa,
-          "Votos últimos 5 min": ritmoReciente,
+          "Mesas reportadas últimos 5 min": ritmoReciente,
         }],
+      },
+      {
+        name: "Por Candidato",
+        rows: resultados.map((r) => ({
+          "N°": r.numero, "Candidato": r.nombre, "Partido": r.partido,
+          "Votos": r.votos, "%": `${r.pct.toFixed(2)}%`,
+        })),
       },
       {
         name: "Por Comuna",
@@ -477,7 +573,7 @@ export default function ResultadosVotosPage() {
         </div>
       ) : (
         <>
-          {/* Hero: total de votos */}
+          {/* Hero: candidato líder */}
           <div className="hero-card rounded-3xl shadow-xl p-8 md:p-10 text-center"
             style={{ background: "linear-gradient(135deg, #0d47a1, #1565c0 55%, #1976d2)" }}>
 
@@ -488,11 +584,24 @@ export default function ResultadosVotosPage() {
             </div>
 
             <p className="text-xs md:text-sm font-bold uppercase tracking-[0.15em]" style={{ color: "#bfdbfe" }}>
-              Total de votos — {NOMBRE_PARTIDO}
+              Va ganando
             </p>
-            <p className="text-7xl md:text-8xl font-black text-white mt-3 tracking-tight" style={{ textShadow: "0 4px 24px rgba(0,0,0,0.15)" }}>
-              <AnimatedNumber value={totalVotosPartido} />
-            </p>
+            {lider && lider.votos > 0 ? (
+              <>
+                <p className="text-3xl md:text-5xl font-black text-white mt-3 tracking-tight" style={{ textShadow: "0 4px 24px rgba(0,0,0,0.15)" }}>
+                  {lider.nombre}
+                </p>
+                <p className="text-sm md:text-base mt-1" style={{ color: "#bfdbfe" }}>{lider.partido}</p>
+                <p className="text-6xl md:text-7xl font-black text-white mt-4 tracking-tight" style={{ textShadow: "0 4px 24px rgba(0,0,0,0.15)" }}>
+                  <AnimatedNumber value={lider.votos} />
+                </p>
+                <p className="text-sm mt-2" style={{ color: "#dbeafe" }}>
+                  {lider.pct.toFixed(1)}% de {numberFmt.format(totalVotosCandidatos)} votos válidos
+                </p>
+              </>
+            ) : (
+              <p className="text-2xl md:text-3xl font-bold text-white mt-3">Aún no hay votos reportados</p>
+            )}
             <p className="text-sm mt-4" style={{ color: "#dbeafe" }}>
               <strong className="text-white">{mesasReportadas}</strong> de <strong className="text-white">{mesasAsignadas}</strong> mesas reportadas · {coberturaPct}% de cobertura
             </p>
@@ -506,7 +615,7 @@ export default function ResultadosVotosPage() {
             <TrendCard
               label="Ritmo reciente"
               value={`+${ritmoReciente}`}
-              subtitle="en los últimos 5 min"
+              subtitle="mesas en los últimos 5 min"
               icon={<BoltIcon sx={{ fontSize: 18 }} />}
               color="#1565c0"
             />
@@ -521,15 +630,42 @@ export default function ResultadosVotosPage() {
             <SimpleStatCard
               label="Promedio por mesa"
               value={promedioPorMesa}
-              subtitle="Votos por mesa reportada"
+              subtitle="Votos válidos por mesa reportada"
               icon={<BarChartIcon sx={{ fontSize: 18 }} />}
               color="#7c3aed"
             />
           </div>
 
-          {actas.length === 0 && (
+          {actas.length === 0 ? (
             <div className="bg-white rounded-2xl shadow p-10 text-center text-gray-400 text-sm">
-              Aún no hay votos reportados. Los resultados aparecerán aquí apenas los personeros empiecen a enviar sus reportes.
+              Aún no hay actas reportadas. Los resultados aparecerán aquí apenas los personeros empiecen a enviar sus reportes.
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl shadow overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <EmojiEventsIcon sx={{ fontSize: 18, color: "#94a3b8" }} />
+                  <h3 className="font-bold text-base" style={{ color: "#0d1b3e" }}>Resultados por candidato</h3>
+                </div>
+                {resultados.length > 8 && (
+                  <button
+                    onClick={() => setMostrarTodos((v) => !v)}
+                    className="text-xs font-semibold px-3 py-1 rounded-full transition-all"
+                    style={{ background: "#eff6ff", color: "#1565c0" }}>
+                    {mostrarTodos ? "Ver menos" : `Ver los ${resultados.length}`}
+                  </button>
+                )}
+              </div>
+              <div className="divide-y divide-gray-50 py-2">
+                {(mostrarTodos ? resultados : resultados.slice(0, 8)).map((r, i) => (
+                  <CandidatoBar
+                    key={r.numero}
+                    resultado={r}
+                    color={COLORES_CANDIDATOS[i % COLORES_CANDIDATOS.length]}
+                    delay={60 + i * 60}
+                  />
+                ))}
+              </div>
             </div>
           )}
 

@@ -217,7 +217,7 @@ export const MODULOS_PROGRAMAS_SOCIALES: MenuItem[] = [
         nombre: "Registro de Votos",
         ruta: "/programas-sociales/conteo-votos/verificacion",
         icono: "FactCheck",
-        descripcion: "Listado de votos reportados por los personeros, con su foto de respaldo",
+        descripcion: "Listado de actas reportadas por los personeros, con su foto de respaldo",
         permisos: ["all_programas_sociales", "all"],
       },
       {
