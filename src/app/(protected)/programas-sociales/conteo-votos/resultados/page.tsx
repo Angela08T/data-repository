@@ -14,6 +14,8 @@ import BoltIcon from "@mui/icons-material/Bolt";
 import SensorsIcon from "@mui/icons-material/Sensors";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
+import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
 
 const REFRESH_MS = 20000;
 const RITMO_VENTANA_MS = 5 * 60 * 1000;
@@ -25,6 +27,7 @@ const HORA_INICIO_VOTACION = 8; // apertura de mesas
 const ELECTORES_ESTIMADOS_SJL = 794417;
 
 const COLORES_CANDIDATOS = ["#1565c0", "#7c3aed", "#16a34a", "#d97706", "#db2777", "#0891b2", "#dc2626", "#4f46e5"];
+const COLORES_MEDALLA = ["#eab308", "#94a3b8", "#b45309"]; // oro, plata, bronce
 
 interface ActaMesa {
   id: string;
@@ -278,19 +281,25 @@ function ComunaBar({ comuna, votos, mesas, pct, delay }: {
   );
 }
 
-function CandidatoBar({ resultado, color, delay }: { resultado: ResultadoCandidato; color: string; delay: number }) {
+function CandidatoBar({ resultado, color, delay, rank }: { resultado: ResultadoCandidato; color: string; delay: number; rank?: number }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), delay);
     return () => clearTimeout(t);
   }, [delay]);
 
+  const esPodio = !!rank && rank <= 3 && resultado.votos > 0;
+  const colorMedalla = esPodio ? COLORES_MEDALLA[rank! - 1] : undefined;
+
   return (
-    <div className="px-6 py-3">
+    <div className="px-6 py-3" style={esPodio ? { background: `${colorMedalla}0c` } : undefined}>
       <div className="flex justify-between items-center gap-3 mb-1.5">
-        <div className="min-w-0">
-          <span className="text-sm font-semibold text-gray-700 truncate block">{resultado.numero}. {resultado.nombre}</span>
-          <span className="text-xs text-gray-400 truncate block">{resultado.partido}</span>
+        <div className="flex items-center gap-2 min-w-0">
+          {esPodio && <MilitaryTechIcon sx={{ fontSize: 18, color: colorMedalla, flexShrink: 0 }} />}
+          <div className="min-w-0">
+            <span className="text-sm font-semibold text-gray-700 truncate block">{resultado.numero}. {resultado.nombre}</span>
+            <span className="text-xs text-gray-400 truncate block">{resultado.partido}</span>
+          </div>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
           <span className="text-xs text-gray-400 tabular-nums">{resultado.pct.toFixed(1)}%</span>
@@ -302,6 +311,71 @@ function CandidatoBar({ resultado, color, delay }: { resultado: ResultadoCandida
           className="h-full rounded-full transition-all duration-700 ease-out"
           style={{ width: mounted ? `${resultado.pct}%` : "0%", background: color }}
         />
+      </div>
+    </div>
+  );
+}
+
+// ── Podio (top 3) ────────────────────────────────────────────────────────────
+function PodiumCard({ resultado, rank, color }: { resultado: ResultadoCandidato; rank: 1 | 2 | 3; color: string }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 150 + rank * 120);
+    return () => clearTimeout(t);
+  }, [rank]);
+
+  const alturaBloque: Record<number, string> = { 1: "h-28 md:h-36", 2: "h-20 md:h-24", 3: "h-14 md:h-16" };
+  const ordenVisual: Record<number, string> = { 1: "order-2", 2: "order-1", 3: "order-3" };
+  const escalaAvatar = rank === 1 ? "w-16 h-16 md:w-20 md:h-20 text-xl md:text-2xl" : "w-12 h-12 md:w-14 md:h-14 text-base md:text-lg";
+
+  return (
+    <div className={`flex flex-col items-center flex-1 min-w-0 ${ordenVisual[rank]}`}>
+      {rank === 1 && <WorkspacePremiumIcon sx={{ fontSize: 26, color, mb: 0.5 }} />}
+      <div
+        className={`rounded-full flex items-center justify-center text-white font-black shadow-lg mb-2 ring-4 ring-white flex-shrink-0 ${escalaAvatar}`}
+        style={{ background: `linear-gradient(135deg, ${color}, ${color}bb)`, boxShadow: `0 8px 20px ${color}40` }}
+      >
+        {resultado.nombre.charAt(0).toUpperCase()}
+      </div>
+      <p className="text-xs md:text-sm font-bold text-center truncate max-w-full px-1" style={{ color: "#0d1b3e" }}>
+        {resultado.nombre}
+      </p>
+      <p className="text-[11px] text-gray-400 text-center truncate max-w-full px-1">{resultado.partido}</p>
+      <p className="text-base md:text-xl font-black tabular-nums mt-1" style={{ color }}>
+        {numberFmt.format(resultado.votos)}
+      </p>
+      <p className="text-[11px] font-semibold text-gray-400 mb-2">{resultado.pct.toFixed(1)}%</p>
+      <div
+        className={`w-full rounded-t-xl flex items-start justify-center pt-2 transition-all duration-700 ease-out ${alturaBloque[rank]}`}
+        style={{
+          background: `linear-gradient(180deg, ${color}, ${color}cc)`,
+          opacity: mounted ? 1 : 0,
+          transform: mounted ? "scaleY(1)" : "scaleY(0.6)",
+          transformOrigin: "bottom",
+        }}
+      >
+        <span className="text-white font-black text-xl md:text-2xl" style={{ textShadow: "0 2px 6px rgba(0,0,0,0.2)" }}>
+          {rank}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function Podio({ resultados }: { resultados: ResultadoCandidato[] }) {
+  const top3 = resultados.filter((r) => r.votos > 0).slice(0, 3);
+  if (top3.length === 0) return null;
+
+  return (
+    <div className="kpi-enter bg-white rounded-2xl shadow overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+        <EmojiEventsIcon sx={{ fontSize: 18, color: "#eab308" }} />
+        <h3 className="font-bold text-base" style={{ color: "#0d1b3e" }}>Podio</h3>
+      </div>
+      <div className="flex items-end justify-center gap-3 md:gap-8 px-6 pt-8 pb-0">
+        {top3.map((r, i) => (
+          <PodiumCard key={r.numero} resultado={r} rank={(i + 1) as 1 | 2 | 3} color={COLORES_MEDALLA[i]} />
+        ))}
       </div>
     </div>
   );
@@ -583,18 +657,27 @@ export default function ResultadosVotosPage() {
               <LiveBadge />
             </div>
 
-            <p className="text-xs md:text-sm font-bold uppercase tracking-[0.15em]" style={{ color: "#bfdbfe" }}>
-              Va ganando
-            </p>
+            <div className="flex items-center justify-center gap-1.5">
+              <WorkspacePremiumIcon sx={{ fontSize: 18, color: "#fbbf24" }} />
+              <p className="text-xs md:text-sm font-bold uppercase tracking-[0.15em]" style={{ color: "#bfdbfe" }}>
+                Va ganando
+              </p>
+            </div>
             {lider && lider.votos > 0 ? (
               <>
                 <p className="text-3xl md:text-5xl font-black text-white mt-3 tracking-tight" style={{ textShadow: "0 4px 24px rgba(0,0,0,0.15)" }}>
                   {lider.nombre}
                 </p>
                 <p className="text-sm md:text-base mt-1" style={{ color: "#bfdbfe" }}>{lider.partido}</p>
-                <p className="text-6xl md:text-7xl font-black text-white mt-4 tracking-tight" style={{ textShadow: "0 4px 24px rgba(0,0,0,0.15)" }}>
-                  <AnimatedNumber value={lider.votos} />
-                </p>
+                <div className="relative flex justify-center mt-4">
+                  <div
+                    className="absolute inset-0 m-auto rounded-full pointer-events-none"
+                    style={{ width: 220, height: 220, background: "radial-gradient(circle, rgba(251,191,36,0.35), transparent 70%)", filter: "blur(6px)" }}
+                  />
+                  <p className="relative text-6xl md:text-7xl lg:text-8xl font-black text-white tracking-tight" style={{ textShadow: "0 4px 24px rgba(0,0,0,0.2)" }}>
+                    <AnimatedNumber value={lider.votos} />
+                  </p>
+                </div>
                 <p className="text-sm mt-2" style={{ color: "#dbeafe" }}>
                   {lider.pct.toFixed(1)}% de {numberFmt.format(totalVotosCandidatos)} votos válidos
                 </p>
@@ -610,6 +693,8 @@ export default function ResultadosVotosPage() {
               <Sparkline data={historial} />
             </div>
           </div>
+
+          <Podio resultados={resultados} />
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <TrendCard
@@ -663,6 +748,7 @@ export default function ResultadosVotosPage() {
                     resultado={r}
                     color={COLORES_CANDIDATOS[i % COLORES_CANDIDATOS.length]}
                     delay={60 + i * 60}
+                    rank={i + 1}
                   />
                 ))}
               </div>

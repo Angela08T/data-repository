@@ -25,6 +25,8 @@ import CakeIcon from "@mui/icons-material/Cake";
 import PhoneInTalkIcon from "@mui/icons-material/PhoneInTalk";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
 import SendMessageModal, { Contacto } from "@/components/messaging/SendMessageModal";
 import SuccessToast from "@/components/feedback/SuccessToast";
 import AgregarPersoneroModal, { PersoneroCreado } from "@/components/personeros/AgregarPersoneroModal";
@@ -82,6 +84,17 @@ function calcularEdad(fechaNacimiento: string): number | null {
 
 const EDAD_MAX = 100;
 const COMUNAS = Array.from({ length: 18 }, (_, i) => i + 1);
+const ZONAS = Array.from({ length: 8 }, (_, i) => i + 1);
+
+// El texto libre de "zona" se escribe a mano (ej. "Zona 1", "zona1"), así que el
+// filtro compara por el número extraído en vez de por texto exacto.
+function extraerNumeroZona(zona?: string | null): number | null {
+  if (!zona) return null;
+  const match = zona.match(/\d+/);
+  if (!match) return null;
+  const n = parseInt(match[0], 10);
+  return n >= 1 && n <= 8 ? n : null;
+}
 
 // El texto libre de "comuna" viene con inconsistencias (mayúsculas, espacios,
 // "No sé / No conozco mi comuna", etc.), así que el filtro compara por el
@@ -108,7 +121,7 @@ interface Personero {
   distrito: string;
   direccion: string;
   telefono: string;
-  comuna: string;
+  comuna: string | null;
   email?: string | null;
   created_at?: string | null;
   registrador_nombres?: string | null;
@@ -116,6 +129,7 @@ interface Personero {
   tipo_registro?: string | null;
   colegio_votacion?: string | null;
   numero_mesa?: string | null;
+  zona?: string | null;
   llamado?: boolean | null;
   fecha_llamada?: string | null;
 }
@@ -142,6 +156,7 @@ function personeroToRow(p: Personero) {
     "Registrador Apellidos": p.registrador_apellidos ?? "",
     "Colegio de Votación":   p.colegio_votacion ?? "",
     "N° de Mesa":            p.numero_mesa ?? "",
+    "Zona":                  p.zona ?? "",
     "Llamado":               p.llamado ? "Sí" : "No",
   };
 }
@@ -218,6 +233,7 @@ export default function PersonerosPage() {
   const [filtroComuna, setFiltroComuna]           = useState<string>("todos");
   const [filtroTipoRegistro, setFiltroTipoRegistro] = useState<"todos" | "directo" | "registrador">("todos");
   const [filtroColegio, setFiltroColegio]         = useState<string>("todos");
+  const [filtroZona, setFiltroZona]               = useState<string>("todos");
   const [filtroFechaCumple, setFiltroFechaCumple] = useState<Dayjs | null>(null);
   const [filtroLlamado, setFiltroLlamado]         = useState<"todos" | "llamados" | "pendientes">("todos");
   const [edadRange, setEdadRange]                 = useState<number[]>([0, EDAD_MAX]);
@@ -230,6 +246,12 @@ export default function PersonerosPage() {
   const [modalContactos, setModalContactos]       = useState<Contacto[]>([]);
   const [agregarOpen, setAgregarOpen]             = useState(false);
   const [successMsg, setSuccessMsg]               = useState<string | null>(null);
+  const [editingCell, setEditingCell] = useState<{ id: string; field: "colegio_votacion" | "numero_mesa" | "zona" | "comuna" } | null>(null);
+  const [editValue, setEditValue]     = useState("");
+  const [savingCell, setSavingCell]   = useState(false);
+  const [editingRegistrador, setEditingRegistrador]   = useState<string | null>(null);
+  const [editRegNombres, setEditRegNombres]           = useState("");
+  const [editRegApellidos, setEditRegApellidos]       = useState("");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -264,6 +286,7 @@ export default function PersonerosPage() {
     const matchSexo     = filtroSexo === "todos" || p.sexo?.toUpperCase() === filtroSexo;
     const matchComuna   = filtroComuna === "todos" || extraerNumeroComuna(p.comuna) === Number(filtroComuna);
     const matchColegio  = filtroColegio === "todos" || (p.colegio_votacion?.trim() ?? "") === filtroColegio;
+    const matchZona     = filtroZona === "todos" || extraerNumeroZona(p.zona) === Number(filtroZona);
     const matchTipo     = filtroTipoRegistro === "todos"
       ? true
       : filtroTipoRegistro === "directo"
@@ -281,7 +304,7 @@ export default function PersonerosPage() {
       : filtroLlamado === "llamados"
         ? !!p.llamado
         : !p.llamado;
-    return matchSearch && matchSexo && matchComuna && matchColegio && matchTipo && matchCumple && matchEdad && matchLlamado;
+    return matchSearch && matchSexo && matchComuna && matchColegio && matchZona && matchTipo && matchCumple && matchEdad && matchLlamado;
   });
 
   // Selección
@@ -322,7 +345,7 @@ export default function PersonerosPage() {
   const totalHombres      = data.filter((p) => p.sexo?.toUpperCase() === "M").length;
   const porRegistrador    = data.filter(esPorRegistrador).length;
   const selCount          = filtrados.filter((p) => selectedIds.has(p.id)).length;
-  const COLS              = 16; // checkbox + cols + tipo + registrador + colegio + mesa + llamado + acciones
+  const COLS              = 17; // checkbox + cols + tipo + registrador + colegio + mesa + zona + llamado + acciones
 
   // Solo se puede descargar/marcar en lote a quienes aún están pendientes
   // (respetando los demás filtros activos: búsqueda, sexo, comuna, colegio, tipo, cumpleaños, edad, llamado).
@@ -373,7 +396,93 @@ export default function PersonerosPage() {
     setSuccessMsg("Personero agregado correctamente.");
   };
 
-  const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos" || filtroLlamado !== "todos" || !!filtroFechaCumple || isEdadFiltered;
+  // Edición inline de "Colegio de Votación", "N° Mesa", "Zona", "Comuna" y "Registrador"
+  // — solo el admin puede completar estos datos cuando el personero no los registró
+  // al inscribirse (o corregirlos).
+  const puedeEditarMesa = isAdmin();
+
+  const startEdit = (p: Personero, field: "colegio_votacion" | "numero_mesa" | "zona" | "comuna") => {
+    if (!puedeEditarMesa) return;
+    setEditingRegistrador(null);
+    setEditingCell({ id: p.id, field });
+    setEditValue(p[field] ?? "");
+  };
+
+  const cancelEdit = () => {
+    setEditingCell(null);
+    setEditValue("");
+  };
+
+  const saveEdit = async () => {
+    if (!editingCell) return;
+    const { id, field } = editingCell;
+    const valor = editValue.trim();
+    const original = data.find((p) => p.id === id);
+    if (original && (original[field] ?? "") === valor) {
+      cancelEdit();
+      return;
+    }
+
+    setSavingCell(true);
+    const { error: updateError } = await supabase
+      .from("personeros")
+      .update({ [field]: valor || null })
+      .eq("id", id);
+    setSavingCell(false);
+
+    if (updateError) {
+      showError("No se pudo guardar", updateError.message);
+      return;
+    }
+
+    setData((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: valor || null } : p)));
+    cancelEdit();
+  };
+
+  // El registrador ocupa dos columnas de la BD (nombres y apellidos) mostradas en una
+  // sola celda, así que se edita aparte del mecanismo genérico de arriba.
+  const startEditRegistrador = (p: Personero) => {
+    if (!puedeEditarMesa) return;
+    setEditingCell(null);
+    setEditingRegistrador(p.id);
+    setEditRegNombres(p.registrador_nombres ?? "");
+    setEditRegApellidos(p.registrador_apellidos ?? "");
+  };
+
+  const cancelEditRegistrador = () => {
+    setEditingRegistrador(null);
+    setEditRegNombres("");
+    setEditRegApellidos("");
+  };
+
+  const saveEditRegistrador = async () => {
+    if (!editingRegistrador) return;
+    const id = editingRegistrador;
+    const nombres = editRegNombres.trim();
+    const apellidos = editRegApellidos.trim();
+    const original = data.find((p) => p.id === id);
+    if (original && (original.registrador_nombres ?? "") === nombres && (original.registrador_apellidos ?? "") === apellidos) {
+      cancelEditRegistrador();
+      return;
+    }
+
+    setSavingCell(true);
+    const { error: updateError } = await supabase
+      .from("personeros")
+      .update({ registrador_nombres: nombres || null, registrador_apellidos: apellidos || null })
+      .eq("id", id);
+    setSavingCell(false);
+
+    if (updateError) {
+      showError("No se pudo guardar", updateError.message);
+      return;
+    }
+
+    setData((prev) => prev.map((p) => (p.id === id ? { ...p, registrador_nombres: nombres || null, registrador_apellidos: apellidos || null } : p)));
+    cancelEditRegistrador();
+  };
+
+  const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos" || filtroZona !== "todos" || filtroLlamado !== "todos" || !!filtroFechaCumple || isEdadFiltered;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -611,6 +720,30 @@ export default function PersonerosPage() {
           {/* Separador */}
           <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
 
+          {/* Filtro Zona */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Zona:</span>
+            <select
+              value={filtroZona}
+              onChange={(e) => setFiltroZona(e.target.value)}
+              className="text-xs border rounded-full px-3 py-1.5 outline-none cursor-pointer font-semibold transition-all"
+              style={{
+                borderColor: filtroZona !== "todos" ? "#0891b2" : "#e2e8f0",
+                color: filtroZona !== "todos" ? "#0891b2" : "#64748b",
+                background: filtroZona !== "todos" ? "#ecfeff" : "#fff",
+                fontFamily: "'Poppins', sans-serif",
+              }}
+            >
+              <option value="todos">Todas</option>
+              {ZONAS.map((n) => (
+                <option key={n} value={n}>Zona {n}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Separador */}
+          <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
+
           {/* Filtro Cumpleaños (calendario) */}
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide flex items-center gap-1">
@@ -794,7 +927,7 @@ export default function PersonerosPage() {
           {/* Limpiar */}
           {hayFiltrosActivos && (
             <button
-              onClick={() => { setFiltroComuna("todos"); setFiltroTipoRegistro("todos"); setFiltroColegio("todos"); setFiltroFechaCumple(null); setFiltroLlamado("todos"); setEdadRange([0, EDAD_MAX]); setEdadRangeDraft([0, EDAD_MAX]); }}
+              onClick={() => { setFiltroComuna("todos"); setFiltroTipoRegistro("todos"); setFiltroColegio("todos"); setFiltroZona("todos"); setFiltroFechaCumple(null); setFiltroLlamado("todos"); setEdadRange([0, EDAD_MAX]); setEdadRangeDraft([0, EDAD_MAX]); }}
               className="text-xs font-semibold px-3 py-1 rounded-full transition-all"
               style={{ background: "#fee2e2", color: "#dc2626", border: "1px solid #fecaca" }}>
               Limpiar filtros
@@ -813,16 +946,16 @@ export default function PersonerosPage() {
         </div>
 
         {/* Tabla */}
-        <div className="overflow-x-auto">
+        <div className="overflow-auto" style={{ maxHeight: "65vh" }}>
           <table className="w-full text-sm">
-            <thead>
+            <thead className="sticky top-0 z-10">
               <tr style={{ background: "#f8fafc" }}>
                 <th className="px-4 py-3 w-10">
                   <Checkbox size="small" checked={allChecked} indeterminate={someChecked && !allChecked}
                     onChange={toggleSelectAll} disabled={loading || conTelefono.length === 0}
                     sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" }, "&.MuiCheckbox-indeterminate": { color: "#1565c0" } }} />
                 </th>
-                {["Apellidos y Nombres", "DNI", "Nacimiento", "Edad", "Sexo", "Distrito", "Dirección", "Teléfono", "Comuna", "Tipo", "Registrador", "Colegio de Votación", "N° Mesa", "Llamado", ""].map((h) => (
+                {["Apellidos y Nombres", "DNI", "Nacimiento", "Edad", "Sexo", "Distrito", "Dirección", "Teléfono", "Comuna", "Tipo", "Registrador", "Colegio de Votación", "N° Mesa", "Zona", "Llamado", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap" style={{ color: "#64748b" }}>
                     {h}
                   </th>
@@ -847,7 +980,6 @@ export default function PersonerosPage() {
                 filtrados.map((p, i) => {
                   const checked     = selectedIds.has(p.id);
                   const tienePhone  = hasPhone(p);
-                  const registrador = esPorRegistrador(p);
                   return (
                     <tr key={p.id}
                       className="table-row-animate border-t border-gray-50 hover:bg-blue-50 transition-colors"
@@ -923,9 +1055,40 @@ export default function PersonerosPage() {
 
                       {/* Comuna */}
                       <td className="px-4 py-3">
-                        <span className="inline-block px-2 py-0.5 rounded text-xs font-medium" style={{ background: "#f0fdf4", color: "#166534" }}>
-                          {p.comuna || "—"}
-                        </span>
+                        {editingCell?.id === p.id && editingCell.field === "comuna" ? (
+                          <TextField
+                            size="small"
+                            autoFocus
+                            value={editValue}
+                            disabled={savingCell}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onBlur={saveEdit}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") saveEdit();
+                              if (e.key === "Escape") cancelEdit();
+                            }}
+                            sx={{ minWidth: 140, "& .MuiOutlinedInput-input": { padding: "4px 8px", fontSize: "0.75rem" } }}
+                          />
+                        ) : p.comuna ? (
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${puedeEditarMesa ? "cursor-pointer" : ""}`}
+                            style={{ background: "#f0fdf4", color: "#166534" }}
+                            title={puedeEditarMesa ? "Clic para editar" : undefined}
+                            onClick={() => startEdit(p, "comuna")}
+                          >
+                            {p.comuna}
+                          </span>
+                        ) : puedeEditarMesa ? (
+                          <span
+                            className="text-gray-300 text-xs cursor-pointer hover:underline"
+                            title="Clic para editar"
+                            onClick={() => startEdit(p, "comuna")}
+                          >
+                            —
+                          </span>
+                        ) : (
+                          <span className="text-gray-300 text-xs">—</span>
+                        )}
                       </td>
 
                       {/* Tipo de registro */}
@@ -935,36 +1098,155 @@ export default function PersonerosPage() {
 
                       {/* Registrador */}
                       <td className="px-4 py-3 whitespace-nowrap">
-                        {registrador && (p.registrador_nombres || p.registrador_apellidos) ? (
-                          <div className="flex flex-col">
-                            <span className="text-xs font-semibold text-gray-700">
-                              {p.registrador_nombres} {p.registrador_apellidos}
-                            </span>
-                            <span className="text-xs text-gray-400">Registrador</span>
+                        {editingRegistrador === p.id ? (
+                          <div className="flex items-center gap-1">
+                            <div className="flex flex-col gap-1">
+                              <TextField
+                                size="small"
+                                autoFocus
+                                placeholder="Nombres"
+                                value={editRegNombres}
+                                disabled={savingCell}
+                                onChange={(e) => setEditRegNombres(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") saveEditRegistrador();
+                                  if (e.key === "Escape") cancelEditRegistrador();
+                                }}
+                                sx={{ minWidth: 130, "& .MuiOutlinedInput-input": { padding: "4px 8px", fontSize: "0.75rem" } }}
+                              />
+                              <TextField
+                                size="small"
+                                placeholder="Apellidos"
+                                value={editRegApellidos}
+                                disabled={savingCell}
+                                onChange={(e) => setEditRegApellidos(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") saveEditRegistrador();
+                                  if (e.key === "Escape") cancelEditRegistrador();
+                                }}
+                                sx={{ minWidth: 130, "& .MuiOutlinedInput-input": { padding: "4px 8px", fontSize: "0.75rem" } }}
+                              />
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                              <IconButton size="small" onClick={saveEditRegistrador} disabled={savingCell}
+                                sx={{ p: 0.25, color: "#166534" }}>
+                                <CheckIcon sx={{ fontSize: 16 }} />
+                              </IconButton>
+                              <IconButton size="small" onClick={cancelEditRegistrador} disabled={savingCell}
+                                sx={{ p: 0.25, color: "#dc2626" }}>
+                                <CloseIcon sx={{ fontSize: 16 }} />
+                              </IconButton>
+                            </div>
                           </div>
                         ) : (
-                          <span className="text-gray-300 text-xs">—</span>
+                          <div
+                            className={puedeEditarMesa ? "cursor-pointer hover:underline" : ""}
+                            title={puedeEditarMesa ? "Clic para editar" : undefined}
+                            onClick={() => startEditRegistrador(p)}
+                          >
+                            {p.registrador_nombres || p.registrador_apellidos ? (
+                              <div className="flex flex-col">
+                                <span className="text-xs font-semibold text-gray-700">
+                                  {p.registrador_nombres} {p.registrador_apellidos}
+                                </span>
+                                <span className="text-xs text-gray-400">Registrador</span>
+                              </div>
+                            ) : (
+                              <span className="text-gray-300 text-xs">—</span>
+                            )}
+                          </div>
                         )}
                       </td>
 
                       {/* Colegio de votación */}
                       <td className="px-4 py-3 max-w-[180px]">
-                        {p.colegio_votacion ? (
-                          <span className="text-xs text-gray-700 block truncate" title={p.colegio_votacion}>{p.colegio_votacion}</span>
+                        {editingCell?.id === p.id && editingCell.field === "colegio_votacion" ? (
+                          <TextField
+                            size="small"
+                            autoFocus
+                            value={editValue}
+                            disabled={savingCell}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onBlur={saveEdit}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") saveEdit();
+                              if (e.key === "Escape") cancelEdit();
+                            }}
+                            sx={{ minWidth: 160, "& .MuiOutlinedInput-input": { padding: "4px 8px", fontSize: "0.75rem" } }}
+                          />
                         ) : (
-                          <span className="text-gray-300 text-xs">—</span>
+                          <span
+                            className={`text-xs text-gray-700 block truncate ${puedeEditarMesa ? "cursor-pointer hover:underline" : ""}`}
+                            title={puedeEditarMesa ? "Clic para editar" : p.colegio_votacion ?? undefined}
+                            onClick={() => startEdit(p, "colegio_votacion")}
+                          >
+                            {p.colegio_votacion || <span className="text-gray-300">—</span>}
+                          </span>
                         )}
                       </td>
 
                       {/* N° de Mesa */}
                       <td className="px-4 py-3 text-center">
-                        {p.numero_mesa ? (
-                          <span className="inline-block px-2 py-0.5 rounded font-mono text-xs font-bold"
-                            style={{ background: "#eff6ff", color: "#1565c0" }}>
+                        {editingCell?.id === p.id && editingCell.field === "numero_mesa" ? (
+                          <TextField
+                            size="small"
+                            autoFocus
+                            value={editValue}
+                            disabled={savingCell}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onBlur={saveEdit}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") saveEdit();
+                              if (e.key === "Escape") cancelEdit();
+                            }}
+                            sx={{ width: 90, "& .MuiOutlinedInput-input": { padding: "4px 8px", fontSize: "0.75rem", textAlign: "center" } }}
+                          />
+                        ) : p.numero_mesa ? (
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded font-mono text-xs font-bold ${puedeEditarMesa ? "cursor-pointer" : ""}`}
+                            style={{ background: "#eff6ff", color: "#1565c0" }}
+                            title={puedeEditarMesa ? "Clic para editar" : undefined}
+                            onClick={() => startEdit(p, "numero_mesa")}
+                          >
                             {p.numero_mesa}
+                          </span>
+                        ) : puedeEditarMesa ? (
+                          <span
+                            className="text-gray-300 text-xs cursor-pointer hover:underline"
+                            title="Clic para editar"
+                            onClick={() => startEdit(p, "numero_mesa")}
+                          >
+                            —
                           </span>
                         ) : (
                           <span className="text-gray-300 text-xs">—</span>
+                        )}
+                      </td>
+
+                      {/* Zona */}
+                      <td className="px-4 py-3 max-w-[140px]">
+                        {editingCell?.id === p.id && editingCell.field === "zona" ? (
+                          <TextField
+                            size="small"
+                            autoFocus
+                            value={editValue}
+                            disabled={savingCell}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onBlur={saveEdit}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") saveEdit();
+                              if (e.key === "Escape") cancelEdit();
+                            }}
+                            sx={{ minWidth: 120, "& .MuiOutlinedInput-input": { padding: "4px 8px", fontSize: "0.75rem" } }}
+                          />
+                        ) : (
+                          <span
+                            className={`text-xs text-gray-700 block truncate ${puedeEditarMesa ? "cursor-pointer hover:underline" : ""}`}
+                            title={puedeEditarMesa ? "Clic para editar" : p.zona ?? undefined}
+                            onClick={() => startEdit(p, "zona")}
+                          >
+                            {p.zona || <span className="text-gray-300">—</span>}
+                          </span>
                         )}
                       </td>
 
