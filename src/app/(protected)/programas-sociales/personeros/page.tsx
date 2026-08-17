@@ -25,11 +25,10 @@ import CakeIcon from "@mui/icons-material/Cake";
 import PhoneInTalkIcon from "@mui/icons-material/PhoneInTalk";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
-import CheckIcon from "@mui/icons-material/Check";
-import CloseIcon from "@mui/icons-material/Close";
 import SendMessageModal, { Contacto } from "@/components/messaging/SendMessageModal";
 import SuccessToast from "@/components/feedback/SuccessToast";
 import AgregarPersoneroModal, { PersoneroCreado } from "@/components/personeros/AgregarPersoneroModal";
+import EditableCell from "@/components/personeros/EditableCell";
 
 dayjs.locale("es");
 
@@ -246,12 +245,6 @@ export default function PersonerosPage() {
   const [modalContactos, setModalContactos]       = useState<Contacto[]>([]);
   const [agregarOpen, setAgregarOpen]             = useState(false);
   const [successMsg, setSuccessMsg]               = useState<string | null>(null);
-  const [editingCell, setEditingCell] = useState<{ id: string; field: "colegio_votacion" | "numero_mesa" | "zona" | "comuna" } | null>(null);
-  const [editValue, setEditValue]     = useState("");
-  const [savingCell, setSavingCell]   = useState(false);
-  const [editingRegistrador, setEditingRegistrador]   = useState<string | null>(null);
-  const [editRegNombres, setEditRegNombres]           = useState("");
-  const [editRegApellidos, setEditRegApellidos]       = useState("");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -396,91 +389,29 @@ export default function PersonerosPage() {
     setSuccessMsg("Personero agregado correctamente.");
   };
 
-  // Edición inline de "Colegio de Votación", "N° Mesa", "Zona", "Comuna" y "Registrador"
-  // — solo el admin puede completar estos datos cuando el personero no los registró
-  // al inscribirse (o corregirlos).
-  const puedeEditarMesa = isAdmin();
-
-  const startEdit = (p: Personero, field: "colegio_votacion" | "numero_mesa" | "zona" | "comuna") => {
-    if (!puedeEditarMesa) return;
-    setEditingRegistrador(null);
-    setEditingCell({ id: p.id, field });
-    setEditValue(p[field] ?? "");
+  // Guarda un solo campo editado inline en la tabla. Devuelve el mensaje de error
+  // (o null si salió bien) para que EditableCell decida si revertir el valor.
+  const handleActualizarCampo = async (id: string, campo: keyof Personero, valorCrudo: string): Promise<string | null> => {
+    const valor = valorCrudo.trim() === "" ? null : valorCrudo.trim();
+    const { error } = await supabase.from("personeros").update({ [campo]: valor }).eq("id", id);
+    if (error) return error.message;
+    setData((prev) => prev.map((p) => (p.id === id ? { ...p, [campo]: valor } : p)));
+    return null;
   };
 
-  const cancelEdit = () => {
-    setEditingCell(null);
-    setEditValue("");
-  };
+  // Convierte el texto libre de "comuna" al valor del <select> (número 1-18 o "no_se").
+  function comunaAOpcion(comuna?: string | null): string {
+    if (!comuna) return "";
+    if (comuna.trim().toLowerCase().startsWith("no s")) return "no_se";
+    const n = extraerNumeroComuna(comuna);
+    return n ? String(n) : "";
+  }
 
-  const saveEdit = async () => {
-    if (!editingCell) return;
-    const { id, field } = editingCell;
-    const valor = editValue.trim();
-    const original = data.find((p) => p.id === id);
-    if (original && (original[field] ?? "") === valor) {
-      cancelEdit();
-      return;
-    }
-
-    setSavingCell(true);
-    const { error: updateError } = await supabase
-      .from("personeros")
-      .update({ [field]: valor || null })
-      .eq("id", id);
-    setSavingCell(false);
-
-    if (updateError) {
-      showError("No se pudo guardar", updateError.message);
-      return;
-    }
-
-    setData((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: valor || null } : p)));
-    cancelEdit();
-  };
-
-  // El registrador ocupa dos columnas de la BD (nombres y apellidos) mostradas en una
-  // sola celda, así que se edita aparte del mecanismo genérico de arriba.
-  const startEditRegistrador = (p: Personero) => {
-    if (!puedeEditarMesa) return;
-    setEditingCell(null);
-    setEditingRegistrador(p.id);
-    setEditRegNombres(p.registrador_nombres ?? "");
-    setEditRegApellidos(p.registrador_apellidos ?? "");
-  };
-
-  const cancelEditRegistrador = () => {
-    setEditingRegistrador(null);
-    setEditRegNombres("");
-    setEditRegApellidos("");
-  };
-
-  const saveEditRegistrador = async () => {
-    if (!editingRegistrador) return;
-    const id = editingRegistrador;
-    const nombres = editRegNombres.trim();
-    const apellidos = editRegApellidos.trim();
-    const original = data.find((p) => p.id === id);
-    if (original && (original.registrador_nombres ?? "") === nombres && (original.registrador_apellidos ?? "") === apellidos) {
-      cancelEditRegistrador();
-      return;
-    }
-
-    setSavingCell(true);
-    const { error: updateError } = await supabase
-      .from("personeros")
-      .update({ registrador_nombres: nombres || null, registrador_apellidos: apellidos || null })
-      .eq("id", id);
-    setSavingCell(false);
-
-    if (updateError) {
-      showError("No se pudo guardar", updateError.message);
-      return;
-    }
-
-    setData((prev) => prev.map((p) => (p.id === id ? { ...p, registrador_nombres: nombres || null, registrador_apellidos: apellidos || null } : p)));
-    cancelEditRegistrador();
-  };
+  // Convierte la opción elegida en el <select> de vuelta al texto que se guarda.
+  function opcionAComuna(opcion: string): string {
+    if (opcion === "no_se") return "No sé / No conozco mi comuna";
+    return opcion ? `Comuna ${opcion}` : "";
+  }
 
   const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos" || filtroZona !== "todos" || filtroLlamado !== "todos" || !!filtroFechaCumple || isEdadFiltered;
 
@@ -1007,13 +938,16 @@ export default function PersonerosPage() {
                       </td>
 
                       {/* DNI */}
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-sm font-medium text-gray-700">{p.dni || "—"}</span>
+                      <td className="px-4 py-3 font-mono font-medium text-gray-700">
+                        <EditableCell value={p.dni ?? ""} editable={puedeAgregar}
+                          sanitize={(v) => v.replace(/\D/g, "").slice(0, 8)}
+                          onSave={(v) => handleActualizarCampo(p.id, "dni", v)} />
                       </td>
 
                       {/* Nacimiento */}
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-sm text-gray-600">{p.fecha_nacimiento || "—"}</span>
+                        <EditableCell value={p.fecha_nacimiento ?? ""} editable={puedeAgregar}
+                          onSave={(v) => handleActualizarCampo(p.id, "fecha_nacimiento", v)} />
                       </td>
 
                       {/* Edad */}
@@ -1032,63 +966,51 @@ export default function PersonerosPage() {
 
                       {/* Sexo */}
                       <td className="px-4 py-3">
-                        <SexoBadge sexo={p.sexo} />
+                        <EditableCell value={p.sexo?.toUpperCase() === "F" ? "F" : "M"} editable={puedeAgregar}
+                          type="select"
+                          options={[{ value: "M", label: "Masculino" }, { value: "F", label: "Femenino" }]}
+                          displayValue={<SexoBadge sexo={p.sexo} />}
+                          onSave={(v) => handleActualizarCampo(p.id, "sexo", v)} />
                       </td>
 
                       {/* Distrito */}
                       <td className="px-4 py-3">
                         <div className="flex flex-col">
-                          <span className="text-sm font-medium text-gray-700">{p.distrito || "—"}</span>
+                          <EditableCell value={p.distrito ?? ""} editable={puedeAgregar}
+                            onSave={(v) => handleActualizarCampo(p.id, "distrito", v)} />
                           <span className="text-xs text-gray-400">{p.region}</span>
                         </div>
                       </td>
 
                       {/* Dirección */}
                       <td className="px-4 py-3 max-w-[160px]">
-                        <span className="text-sm text-gray-600 truncate block">{p.direccion || "—"}</span>
+                        <EditableCell value={p.direccion ?? ""} editable={puedeAgregar}
+                          onSave={(v) => handleActualizarCampo(p.id, "direccion", v)} />
                       </td>
 
                       {/* Teléfono */}
                       <td className="px-4 py-3">
-                        <span className="text-sm text-gray-600">{tienePhone ? (p.telefono.startsWith("+") ? p.telefono : `+51 ${p.telefono}`) : "—"}</span>
+                        <EditableCell value={p.telefono ?? ""} editable={puedeAgregar}
+                          sanitize={(v) => v.replace(/\D/g, "").slice(0, 9)}
+                          displayValue={tienePhone ? (p.telefono.startsWith("+") ? p.telefono : `+51 ${p.telefono}`) : "—"}
+                          onSave={(v) => handleActualizarCampo(p.id, "telefono", v)} />
                       </td>
 
                       {/* Comuna */}
                       <td className="px-4 py-3">
-                        {editingCell?.id === p.id && editingCell.field === "comuna" ? (
-                          <TextField
-                            size="small"
-                            autoFocus
-                            value={editValue}
-                            disabled={savingCell}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onBlur={saveEdit}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") saveEdit();
-                              if (e.key === "Escape") cancelEdit();
-                            }}
-                            sx={{ minWidth: 140, "& .MuiOutlinedInput-input": { padding: "4px 8px", fontSize: "0.75rem" } }}
-                          />
-                        ) : p.comuna ? (
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${puedeEditarMesa ? "cursor-pointer" : ""}`}
-                            style={{ background: "#f0fdf4", color: "#166534" }}
-                            title={puedeEditarMesa ? "Clic para editar" : undefined}
-                            onClick={() => startEdit(p, "comuna")}
-                          >
-                            {p.comuna}
-                          </span>
-                        ) : puedeEditarMesa ? (
-                          <span
-                            className="text-gray-300 text-xs cursor-pointer hover:underline"
-                            title="Clic para editar"
-                            onClick={() => startEdit(p, "comuna")}
-                          >
-                            —
-                          </span>
-                        ) : (
-                          <span className="text-gray-300 text-xs">—</span>
-                        )}
+                        <EditableCell value={comunaAOpcion(p.comuna)} editable={puedeAgregar}
+                          type="select"
+                          options={[
+                            { value: "", label: "—" },
+                            ...COMUNAS.map((n) => ({ value: String(n), label: `Comuna ${n}` })),
+                            { value: "no_se", label: "No sé / No conozco mi comuna" },
+                          ]}
+                          displayValue={
+                            <span className="inline-block px-2 py-0.5 rounded text-xs font-medium" style={{ background: "#f0fdf4", color: "#166534" }}>
+                              {p.comuna || "—"}
+                            </span>
+                          }
+                          onSave={(v) => handleActualizarCampo(p.id, "comuna", opcionAComuna(v))} />
                       </td>
 
                       {/* Tipo de registro */}
@@ -1098,156 +1020,39 @@ export default function PersonerosPage() {
 
                       {/* Registrador */}
                       <td className="px-4 py-3 whitespace-nowrap">
-                        {editingRegistrador === p.id ? (
-                          <div className="flex items-center gap-1">
-                            <div className="flex flex-col gap-1">
-                              <TextField
-                                size="small"
-                                autoFocus
-                                placeholder="Nombres"
-                                value={editRegNombres}
-                                disabled={savingCell}
-                                onChange={(e) => setEditRegNombres(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") saveEditRegistrador();
-                                  if (e.key === "Escape") cancelEditRegistrador();
-                                }}
-                                sx={{ minWidth: 130, "& .MuiOutlinedInput-input": { padding: "4px 8px", fontSize: "0.75rem" } }}
-                              />
-                              <TextField
-                                size="small"
-                                placeholder="Apellidos"
-                                value={editRegApellidos}
-                                disabled={savingCell}
-                                onChange={(e) => setEditRegApellidos(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") saveEditRegistrador();
-                                  if (e.key === "Escape") cancelEditRegistrador();
-                                }}
-                                sx={{ minWidth: 130, "& .MuiOutlinedInput-input": { padding: "4px 8px", fontSize: "0.75rem" } }}
-                              />
-                            </div>
-                            <div className="flex flex-col gap-0.5">
-                              <IconButton size="small" onClick={saveEditRegistrador} disabled={savingCell}
-                                sx={{ p: 0.25, color: "#166534" }}>
-                                <CheckIcon sx={{ fontSize: 16 }} />
-                              </IconButton>
-                              <IconButton size="small" onClick={cancelEditRegistrador} disabled={savingCell}
-                                sx={{ p: 0.25, color: "#dc2626" }}>
-                                <CloseIcon sx={{ fontSize: 16 }} />
-                              </IconButton>
-                            </div>
-                          </div>
-                        ) : (
-                          <div
-                            className={puedeEditarMesa ? "cursor-pointer hover:underline" : ""}
-                            title={puedeEditarMesa ? "Clic para editar" : undefined}
-                            onClick={() => startEditRegistrador(p)}
-                          >
-                            {p.registrador_nombres || p.registrador_apellidos ? (
-                              <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-gray-700">
-                                  {p.registrador_nombres} {p.registrador_apellidos}
-                                </span>
-                                <span className="text-xs text-gray-400">Registrador</span>
-                              </div>
-                            ) : (
-                              <span className="text-gray-300 text-xs">—</span>
-                            )}
-                          </div>
-                        )}
+                        <div className="flex flex-col gap-0.5">
+                          <EditableCell value={p.registrador_nombres ?? ""} editable={puedeAgregar}
+                            displayValue={<span className="text-xs font-semibold text-gray-700">{p.registrador_nombres || "—"}</span>}
+                            onSave={(v) => handleActualizarCampo(p.id, "registrador_nombres", v)} />
+                          <EditableCell value={p.registrador_apellidos ?? ""} editable={puedeAgregar}
+                            displayValue={<span className="text-xs text-gray-400">{p.registrador_apellidos || "Registrador"}</span>}
+                            onSave={(v) => handleActualizarCampo(p.id, "registrador_apellidos", v)} />
+                        </div>
                       </td>
 
                       {/* Colegio de votación */}
                       <td className="px-4 py-3 max-w-[180px]">
-                        {editingCell?.id === p.id && editingCell.field === "colegio_votacion" ? (
-                          <TextField
-                            size="small"
-                            autoFocus
-                            value={editValue}
-                            disabled={savingCell}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onBlur={saveEdit}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") saveEdit();
-                              if (e.key === "Escape") cancelEdit();
-                            }}
-                            sx={{ minWidth: 160, "& .MuiOutlinedInput-input": { padding: "4px 8px", fontSize: "0.75rem" } }}
-                          />
-                        ) : (
-                          <span
-                            className={`text-xs text-gray-700 block truncate ${puedeEditarMesa ? "cursor-pointer hover:underline" : ""}`}
-                            title={puedeEditarMesa ? "Clic para editar" : p.colegio_votacion ?? undefined}
-                            onClick={() => startEdit(p, "colegio_votacion")}
-                          >
-                            {p.colegio_votacion || <span className="text-gray-300">—</span>}
-                          </span>
-                        )}
+                        <EditableCell value={p.colegio_votacion ?? ""} editable={puedeAgregar}
+                          onSave={(v) => handleActualizarCampo(p.id, "colegio_votacion", v)} />
                       </td>
 
                       {/* N° de Mesa */}
                       <td className="px-4 py-3 text-center">
-                        {editingCell?.id === p.id && editingCell.field === "numero_mesa" ? (
-                          <TextField
-                            size="small"
-                            autoFocus
-                            value={editValue}
-                            disabled={savingCell}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onBlur={saveEdit}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") saveEdit();
-                              if (e.key === "Escape") cancelEdit();
-                            }}
-                            sx={{ width: 90, "& .MuiOutlinedInput-input": { padding: "4px 8px", fontSize: "0.75rem", textAlign: "center" } }}
-                          />
-                        ) : p.numero_mesa ? (
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded font-mono text-xs font-bold ${puedeEditarMesa ? "cursor-pointer" : ""}`}
-                            style={{ background: "#eff6ff", color: "#1565c0" }}
-                            title={puedeEditarMesa ? "Clic para editar" : undefined}
-                            onClick={() => startEdit(p, "numero_mesa")}
-                          >
-                            {p.numero_mesa}
-                          </span>
-                        ) : puedeEditarMesa ? (
-                          <span
-                            className="text-gray-300 text-xs cursor-pointer hover:underline"
-                            title="Clic para editar"
-                            onClick={() => startEdit(p, "numero_mesa")}
-                          >
-                            —
-                          </span>
-                        ) : (
-                          <span className="text-gray-300 text-xs">—</span>
-                        )}
+                        <EditableCell value={p.numero_mesa ?? ""} editable={puedeAgregar} align="center"
+                          sanitize={(v) => v.replace(/\D/g, "")}
+                          displayValue={p.numero_mesa ? (
+                            <span className="inline-block px-2 py-0.5 rounded font-mono text-xs font-bold"
+                              style={{ background: "#eff6ff", color: "#1565c0" }}>
+                              {p.numero_mesa}
+                            </span>
+                          ) : "—"}
+                          onSave={(v) => handleActualizarCampo(p.id, "numero_mesa", v)} />
                       </td>
 
                       {/* Zona */}
                       <td className="px-4 py-3 max-w-[140px]">
-                        {editingCell?.id === p.id && editingCell.field === "zona" ? (
-                          <TextField
-                            size="small"
-                            autoFocus
-                            value={editValue}
-                            disabled={savingCell}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onBlur={saveEdit}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") saveEdit();
-                              if (e.key === "Escape") cancelEdit();
-                            }}
-                            sx={{ minWidth: 120, "& .MuiOutlinedInput-input": { padding: "4px 8px", fontSize: "0.75rem" } }}
-                          />
-                        ) : (
-                          <span
-                            className={`text-xs text-gray-700 block truncate ${puedeEditarMesa ? "cursor-pointer hover:underline" : ""}`}
-                            title={puedeEditarMesa ? "Clic para editar" : p.zona ?? undefined}
-                            onClick={() => startEdit(p, "zona")}
-                          >
-                            {p.zona || <span className="text-gray-300">—</span>}
-                          </span>
-                        )}
+                        <EditableCell value={p.zona ?? ""} editable={puedeAgregar}
+                          onSave={(v) => handleActualizarCampo(p.id, "zona", v)} />
                       </td>
 
                       {/* Llamado */}
