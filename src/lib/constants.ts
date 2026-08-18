@@ -160,10 +160,27 @@ export const MODULOS_PROGRAMAS_SOCIALES: MenuItem[] = [
   {
     id: "personeros",
     nombre: "Personeros",
-    ruta: "/programas-sociales/personeros",
     icono: "Badge",
     descripcion: "Gestión de personeros de campaña",
     permisos: ["all_programas_sociales", "all", "campo", "personeros"],
+    children: [
+      {
+        id: "personeros-listado",
+        nombre: "Listado",
+        ruta: "/programas-sociales/personeros",
+        icono: "Badge",
+        descripcion: "Registro de personeros inscritos en la campaña",
+        permisos: ["all_programas_sociales", "all", "campo", "personeros"],
+      },
+      {
+        id: "personeros-dashboard",
+        nombre: "Dashboard",
+        ruta: "/programas-sociales/personeros/dashboard",
+        icono: "BarChart",
+        descripcion: "Resumen de personeros por comuna, zona y sexo",
+        permisos: ["all_programas_sociales", "all", "campo", "personeros"],
+      },
+    ],
   },
   {
     id: "dirigentes",
