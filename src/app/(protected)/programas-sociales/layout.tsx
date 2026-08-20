@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Header from "@/components/navigation/Header";
 import Sidebar from "@/components/navigation/Sidebar";
-import { SUBGERENCIAS, SubgerenciaType, MODULOS_PROGRAMAS_SOCIALES, type MenuItem } from "@/lib/constants";
+import { SUBGERENCIAS, SubgerenciaType, MODULOS_PROGRAMAS_SOCIALES, primeraRutaAccesible, type MenuItem } from "@/lib/constants";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 
 const subgerencia = SUBGERENCIAS[SubgerenciaType.PROGRAMAS_SOCIALES];
@@ -49,7 +49,7 @@ export default function ProgramasSocialesLayout({ children }: { children: React.
 
   useEffect(() => {
     if (!accesoPermitido) {
-      router.replace(menuItems[0]?.ruta ?? "/");
+      router.replace(primeraRutaAccesible(menuItems) ?? "/");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accesoPermitido]);

@@ -10,7 +10,7 @@ import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { useAppDispatch } from "@/redux/hooks";
 import { loginSuccess, setLoading } from "@/redux/slices/authSlice";
 import { supabase } from "@/lib/supabase";
-import { MODULOS_PROGRAMAS_SOCIALES, type SubgerenciaType } from "@/lib/constants";
+import { MODULOS_PROGRAMAS_SOCIALES, primeraRutaAccesible, type SubgerenciaType } from "@/lib/constants";
 import { filterMenuItemsFunction } from "@/lib/hooks/usePermissions";
 import type { User } from "@/types/auth";
 
@@ -85,7 +85,7 @@ export default function LoginForm({ subgerencia }: LoginFormProps) {
       // Redirige a "donaciones" por defecto, o al primer módulo al que el
       // usuario sí tenga acceso si "donaciones" le está restringido.
       const accesibles = filterMenuItemsFunction(user, MODULOS_PROGRAMAS_SOCIALES);
-      const primerModuloAccesible = accesibles.find((m) => m.ruta)?.ruta;
+      const primerModuloAccesible = primeraRutaAccesible(accesibles);
       router.push(primerModuloAccesible ?? `/${subgerencia}/donaciones`);
     } finally {
       setIsLoading(false);

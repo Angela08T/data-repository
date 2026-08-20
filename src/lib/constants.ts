@@ -145,6 +145,22 @@ export interface MenuItem {
   children?: MenuItem[];
 }
 
+// Un módulo con subsecciones (ej. Personeros, Conteo de Votos) no tiene "ruta"
+// propia — solo sus hijos la tienen. Busca la primera ruta navegable de verdad,
+// bajando a los hijos cuando el ítem de más arriba no tiene una directa. Sin esto,
+// un usuario cuyo único módulo accesible es uno con subsecciones (ej. el rol
+// restringido "personeros") no tiene a dónde redirigirlo tras el login.
+export function primeraRutaAccesible(items: MenuItem[]): string | undefined {
+  for (const item of items) {
+    if (item.ruta) return item.ruta;
+    if (item.children) {
+      const ruta = primeraRutaAccesible(item.children);
+      if (ruta) return ruta;
+    }
+  }
+  return undefined;
+}
+
 // ============================================
 // MÓDULOS DE CAMPAIGN DATA REPOSITORY
 // ============================================
