@@ -63,6 +63,16 @@ function extraerNumeroZona(zona?: string | null): number | null {
   return n >= 1 && n <= 8 ? n : null;
 }
 
+// "sexo" viene con variantes ("F", "Femenino", "FEMENINO", "F " con espacio,
+// vacío...) — se normaliza por la primera letra, no por el texto exacto.
+function normalizarSexo(sexo?: string | null): "M" | "F" | null {
+  const v = sexo?.trim().toUpperCase();
+  if (!v) return null;
+  if (v.startsWith("F")) return "F";
+  if (v.startsWith("M")) return "M";
+  return null;
+}
+
 // fecha_nacimiento viene como texto "DD/MM/YYYY" o, a veces, "YYYY-MM-DD".
 function extraerDiaMes(fechaNacimiento?: string | null): { dia: number; mes: number } | null {
   if (!fechaNacimiento) return null;
@@ -298,8 +308,8 @@ export default function PersonerosDashboardPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const total = data.length;
-  const hombres = data.filter((p) => p.sexo?.toUpperCase() === "M").length;
-  const mujeres = data.filter((p) => p.sexo?.toUpperCase() === "F").length;
+  const hombres = data.filter((p) => normalizarSexo(p.sexo) === "M").length;
+  const mujeres = data.filter((p) => normalizarSexo(p.sexo) === "F").length;
 
   const conTelefono = data.filter((p) => hasPhone(p.telefono)).length;
   const sinTelefono = total - conTelefono;

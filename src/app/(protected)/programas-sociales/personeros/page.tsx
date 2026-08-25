@@ -106,6 +106,18 @@ function extraerNumeroComuna(comuna?: string | null): number | null {
   return n >= 1 && n <= 18 ? n : null;
 }
 
+// "sexo" viene con variantes ("F", "Femenino", "FEMENINO", "F " con espacio,
+// vacío...) porque se cargó de varias fuentes. Se normaliza por la primera
+// letra en vez de exigir el texto exacto "F"/"M" — así Mujeres + Hombres sí
+// suma el total en vez de dejar afuera todo lo que no sea exactamente "F"/"M".
+function normalizarSexo(sexo?: string | null): "M" | "F" | null {
+  const v = sexo?.trim().toUpperCase();
+  if (!v) return null;
+  if (v.startsWith("F")) return "F";
+  if (v.startsWith("M")) return "M";
+  return null;
+}
+
 interface Personero {
   id: string;
   apellido_paterno: string;
@@ -141,7 +153,7 @@ function personeroToRow(p: Personero) {
     "DNI":                   p.dni ?? "",
     "Fecha Nacimiento":      p.fecha_nacimiento ?? "",
     "Edad":                  calcularEdad(p.fecha_nacimiento) ?? "",
-    "Sexo":                  p.sexo?.toUpperCase() === "F" ? "Femenino" : "Masculino",
+    "Sexo":                  normalizarSexo(p.sexo) === "F" ? "Femenino" : "Masculino",
     "Lugar Nacimiento":      p.lugar_nacimiento ?? "",
     "Región":                p.region ?? "",
     "Provincia":             p.provincia ?? "",
@@ -169,7 +181,7 @@ function esPorRegistrador(p: Personero): boolean {
 }
 
 function SexoBadge({ sexo }: { sexo: string }) {
-  const esMujer = sexo?.toUpperCase() === "F";
+  const esMujer = normalizarSexo(sexo) === "F";
   return (
     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
       style={esMujer ? { background: "#fce7f3", color: "#9d174d" } : { background: "#dbeafe", color: "#1e40af" }}>
@@ -276,7 +288,7 @@ export default function PersonerosPage() {
       (p.distrito ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (p.comuna ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (p.registrador_nombres ?? "").toLowerCase().includes(search.toLowerCase());
-    const matchSexo     = filtroSexo === "todos" || p.sexo?.toUpperCase() === filtroSexo;
+    const matchSexo     = filtroSexo === "todos" || normalizarSexo(p.sexo) === filtroSexo;
     const matchComuna   = filtroComuna === "todos" || extraerNumeroComuna(p.comuna) === Number(filtroComuna);
     const matchColegio  = filtroColegio === "todos" || (p.colegio_votacion?.trim() ?? "") === filtroColegio;
     const matchZona     = filtroZona === "todos" || extraerNumeroZona(p.zona) === Number(filtroZona);
@@ -334,8 +346,8 @@ export default function PersonerosPage() {
     setModalOpen(true);
   };
 
-  const totalMujeres      = data.filter((p) => p.sexo?.toUpperCase() === "F").length;
-  const totalHombres      = data.filter((p) => p.sexo?.toUpperCase() === "M").length;
+  const totalMujeres      = data.filter((p) => normalizarSexo(p.sexo) === "F").length;
+  const totalHombres      = data.filter((p) => normalizarSexo(p.sexo) === "M").length;
   const porRegistrador    = data.filter(esPorRegistrador).length;
   const selCount          = filtrados.filter((p) => selectedIds.has(p.id)).length;
   const COLS              = 17; // checkbox + cols + tipo + registrador + colegio + mesa + zona + llamado + acciones
@@ -927,7 +939,7 @@ export default function PersonerosPage() {
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                            style={{ background: p.sexo?.toUpperCase() === "F" ? "#9d174d" : "#1565c0" }}>
+                            style={{ background: normalizarSexo(p.sexo) === "F" ? "#9d174d" : "#1565c0" }}>
                             {p.nombres?.charAt(0) ?? "?"}
                           </div>
                           <div>
@@ -966,7 +978,7 @@ export default function PersonerosPage() {
 
                       {/* Sexo */}
                       <td className="px-4 py-3">
-                        <EditableCell value={p.sexo?.toUpperCase() === "F" ? "F" : "M"} editable={puedeAgregar}
+                        <EditableCell value={normalizarSexo(p.sexo) ?? "M"} editable={puedeAgregar}
                           type="select"
                           options={[{ value: "M", label: "Masculino" }, { value: "F", label: "Femenino" }]}
                           displayValue={<SexoBadge sexo={p.sexo} />}
