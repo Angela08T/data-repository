@@ -223,6 +223,14 @@ export const MODULOS_PROGRAMAS_SOCIALES: MenuItem[] = [
     permisos: ["all_programas_sociales", "all", "campo"],
   },
   {
+    id: "corredores",
+    nombre: "Corredores",
+    ruta: "/programas-sociales/corredores",
+    icono: "SportsScore",
+    descripcion: "Registro de corredores",
+    permisos: ["all_programas_sociales", "all", "campo"],
+  },
+  {
     id: "simpatizantes",
     nombre: "Simpatizantes",
     ruta: "/programas-sociales/simpatizantes",
