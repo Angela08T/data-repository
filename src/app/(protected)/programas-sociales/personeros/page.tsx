@@ -942,9 +942,16 @@ export default function PersonerosPage() {
                             style={{ background: normalizarSexo(p.sexo) === "F" ? "#9d174d" : "#1565c0" }}>
                             {p.nombres?.charAt(0) ?? "?"}
                           </div>
-                          <div>
-                            <p className="font-semibold text-gray-800">{p.apellido_paterno} {p.apellido_materno}</p>
-                            <p className="text-xs text-gray-400">{p.nombres}</p>
+                          <div className="flex flex-col gap-0.5">
+                            <EditableCell value={p.apellido_paterno ?? ""} editable={puedeAgregar}
+                              displayValue={<span className="font-semibold text-gray-800">{p.apellido_paterno || "—"}</span>}
+                              onSave={(v) => handleActualizarCampo(p.id, "apellido_paterno", v)} />
+                            <EditableCell value={p.apellido_materno ?? ""} editable={puedeAgregar}
+                              displayValue={<span className="font-semibold text-gray-800">{p.apellido_materno || "—"}</span>}
+                              onSave={(v) => handleActualizarCampo(p.id, "apellido_materno", v)} />
+                            <EditableCell value={p.nombres ?? ""} editable={puedeAgregar}
+                              displayValue={<span className="text-xs text-gray-400">{p.nombres || "—"}</span>}
+                              onSave={(v) => handleActualizarCampo(p.id, "nombres", v)} />
                           </div>
                         </div>
                       </td>
