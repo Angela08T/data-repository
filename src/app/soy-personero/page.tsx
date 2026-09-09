@@ -161,7 +161,7 @@ export default function SoyPersoneroPage() {
 
           {/* Resultado: inscrito */}
           {resultado?.tipo === "inscrito" && (
-            <Box className="space-y-4">
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
               <Box textAlign="center" py={1}>
                 <CheckCircleIcon sx={{ fontSize: 48, color: "#16a34a", mb: 1 }} />
                 <Typography variant="h6" fontWeight={700} color="#16a34a" gutterBottom>
@@ -207,7 +207,7 @@ export default function SoyPersoneroPage() {
 
           {/* Resultado: no inscrito */}
           {resultado?.tipo === "no-inscrito" && (
-            <Box className="space-y-4">
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
               <Box textAlign="center" py={1}>
                 <HowToRegIcon sx={{ fontSize: 48, color: "#1565c0", mb: 1 }} />
                 <Typography variant="h6" fontWeight={700} color="#0d1b3e" gutterBottom>
