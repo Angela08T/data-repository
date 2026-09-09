@@ -409,7 +409,7 @@ export const MAP_LAYERS = {
 // ============================================
 // RUTAS Y CONFIGURACIÓN
 // ============================================
-export const PUBLIC_ROUTES = ["/", "/login/programas-sociales", "/reportar-votos"];
+export const PUBLIC_ROUTES = ["/", "/login/programas-sociales", "/reportar-votos", "/soy-personero"];
 
 export enum CRUDOperation {
   CREATE = "create",
