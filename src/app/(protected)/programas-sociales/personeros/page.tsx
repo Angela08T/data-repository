@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { TextField, InputAdornment, IconButton, Tooltip, CircularProgress, Checkbox, Button, Popover, Slider, Typography, Box } from "@mui/material";
+import { TextField, InputAdornment, IconButton, Tooltip, CircularProgress, Checkbox, Button, Popover, Slider, Typography, Box, TablePagination } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -257,6 +257,8 @@ export default function PersonerosPage() {
   const [modalContactos, setModalContactos]       = useState<Contacto[]>([]);
   const [agregarOpen, setAgregarOpen]             = useState(false);
   const [successMsg, setSuccessMsg]               = useState<string | null>(null);
+  const [page, setPage]                           = useState(0);
+  const [rowsPerPage, setRowsPerPage]             = useState(25);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -331,6 +333,13 @@ export default function PersonerosPage() {
         : !p.llamado;
     return matchSearch && matchSexo && matchComuna && matchColegio && matchZona && matchTipo && matchCumple && matchEdad && matchLlamado;
   });
+
+  // Si un filtro o la búsqueda reduce los resultados y la página actual queda
+  // fuera de rango, se muestra la última página válida (sin necesidad de un
+  // useEffect que dispare un re-render extra).
+  const totalPaginas  = Math.max(1, Math.ceil(filtrados.length / rowsPerPage));
+  const paginaActual   = Math.min(page, totalPaginas - 1);
+  const paginados      = filtrados.slice(paginaActual * rowsPerPage, paginaActual * rowsPerPage + rowsPerPage);
 
   // Selección
   const conTelefono = filtrados.filter(hasPhone);
@@ -940,7 +949,7 @@ export default function PersonerosPage() {
                   No se encontraron registros
                 </td></tr>
               ) : (
-                filtrados.map((p, i) => {
+                paginados.map((p, i) => {
                   const checked     = selectedIds.has(p.id);
                   const tienePhone  = hasPhone(p);
                   return (
@@ -1121,8 +1130,23 @@ export default function PersonerosPage() {
           </table>
         </div>
 
+        {!loading && filtrados.length > 0 && (
+          <TablePagination
+            component="div"
+            count={filtrados.length}
+            page={paginaActual}
+            onPageChange={(_, nuevaPagina) => setPage(nuevaPagina)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+            rowsPerPageOptions={[25, 50, 100, 250]}
+            labelRowsPerPage="Filas por página:"
+            labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+            sx={{ borderTop: "1px solid #e2e8f0", "& .MuiTablePagination-selectIcon": { color: "#64748b" } }}
+          />
+        )}
+
         <div className="px-5 py-3 border-t border-gray-100 flex justify-between items-center text-xs text-gray-400">
-          <span>{!loading && `Mostrando ${filtrados.length} de ${data.length} registros`}</span>
+          <span>{!loading && `Mostrando ${paginados.length} de ${filtrados.length} filtrados · ${data.length} en total`}</span>
           <span style={{ color: "#1565c0", fontWeight: 600 }}>Campaign Data Repository</span>
         </div>
       </div>
