@@ -261,12 +261,32 @@ export default function PersonerosPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const { data: rows, error: err } = await supabase
-      .from("personeros")
-      .select("*")
-      .order("apellido_paterno", { ascending: true });
-    if (err) setError(err.message);
-    else setData((rows as Personero[]) ?? []);
+
+    // Supabase/PostgREST limita cada consulta a 1000 filas; se pagina con .range()
+    // hasta traer todo. Sin esto, los personeros cuyo apellido queda después del
+    // corte (incluidas muchas inscripciones recientes desde el link público) no
+    // aparecen en el listado ni cuentan en las estadísticas.
+    const PAGE_SIZE = 1000;
+    const todos: Personero[] = [];
+    let from = 0;
+    let hayError: string | null = null;
+
+    while (true) {
+      const { data: rows, error: err } = await supabase
+        .from("personeros")
+        .select("*")
+        .order("apellido_paterno", { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (err) { hayError = err.message; break; }
+      const lote = (rows as Personero[]) ?? [];
+      todos.push(...lote);
+      if (lote.length === 0) break;
+      from += lote.length;
+    }
+
+    if (hayError) setError(hayError);
+    else setData(todos);
     setLoading(false);
     setSelectedIds(new Set());
   }, []);
