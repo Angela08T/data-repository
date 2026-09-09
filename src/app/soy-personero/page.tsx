@@ -28,12 +28,35 @@ type Resultado =
   | { tipo: "inscrito"; personero: PersoneroConsulta }
   | { tipo: "no-inscrito" };
 
+// En móviles angostos (iPhone SE, Androids de 320-360px) el par label/valor no
+// entra en una sola línea, sobre todo el colegio de votación. Por eso se apila
+// (label arriba, valor abajo) hasta el breakpoint sm y recién ahí va en fila.
 function DatoFila({ label, value }: { label: string; value?: string | null }) {
   if (!value || !value.trim()) return null;
   return (
-    <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2, py: 0.75, borderBottom: "1px solid #f1f5f9" }}>
-      <Typography variant="body2" color="text.secondary">{label}</Typography>
-      <Typography variant="body2" fontWeight={600} color="#0d1b3e" textAlign="right">{value}</Typography>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: { xs: "column", sm: "row" },
+        justifyContent: "space-between",
+        alignItems: { xs: "flex-start", sm: "baseline" },
+        gap: { xs: 0.25, sm: 2 },
+        py: 1,
+        borderBottom: "1px solid #e2e8f0",
+        "&:last-of-type": { borderBottom: "none" },
+      }}
+    >
+      <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>
+        {label}
+      </Typography>
+      <Typography
+        variant="body2"
+        fontWeight={600}
+        color="#0d1b3e"
+        sx={{ textAlign: { xs: "left", sm: "right" }, wordBreak: "break-word" }}
+      >
+        {value}
+      </Typography>
     </Box>
   );
 }
@@ -94,37 +117,90 @@ export default function SoyPersoneroPage() {
       .filter(Boolean)
       .join(" ");
 
+  const primaryButtonSx = {
+    background: "linear-gradient(135deg, #1565c0 0%, #1976d2 100%)",
+    "&:hover": { background: "linear-gradient(135deg, #0d47a1 0%, #1565c0 100%)" },
+    textTransform: "none" as const,
+    fontWeight: "bold",
+    py: 1.5,
+    borderRadius: "50px",
+    fontSize: { xs: "0.95rem", sm: "1rem" },
+  };
+
+  const secondaryButtonSx = {
+    textTransform: "none" as const,
+    fontWeight: "bold",
+    py: 1.5,
+    borderRadius: "50px",
+    fontSize: { xs: "0.95rem", sm: "1rem" },
+  };
+
   return (
     <Box
       sx={{
         minHeight: "100dvh",
+        display: "flex",
         backgroundColor: "#f8fafc",
-        pt: "max(env(safe-area-inset-top), 24px)",
-        pb: "max(env(safe-area-inset-bottom), 24px)",
+        pt: "max(env(safe-area-inset-top), 20px)",
+        pb: "max(env(safe-area-inset-bottom), 20px)",
+        pl: "env(safe-area-inset-left)",
+        pr: "env(safe-area-inset-right)",
       }}
     >
-      <Container maxWidth="sm" disableGutters sx={{ px: { xs: 2, sm: 3 } }}>
-        <Paper sx={{ p: { xs: 2.5, sm: 5 }, borderRadius: "16px", boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)" }}>
+      {/* my:auto centra la tarjeta cuando sobra alto (tablets) y deja hacer scroll
+          normal cuando el contenido es más alto que la pantalla (móviles chicos). */}
+      <Container
+        maxWidth="sm"
+        disableGutters
+        sx={{ px: { xs: 2, sm: 3 }, my: "auto", width: "100%" }}
+      >
+        <Paper
+          sx={{
+            p: { xs: 2.5, sm: 4, md: 5 },
+            borderRadius: { xs: "16px", sm: "20px" },
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
+            width: "100%",
+          }}
+        >
 
-          <Box textAlign="center" mb={4}>
+          <Box textAlign="center" mb={{ xs: 3, sm: 4 }}>
             <Box
-              className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3"
-              style={{ background: "#eff6ff" }}
+              sx={{
+                width: { xs: 52, sm: 56 },
+                height: { xs: 52, sm: 56 },
+                borderRadius: "16px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                mx: "auto",
+                mb: 1.5,
+                background: "#eff6ff",
+              }}
             >
-              <BadgeIcon sx={{ fontSize: 28, color: "#1565c0" }} />
+              <BadgeIcon sx={{ fontSize: { xs: 26, sm: 28 }, color: "#1565c0" }} />
             </Box>
-            <Typography variant="h5" component="h1" fontWeight={700} color="#0d1b3e" gutterBottom>
+            <Typography
+              component="h1"
+              fontWeight={700}
+              color="#0d1b3e"
+              gutterBottom
+              sx={{ fontSize: { xs: "1.3rem", sm: "1.5rem" }, lineHeight: 1.25 }}
+            >
               Consulta de Personeros
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" sx={{ px: { xs: 1, sm: 0 } }}>
               San Juan de Lurigancho · Verifica si estás en el padrón
             </Typography>
           </Box>
 
           {/* Formulario */}
           {!resultado && (
-            <form onSubmit={handleConsultar} className="space-y-4">
-              <Typography variant="body2" color="text.secondary" mb={2}>
+            <Box
+              component="form"
+              onSubmit={handleConsultar}
+              sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+            >
+              <Typography variant="body2" color="text.secondary">
                 Ingresa tu número de DNI para saber si ya estás inscrito como personero de campaña.
               </Typography>
               <TextField
@@ -134,7 +210,8 @@ export default function SoyPersoneroPage() {
                 onChange={(e) => setDni(e.target.value.replace(/\D/g, "").slice(0, 8))}
                 disabled={buscando}
                 inputMode="numeric"
-                slotProps={{ htmlInput: { maxLength: 8 } }}
+                autoComplete="off"
+                slotProps={{ htmlInput: { maxLength: 8, enterKeyHint: "search" } }}
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
               />
               <Collapse in={!!error}>
@@ -148,23 +225,24 @@ export default function SoyPersoneroPage() {
                 variant="contained"
                 size="large"
                 disabled={buscando}
-                sx={{
-                  background: "linear-gradient(135deg, #1565c0 0%, #1976d2 100%)",
-                  "&:hover": { background: "linear-gradient(135deg, #0d47a1 0%, #1565c0 100%)" },
-                  textTransform: "none", fontWeight: "bold", py: 1.5, borderRadius: "50px",
-                }}
+                sx={primaryButtonSx}
               >
                 {buscando ? <CircularProgress size={22} color="inherit" /> : "Consultar"}
               </Button>
-            </form>
+            </Box>
           )}
 
           {/* Resultado: inscrito */}
           {resultado?.tipo === "inscrito" && (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
               <Box textAlign="center" py={1}>
-                <CheckCircleIcon sx={{ fontSize: 48, color: "#16a34a", mb: 1 }} />
-                <Typography variant="h6" fontWeight={700} color="#16a34a" gutterBottom>
+                <CheckCircleIcon sx={{ fontSize: { xs: 44, sm: 48 }, color: "#16a34a", mb: 1 }} />
+                <Typography
+                  fontWeight={700}
+                  color="#16a34a"
+                  gutterBottom
+                  sx={{ fontSize: { xs: "1.15rem", sm: "1.25rem" } }}
+                >
                   ¡Sí estás inscrito!
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -172,16 +250,10 @@ export default function SoyPersoneroPage() {
                 </Typography>
               </Box>
 
-              <Box sx={{ background: "#f1f5f9", p: 2, borderRadius: "12px" }}>
-                {nombreCompleto(resultado.personero) ? (
-                  <Typography variant="body1" fontWeight={700} color="#0d1b3e" mb={0.5}>
-                    {nombreCompleto(resultado.personero)}
-                  </Typography>
-                ) : (
-                  <Typography variant="body1" fontWeight={700} color="#0d1b3e" mb={0.5}>
-                    Registro encontrado
-                  </Typography>
-                )}
+              <Box sx={{ background: "#f1f5f9", p: { xs: 2, sm: 2.5 }, borderRadius: "12px" }}>
+                <Typography variant="body1" fontWeight={700} color="#0d1b3e" sx={{ wordBreak: "break-word" }}>
+                  {nombreCompleto(resultado.personero) || "Registro encontrado"}
+                </Typography>
                 <Typography variant="caption" color="text.secondary">DNI {dni}</Typography>
 
                 <Box mt={1.5}>
@@ -198,7 +270,7 @@ export default function SoyPersoneroPage() {
                 size="large"
                 startIcon={<ReplayIcon />}
                 onClick={reiniciar}
-                sx={{ textTransform: "none", fontWeight: "bold", py: 1.5, borderRadius: "50px" }}
+                sx={secondaryButtonSx}
               >
                 Consultar otro DNI
               </Button>
@@ -209,8 +281,13 @@ export default function SoyPersoneroPage() {
           {resultado?.tipo === "no-inscrito" && (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
               <Box textAlign="center" py={1}>
-                <HowToRegIcon sx={{ fontSize: 48, color: "#1565c0", mb: 1 }} />
-                <Typography variant="h6" fontWeight={700} color="#0d1b3e" gutterBottom>
+                <HowToRegIcon sx={{ fontSize: { xs: 44, sm: 48 }, color: "#1565c0", mb: 1 }} />
+                <Typography
+                  fontWeight={700}
+                  color="#0d1b3e"
+                  gutterBottom
+                  sx={{ fontSize: { xs: "1.15rem", sm: "1.25rem" } }}
+                >
                   Todavía no estás inscrito
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -230,7 +307,11 @@ export default function SoyPersoneroPage() {
                 sx={{
                   background: "linear-gradient(135deg, #166534 0%, #16a34a 100%)",
                   "&:hover": { background: "linear-gradient(135deg, #14532d 0%, #166534 100%)" },
-                  textTransform: "none", fontWeight: "bold", py: 1.5, borderRadius: "50px",
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  py: 1.5,
+                  borderRadius: "50px",
+                  fontSize: { xs: "0.95rem", sm: "1rem" },
                 }}
               >
                 Inscribirme ahora
@@ -242,7 +323,7 @@ export default function SoyPersoneroPage() {
                 size="large"
                 startIcon={<ReplayIcon />}
                 onClick={reiniciar}
-                sx={{ textTransform: "none", fontWeight: "bold", py: 1.5, borderRadius: "50px" }}
+                sx={secondaryButtonSx}
               >
                 Consultar otro DNI
               </Button>
