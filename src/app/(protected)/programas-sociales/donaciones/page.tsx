@@ -51,7 +51,7 @@ function EstadoChip({ estado }: { estado: EstadoPago }) {
     procesado: { label: "Procesado", color: "#16a34a", bg: "#dcfce7", icon: <CheckCircleIcon sx={{ fontSize: 13 }} /> },
     fallido:   { label: "Fallido",   color: "#dc2626", bg: "#fee2e2", icon: <CancelIcon sx={{ fontSize: 13 }} /> },
   };
-  const c = cfg[estado] ?? { label: estado, color: "#64748b", bg: "#f1f5f9", icon: null };
+  const c = cfg[estado] ?? { label: estado, color: "#94a3b8", bg: "rgba(148,163,184,0.14)", icon: null };
   return (
     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
       style={{ color: c.color, background: c.bg }}>
@@ -63,14 +63,14 @@ function EstadoChip({ estado }: { estado: EstadoPago }) {
 function MetodoBadge({ metodo }: { metodo: string }) {
   return (
     <span className="inline-block px-2 py-0.5 rounded text-xs font-medium"
-      style={{ background: "#eff6ff", color: "#1565c0" }}>
+      style={{ background: "rgba(59,130,246,0.16)", color: "#1565c0" }}>
       {metodo}
     </span>
   );
 }
 
 function DjBadge({ valor }: { valor: boolean | null }) {
-  if (valor === null) return <span className="text-gray-300 text-xs">—</span>;
+  if (valor === null) return <span className="text-[#475569] text-xs">—</span>;
   return valor
     ? <span className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: "#16a34a" }}>
         <VerifiedUserIcon sx={{ fontSize: 13 }} /> Sí
@@ -80,13 +80,13 @@ function DjBadge({ valor }: { valor: boolean | null }) {
 
 function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: React.ReactNode; color: string }) {
   return (
-    <div className="stat-card bg-white rounded-2xl shadow p-5 flex items-center gap-4">
+    <div className="stat-card glow-card rounded-2xl p-5 flex items-center gap-4">
       <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${color}18` }}>
         <span style={{ color }}>{icon}</span>
       </div>
       <div>
         <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</p>
-        <p className="text-xl font-bold" style={{ color: "#0d1b3e" }}>{value}</p>
+        <p className="text-xl font-bold" style={{ color: "#eef2ff" }}>{value}</p>
       </div>
     </div>
   );
@@ -154,7 +154,7 @@ export default function DonacionesPage() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-black" style={{ color: "#0d1b3e" }}>Donaciones</h1>
+        <h1 className="text-2xl font-black" style={{ color: "#eef2ff" }}>Donaciones</h1>
         <p className="text-sm text-gray-400 mt-1">Aportes recibidos a través del formulario público</p>
       </div>
 
@@ -166,10 +166,10 @@ export default function DonacionesPage() {
       </div>
 
       {/* Tabla */}
-      <div className="bg-white rounded-2xl shadow overflow-hidden">
+      <div className="glow-card rounded-2xl overflow-hidden">
 
         {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b border-gray-100">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b border-[rgba(148,163,184,0.14)]">
           <TextField
             size="small"
             placeholder="Buscar por nombre, DNI, monto o método..."
@@ -196,7 +196,7 @@ export default function DonacionesPage() {
                 style={
                   filtroEstado === e
                     ? { background: "#1565c0", color: "#fff", borderColor: "#1565c0" }
-                    : { background: "transparent", color: "#64748b", borderColor: "#e2e8f0" }
+                    : { background: "transparent", color: "#94a3b8", borderColor: "rgba(148,163,184,0.22)" }
                 }
               >
                 {e === "todos" ? "Todos" : e.charAt(0).toUpperCase() + e.slice(1)}
@@ -216,7 +216,7 @@ export default function DonacionesPage() {
         </div>
 
         {/* Contador */}
-        <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-50">
+        <div className="px-4 py-2 text-xs text-gray-400 border-b border-[rgba(148,163,184,0.10)]">
           {loading ? "Cargando..." : `${filtrados.length} registro${filtrados.length !== 1 ? "s" : ""}`}
         </div>
 
@@ -224,11 +224,11 @@ export default function DonacionesPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ background: "#f8fafc" }}>
+              <tr style={{ background: "#0f1730" }}>
                 {COLS.map((h) => (
                   <th key={h}
                     className={`${h === "D. Jurada" ? "text-center" : "text-left"} px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap`}
-                    style={{ color: "#64748b" }}>
+                    style={{ color: "#94a3b8" }}>
                     {h}
                   </th>
                 ))}
@@ -262,14 +262,14 @@ export default function DonacionesPage() {
                   return (
                     <tr
                       key={d.id}
-                      className="table-row-animate border-t border-gray-50 hover:bg-blue-50 transition-colors"
-                      style={{ background: i % 2 === 0 ? "#ffffff" : "#fafbff" }}
+                      className="table-row-animate border-t border-[rgba(148,163,184,0.10)] hover:bg-[rgba(59,130,246,0.10)] transition-colors"
+                      style={{ background: i % 2 === 0 ? "#121a30" : "#0d1526" }}
                     >
                       {/* ID */}
                       <td className="px-4 py-3">
                         <Tooltip title={d.id}>
                           <span className="font-mono text-xs px-2 py-1 rounded-md cursor-default font-semibold"
-                            style={{ background: "#eff6ff", color: "#1565c0" }}>
+                            style={{ background: "rgba(59,130,246,0.16)", color: "#1565c0" }}>
                             {shortId(d.id)}…
                           </span>
                         </Tooltip>
@@ -284,14 +284,14 @@ export default function DonacionesPage() {
                               {inicial}
                             </div>
                             <div>
-                              <p className="font-semibold text-gray-800 text-xs">{nombreCompleto}</p>
+                              <p className="font-semibold text-[#e7ecfb] text-xs">{nombreCompleto}</p>
                               {d.razon_social && (
                                 <p className="text-xs text-gray-400">{d.razon_social}</p>
                               )}
                             </div>
                           </div>
                         ) : (
-                          <span className="text-gray-300 text-xs">—</span>
+                          <span className="text-[#475569] text-xs">—</span>
                         )}
                       </td>
 
@@ -299,7 +299,7 @@ export default function DonacionesPage() {
                       <td className="px-4 py-3 whitespace-nowrap">
                         {d.numero_documento ? (
                           <div className="flex flex-col">
-                            <span className="text-xs font-semibold" style={{ color: "#0d1b3e" }}>
+                            <span className="text-xs font-semibold" style={{ color: "#eef2ff" }}>
                               {d.numero_documento}
                             </span>
                             {d.tipo_documento && (
@@ -307,13 +307,13 @@ export default function DonacionesPage() {
                             )}
                           </div>
                         ) : (
-                          <span className="text-gray-300 text-xs">—</span>
+                          <span className="text-[#475569] text-xs">—</span>
                         )}
                       </td>
 
                       {/* Monto */}
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="font-bold" style={{ color: "#0d1b3e" }}>
+                        <span className="font-bold" style={{ color: "#eef2ff" }}>
                           S/ {Number(d.monto).toFixed(2)}
                         </span>
                       </td>
@@ -336,7 +336,7 @@ export default function DonacionesPage() {
                       {/* Fecha */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex flex-col">
-                          <span className="font-medium text-gray-700 text-xs">{fecha}</span>
+                          <span className="font-medium text-[#cbd5e1] text-xs">{fecha}</span>
                           <span className="text-xs text-gray-400">{hora}</span>
                         </div>
                       </td>
@@ -348,7 +348,7 @@ export default function DonacionesPage() {
           </table>
         </div>
 
-        <div className="px-5 py-3 border-t border-gray-100 flex justify-between items-center text-xs text-gray-400">
+        <div className="px-5 py-3 border-t border-[rgba(148,163,184,0.14)] flex justify-between items-center text-xs text-gray-400">
           <span>{!loading && `Mostrando ${filtrados.length} de ${data.length} registros`}</span>
           <span style={{ color: "#1565c0", fontWeight: 600 }}>Campaign Data Repository</span>
         </div>

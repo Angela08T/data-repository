@@ -39,9 +39,9 @@ const RANGOS_EDAD = [
 const COLOR_HOMBRE = "#1d4ed8";
 const COLOR_MUJER  = "#9d174d";
 const COLOR_TELEFONO = "#16a34a";
-const COLOR_TELEFONO_TRACK = "#dcfce7";
+const COLOR_TELEFONO_TRACK = "rgba(22,163,74,0.18)";
 const COLOR_MESA = "#1565c0";
-const COLOR_MESA_TRACK = "#dbeafe";
+const COLOR_MESA_TRACK = "rgba(21,101,192,0.2)";
 const COLOR_EDAD = "#0891b2";
 const COLOR_COLEGIO = "#d97706";
 
@@ -133,13 +133,13 @@ function StatCard({ label, value, subtitle, icon, color }: {
   label: string; value: string | number; subtitle?: string; icon: React.ReactNode; color: string;
 }) {
   return (
-    <div className="stat-card bg-white rounded-2xl shadow p-7 flex items-center gap-5">
+    <div className="stat-card glow-card rounded-2xl p-7 flex items-center gap-5">
       <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: `${color}18`, color }}>
         {icon}
       </div>
       <div className="min-w-0">
         <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide">{label}</p>
-        <p className="text-4xl font-black leading-tight" style={{ color: "#0d1b3e" }}>{value}</p>
+        <p className="text-4xl font-black leading-tight" style={{ color: "#eef2ff" }}>{value}</p>
         {subtitle && <p className="text-xs text-gray-400 mt-1">{subtitle}</p>}
       </div>
     </div>
@@ -158,7 +158,7 @@ function BarraDistribucion({ etiqueta, cantidad, pct, color, delay }: {
   return (
     <div className="px-6 py-3">
       <div className="flex justify-between items-center mb-1.5 gap-3">
-        <span className="text-sm font-semibold text-gray-700 truncate">{etiqueta}</span>
+        <span className="text-sm font-semibold text-[#cbd5e1] truncate">{etiqueta}</span>
         <span className="text-sm font-bold tabular-nums flex-shrink-0" style={{ color }}>{cantidad}</span>
       </div>
       <div className="h-2.5 rounded-full overflow-hidden" style={{ background: `${color}18` }}>
@@ -188,7 +188,7 @@ function Donut({ segmentos, size = 176, grosor = 26 }: {
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#f1f5f9" strokeWidth={grosor} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(148,163,184,0.14)" strokeWidth={grosor} />
         {total > 0 && segmentos.filter((s) => s.valor > 0).map((seg) => {
           const frac = seg.valor / total;
           const largo = Math.max(0, (mounted ? frac * c : 0) - GAP);
@@ -203,7 +203,7 @@ function Donut({ segmentos, size = 176, grosor = 26 }: {
         })}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-black" style={{ color: "#0d1b3e" }}>{total}</span>
+        <span className="text-3xl font-black" style={{ color: "#eef2ff" }}>{total}</span>
         <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-wide">Total</span>
       </div>
     </div>
@@ -218,7 +218,7 @@ function LeyendaDonut({ segmentos }: { segmentos: { etiqueta: string; valor: num
         <div key={seg.etiqueta} className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: seg.color }} />
-            <span className="text-sm text-gray-600 truncate">{seg.etiqueta}</span>
+            <span className="text-sm text-[#cbd5e1] truncate">{seg.etiqueta}</span>
           </div>
           <span className="text-sm font-bold tabular-nums flex-shrink-0" style={{ color: seg.color }}>
             {seg.valor} · {total > 0 ? Math.round((seg.valor / total) * 100) : 0}%
@@ -253,7 +253,7 @@ function HistogramaEdades({ bins, color }: { bins: { etiqueta: string; cantidad:
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto">
-      <line x1={padX} x2={width - padX} y1={height - padB} y2={height - padB} stroke="#e2e8f0" strokeWidth={1} />
+      <line x1={padX} x2={width - padX} y1={height - padB} y2={height - padB} stroke="rgba(148,163,184,0.22)" strokeWidth={1} />
       {bins.map((b, i) => {
         const h = mounted ? (b.cantidad / max) * plotH : 0;
         const x = padX + i * (barWidth + gap);
@@ -261,7 +261,7 @@ function HistogramaEdades({ bins, color }: { bins: { etiqueta: string; cantidad:
         return (
           <g key={b.etiqueta}>
             {b.cantidad > 0 && (
-              <text x={x + barWidth / 2} y={y - 8} textAnchor="middle" fontSize={12} fontWeight={700} fill="#0d1b3e">
+              <text x={x + barWidth / 2} y={y - 8} textAnchor="middle" fontSize={12} fontWeight={700} fill="#eef2ff">
                 {b.cantidad}
               </text>
             )}
@@ -279,10 +279,10 @@ function HistogramaEdades({ bins, color }: { bins: { etiqueta: string; cantidad:
 
 function DashboardCard({ titulo, icon, children }: { titulo: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-2xl shadow overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+    <div className="glow-card rounded-2xl overflow-hidden">
+      <div className="px-6 py-4 border-b border-[rgba(148,163,184,0.14)] flex items-center gap-2">
         {icon}
-        <h3 className="font-bold text-base" style={{ color: "#0d1b3e" }}>{titulo}</h3>
+        <h3 className="font-bold text-base" style={{ color: "#eef2ff" }}>{titulo}</h3>
       </div>
       <div className="p-6">{children}</div>
     </div>
@@ -297,11 +297,30 @@ export default function PersonerosDashboardPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const { data: rows, error: err } = await supabase
-      .from("personeros")
-      .select("nombres, apellido_paterno, apellido_materno, sexo, comuna, zona, telefono, fecha_nacimiento, numero_mesa, colegio_votacion");
-    if (err) setError(err.message);
-    else setData((rows as PersoneroMini[]) ?? []);
+
+    // Supabase/PostgREST limita cada consulta a 1000 filas; se pagina con .range()
+    // hasta traer todo — igual que en el listado de Personeros. Sin esto, el
+    // dashboard mostraba un total distinto (y menor) al del listado.
+    const PAGE_SIZE = 1000;
+    const todos: PersoneroMini[] = [];
+    let from = 0;
+    let hayError: string | null = null;
+
+    while (true) {
+      const { data: rows, error: err } = await supabase
+        .from("personeros")
+        .select("nombres, apellido_paterno, apellido_materno, sexo, comuna, zona, telefono, fecha_nacimiento, numero_mesa, colegio_votacion")
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (err) { hayError = err.message; break; }
+      const lote = (rows as PersoneroMini[]) ?? [];
+      todos.push(...lote);
+      if (lote.length === 0) break;
+      from += lote.length;
+    }
+
+    if (hayError) setError(hayError);
+    else setData(todos);
     setLoading(false);
   }, []);
 
@@ -382,7 +401,7 @@ export default function PersonerosDashboardPage() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black" style={{ color: "#0d1b3e" }}>Dashboard de Personeros</h1>
+          <h1 className="text-2xl font-black" style={{ color: "#eef2ff" }}>Dashboard de Personeros</h1>
           <p className="text-sm text-gray-400 mt-1">Resumen general por comuna, zona, sexo, edad y contacto</p>
         </div>
         <Tooltip title="Actualizar">
@@ -398,7 +417,7 @@ export default function PersonerosDashboardPage() {
           <p className="text-gray-400 text-sm mt-4">Cargando datos...</p>
         </div>
       ) : error ? (
-        <div className="bg-white rounded-2xl shadow p-10 text-center text-red-400 text-sm">
+        <div className="glow-card rounded-2xl p-10 text-center text-red-400 text-sm">
           Error al cargar datos: {error}
         </div>
       ) : (
@@ -454,12 +473,12 @@ export default function PersonerosDashboardPage() {
               {cumpleanieros.length > 0 ? (
                 <div className="space-y-2 max-h-[220px] overflow-y-auto">
                   {cumpleanieros.map((p, i) => (
-                    <div key={i} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg" style={{ background: "#fdf2f8" }}>
+                    <div key={i} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg" style={{ background: "rgba(219,39,119,0.16)" }}>
                       <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
                         style={{ background: "#db2777" }}>
                         {p.nombres?.charAt(0) ?? "?"}
                       </div>
-                      <span className="text-sm text-gray-700 truncate">
+                      <span className="text-sm text-[#cbd5e1] truncate">
                         {p.nombres} {p.apellido_paterno} {p.apellido_materno}
                       </span>
                     </div>
@@ -467,7 +486,7 @@ export default function PersonerosDashboardPage() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center text-center py-2">
-                  <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3" style={{ background: "#fdf2f8" }}>
+                  <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3" style={{ background: "rgba(219,39,119,0.16)" }}>
                     <CakeIcon sx={{ fontSize: 28, color: "#f9a8d4" }} />
                   </div>
                   <p className="text-sm text-gray-400 mb-1">Nadie cumple años hoy</p>
@@ -476,7 +495,7 @@ export default function PersonerosDashboardPage() {
                       <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wide mb-1.5">Próximos cumpleaños</p>
                       {proximosCumples.map(({ p, dm }, i) => (
                         <div key={i} className="flex items-center justify-between text-xs">
-                          <span className="text-gray-600 truncate">{p.nombres} {p.apellido_paterno}</span>
+                          <span className="text-[#cbd5e1] truncate">{p.nombres} {p.apellido_paterno}</span>
                           <span className="text-gray-400 font-semibold flex-shrink-0 ml-2">
                             {String(dm.dia).padStart(2, "0")}/{String(dm.mes).padStart(2, "0")}
                           </span>
@@ -517,12 +536,12 @@ export default function PersonerosDashboardPage() {
 
           {/* Comuna y zona */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-2xl shadow overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+            <div className="glow-card rounded-2xl overflow-hidden">
+              <div className="px-6 py-4 border-b border-[rgba(148,163,184,0.14)] flex items-center gap-2">
                 <LocationCityIcon sx={{ fontSize: 18, color: "#94a3b8" }} />
-                <h3 className="font-bold text-base" style={{ color: "#0d1b3e" }}>Por comuna</h3>
+                <h3 className="font-bold text-base" style={{ color: "#eef2ff" }}>Por comuna</h3>
               </div>
-              <div className="divide-y divide-gray-50 py-2 max-h-[480px] overflow-y-auto">
+              <div className="divide-y divide-[rgba(148,163,184,0.10)] py-2 max-h-[480px] overflow-y-auto">
                 {porComuna.length === 0 ? (
                   <p className="text-center text-gray-400 text-sm py-10">Sin datos de comuna todavía</p>
                 ) : (
@@ -534,12 +553,12 @@ export default function PersonerosDashboardPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+            <div className="glow-card rounded-2xl overflow-hidden">
+              <div className="px-6 py-4 border-b border-[rgba(148,163,184,0.14)] flex items-center gap-2">
                 <MapIcon sx={{ fontSize: 18, color: "#94a3b8" }} />
-                <h3 className="font-bold text-base" style={{ color: "#0d1b3e" }}>Por zona</h3>
+                <h3 className="font-bold text-base" style={{ color: "#eef2ff" }}>Por zona</h3>
               </div>
-              <div className="divide-y divide-gray-50 py-2 max-h-[480px] overflow-y-auto">
+              <div className="divide-y divide-[rgba(148,163,184,0.10)] py-2 max-h-[480px] overflow-y-auto">
                 {porZona.length === 0 ? (
                   <p className="text-center text-gray-400 text-sm py-10">Sin datos de zona todavía</p>
                 ) : (
@@ -553,12 +572,12 @@ export default function PersonerosDashboardPage() {
           </div>
 
           {/* Por colegio de votación */}
-          <div className="bg-white rounded-2xl shadow overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+          <div className="glow-card rounded-2xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-[rgba(148,163,184,0.14)] flex items-center gap-2">
               <SchoolIcon sx={{ fontSize: 18, color: "#94a3b8" }} />
-              <h3 className="font-bold text-base" style={{ color: "#0d1b3e" }}>Registrados por colegio de votación</h3>
+              <h3 className="font-bold text-base" style={{ color: "#eef2ff" }}>Registrados por colegio de votación</h3>
             </div>
-            <div className="divide-y divide-gray-50 py-2 max-h-[420px] overflow-y-auto">
+            <div className="divide-y divide-[rgba(148,163,184,0.10)] py-2 max-h-[420px] overflow-y-auto">
               {porColegio.length === 0 ? (
                 <p className="text-center text-gray-400 text-sm py-10">Sin datos de colegio todavía</p>
               ) : (

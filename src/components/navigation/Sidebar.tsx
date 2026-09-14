@@ -20,8 +20,8 @@ interface SidebarProps {
   color: string;
 }
 
-const NAVY   = "#0d1b3e";
-const BLUE   = "#1565c0";
+const NAVY   = "#0a0f1e";
+const BLUE   = "#2563eb";
 const BLUE_L = "#3b82f6";
 
 export default function Sidebar({ toggled, setToggled, menuItems, color }: SidebarProps) {
@@ -92,6 +92,7 @@ export default function Sidebar({ toggled, setToggled, menuItems, color }: Sideb
         style={{
           backgroundColor: active ? "rgba(59,130,246,0.22)" : "transparent",
           borderLeft:       active ? `3px solid ${BLUE_L}` : "3px solid transparent",
+          boxShadow:        active ? "inset 0 0 24px rgba(59,130,246,0.18)" : "none",
           transition:       "all 0.18s ease",
         }}
       >

@@ -195,12 +195,12 @@ function TrendCard({ label, value, subtitle, icon, color }: {
   label: string; value: string; subtitle: string; icon: React.ReactNode; color: string;
 }) {
   return (
-    <div className="kpi-enter stat-card bg-white rounded-2xl shadow p-5">
+    <div className="kpi-enter stat-card glow-card rounded-2xl p-5">
       <div className="flex items-start justify-between mb-3">
         <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide">{label}</p>
         <IconBadge icon={icon} color={color} />
       </div>
-      <p className="text-2xl md:text-3xl font-extrabold" style={{ color: "#0d1b3e" }}>{value}</p>
+      <p className="text-2xl md:text-3xl font-extrabold" style={{ color: "#eef2ff" }}>{value}</p>
       <div className="flex items-center gap-1 mt-1.5">
         <ArrowUpwardIcon sx={{ fontSize: 14, color: "#16a34a" }} />
         <span className="text-xs font-semibold" style={{ color: "#16a34a" }}>{subtitle}</span>
@@ -216,13 +216,13 @@ function ProgressCard({ label, value, pctLabel, pct, icon, color }: {
   useEffect(() => { const raf = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(raf); }, []);
 
   return (
-    <div className="kpi-enter stat-card bg-white rounded-2xl shadow p-5">
+    <div className="kpi-enter stat-card glow-card rounded-2xl p-5">
       <div className="flex items-start justify-between mb-3">
         <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide">{label}</p>
         <IconBadge icon={icon} color={color} pulse />
       </div>
       <div className="flex items-baseline gap-2">
-        <p className="text-2xl md:text-3xl font-extrabold" style={{ color: "#0d1b3e" }}>{value}</p>
+        <p className="text-2xl md:text-3xl font-extrabold" style={{ color: "#eef2ff" }}>{value}</p>
         <span className="text-xs font-bold" style={{ color }}>{pctLabel}</span>
       </div>
       <div className="h-2 rounded-full overflow-hidden mt-3" style={{ background: `${color}18` }}>
@@ -239,12 +239,12 @@ function SimpleStatCard({ label, value, subtitle, icon, color }: {
   label: string; value: string | number; subtitle: string; icon: React.ReactNode; color: string;
 }) {
   return (
-    <div className="kpi-enter stat-card bg-white rounded-2xl shadow p-5">
+    <div className="kpi-enter stat-card glow-card rounded-2xl p-5">
       <div className="flex items-start justify-between mb-3">
         <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide">{label}</p>
         <IconBadge icon={icon} color={color} />
       </div>
-      <p className="text-2xl md:text-3xl font-extrabold" style={{ color: "#0d1b3e" }}>{value}</p>
+      <p className="text-2xl md:text-3xl font-extrabold" style={{ color: "#eef2ff" }}>{value}</p>
       <p className="text-xs text-gray-400 mt-1.5">{subtitle}</p>
     </div>
   );
@@ -262,13 +262,13 @@ function ComunaBar({ comuna, votos, mesas, pct, delay }: {
   return (
     <div className="px-6 py-3">
       <div className="flex justify-between items-center mb-1.5">
-        <span className="text-sm font-semibold text-gray-700">{comuna}</span>
+        <span className="text-sm font-semibold text-[#cbd5e1]">{comuna}</span>
         <div className="flex items-center gap-3">
           <span className="text-xs text-gray-400">{mesas} mesa{mesas !== 1 ? "s" : ""}</span>
           <span className="text-sm font-bold tabular-nums" style={{ color: "#1565c0" }}>{votos}</span>
         </div>
       </div>
-      <div className="h-2.5 rounded-full overflow-hidden" style={{ background: "#eff6ff" }}>
+      <div className="h-2.5 rounded-full overflow-hidden" style={{ background: "rgba(59,130,246,0.16)" }}>
         <div
           className="h-full rounded-full transition-all duration-700 ease-out"
           style={{
@@ -297,7 +297,7 @@ function CandidatoBar({ resultado, color, delay, rank }: { resultado: ResultadoC
         <div className="flex items-center gap-2 min-w-0">
           {esPodio && <MilitaryTechIcon sx={{ fontSize: 18, color: colorMedalla, flexShrink: 0 }} />}
           <div className="min-w-0">
-            <span className="text-sm font-semibold text-gray-700 truncate block">{resultado.numero}. {resultado.nombre}</span>
+            <span className="text-sm font-semibold text-[#cbd5e1] truncate block">{resultado.numero}. {resultado.nombre}</span>
             <span className="text-xs text-gray-400 truncate block">{resultado.partido}</span>
           </div>
         </div>
@@ -337,7 +337,7 @@ function PodiumCard({ resultado, rank, color }: { resultado: ResultadoCandidato;
       >
         {resultado.nombre.charAt(0).toUpperCase()}
       </div>
-      <p className="text-xs md:text-sm font-bold text-center truncate max-w-full px-1" style={{ color: "#0d1b3e" }}>
+      <p className="text-xs md:text-sm font-bold text-center truncate max-w-full px-1" style={{ color: "#eef2ff" }}>
         {resultado.nombre}
       </p>
       <p className="text-[11px] text-gray-400 text-center truncate max-w-full px-1">{resultado.partido}</p>
@@ -367,10 +367,10 @@ function Podio({ resultados }: { resultados: ResultadoCandidato[] }) {
   if (top3.length === 0) return null;
 
   return (
-    <div className="kpi-enter bg-white rounded-2xl shadow overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+    <div className="kpi-enter glow-card rounded-2xl overflow-hidden">
+      <div className="px-6 py-4 border-b border-[rgba(148,163,184,0.14)] flex items-center gap-2">
         <EmojiEventsIcon sx={{ fontSize: 18, color: "#eab308" }} />
-        <h3 className="font-bold text-base" style={{ color: "#0d1b3e" }}>Podio</h3>
+        <h3 className="font-bold text-base" style={{ color: "#eef2ff" }}>Podio</h3>
       </div>
       <div className="flex items-end justify-center gap-3 md:gap-8 px-6 pt-8 pb-0">
         {top3.map((r, i) => (
@@ -408,15 +408,15 @@ function EvolucionChart({ puntos }: { puntos: PuntoEvolucion[] }) {
   const pctPadron = ((ultimo?.votos ?? 0) / ELECTORES_ESTIMADOS_SJL) * 100;
 
   return (
-    <div className="bg-white rounded-2xl shadow overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
+    <div className="glow-card rounded-2xl overflow-hidden">
+      <div className="px-6 py-4 border-b border-[rgba(148,163,184,0.14)] flex items-center justify-between gap-3">
         <div>
-          <h3 className="font-bold text-base" style={{ color: "#0d1b3e" }}>Evolución de votos en tiempo real</h3>
+          <h3 className="font-bold text-base" style={{ color: "#eef2ff" }}>Evolución de votos en tiempo real</h3>
           <p className="text-xs text-gray-400 mt-0.5">
             {numberFmt.format(ultimo?.votos ?? 0)} de ~{numberFmt.format(ELECTORES_ESTIMADOS_SJL)} electores estimados en SJL ({pctPadron < 0.01 && pctPadron > 0 ? "<0.01" : pctPadron.toFixed(2)}%)
           </p>
         </div>
-        <span className="text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0" style={{ background: "#eff6ff", color: "#1565c0" }}>Hoy</span>
+        <span className="text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0" style={{ background: "rgba(59,130,246,0.16)", color: "#1565c0" }}>Hoy</span>
       </div>
 
       <div className="px-4 py-4 relative">
@@ -430,7 +430,7 @@ function EvolucionChart({ puntos }: { puntos: PuntoEvolucion[] }) {
 
           {yTicks.map((t) => (
             <g key={t}>
-              <line x1={padL} x2={width - padR} y1={yFor(t)} y2={yFor(t)} stroke="#eef2f7" strokeWidth={1} />
+              <line x1={padL} x2={width - padR} y1={yFor(t)} y2={yFor(t)} stroke="rgba(148,163,184,0.14)" strokeWidth={1} />
               <text x={padL - 8} y={yFor(t) + 3} textAnchor="end" fontSize={10} fill="#94a3b8">{formatCompact(t)}</text>
             </g>
           ))}
@@ -616,7 +616,7 @@ export default function ResultadosVotosPage() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black" style={{ color: "#0d1b3e" }}>Resultados en Vivo</h1>
+          <h1 className="text-2xl font-black" style={{ color: "#eef2ff" }}>Resultados en Vivo</h1>
           <p className="text-sm text-gray-400 mt-1">
             Conteo paralelo en base a los votos reportados por los personeros
             {ultimaActualizacion && ` · Actualizado ${ultimaActualizacion.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`}
@@ -642,7 +642,7 @@ export default function ResultadosVotosPage() {
           <p className="text-gray-400 text-sm mt-4">Cargando resultados...</p>
         </div>
       ) : error ? (
-        <div className="bg-white rounded-2xl shadow p-10 text-center text-red-400 text-sm">
+        <div className="glow-card rounded-2xl p-10 text-center text-red-400 text-sm">
           Error al cargar datos: {error}
         </div>
       ) : (
@@ -722,26 +722,26 @@ export default function ResultadosVotosPage() {
           </div>
 
           {actas.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow p-10 text-center text-gray-400 text-sm">
+            <div className="glow-card rounded-2xl p-10 text-center text-gray-400 text-sm">
               Aún no hay actas reportadas. Los resultados aparecerán aquí apenas los personeros empiecen a enviar sus reportes.
             </div>
           ) : (
-            <div className="bg-white rounded-2xl shadow overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-2">
+            <div className="glow-card rounded-2xl overflow-hidden">
+              <div className="px-6 py-4 border-b border-[rgba(148,163,184,0.14)] flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <EmojiEventsIcon sx={{ fontSize: 18, color: "#94a3b8" }} />
-                  <h3 className="font-bold text-base" style={{ color: "#0d1b3e" }}>Resultados por candidato</h3>
+                  <h3 className="font-bold text-base" style={{ color: "#eef2ff" }}>Resultados por candidato</h3>
                 </div>
                 {resultados.length > 8 && (
                   <button
                     onClick={() => setMostrarTodos((v) => !v)}
                     className="text-xs font-semibold px-3 py-1 rounded-full transition-all"
-                    style={{ background: "#eff6ff", color: "#1565c0" }}>
+                    style={{ background: "rgba(59,130,246,0.16)", color: "#1565c0" }}>
                     {mostrarTodos ? "Ver menos" : `Ver los ${resultados.length}`}
                   </button>
                 )}
               </div>
-              <div className="divide-y divide-gray-50 py-2">
+              <div className="divide-y divide-[rgba(148,163,184,0.10)] py-2">
                 {(mostrarTodos ? resultados : resultados.slice(0, 8)).map((r, i) => (
                   <CandidatoBar
                     key={r.numero}
@@ -758,12 +758,12 @@ export default function ResultadosVotosPage() {
           <EvolucionChart puntos={puntosEvolucion} />
 
           {porComuna.length > 0 && (
-            <div className="bg-white rounded-2xl shadow overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+            <div className="glow-card rounded-2xl overflow-hidden">
+              <div className="px-6 py-4 border-b border-[rgba(148,163,184,0.14)] flex items-center gap-2">
                 <LocationCityIcon sx={{ fontSize: 18, color: "#94a3b8" }} />
-                <h3 className="font-bold text-base" style={{ color: "#0d1b3e" }}>Votos por comuna</h3>
+                <h3 className="font-bold text-base" style={{ color: "#eef2ff" }}>Votos por comuna</h3>
               </div>
-              <div className="divide-y divide-gray-50 py-2">
+              <div className="divide-y divide-[rgba(148,163,184,0.10)] py-2">
                 {porComuna.map((c, i) => (
                   <ComunaBar
                     key={c.comuna}

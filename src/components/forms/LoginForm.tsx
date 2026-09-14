@@ -96,24 +96,33 @@ export default function LoginForm({ subgerencia }: LoginFormProps) {
   return (
     <div className="w-full max-w-md px-4">
       <div
-        className="bg-white rounded-3xl p-10"
-        style={{ boxShadow: "0 20px 60px rgba(13, 27, 62, 0.12)" }}
+        className="glow-card rounded-3xl p-10"
+        style={{ backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
       >
         {/* Badge */}
         <div className="flex justify-center mb-8">
           <span
             className="text-xs font-semibold tracking-widest uppercase px-4 py-1.5 rounded-full border"
-            style={{ color: "#0d1b3e", borderColor: "#93c5fd", background: "#eff6ff" }}
+            style={{ color: "#93c5fd", borderColor: "rgba(59,130,246,0.35)", background: "rgba(59,130,246,0.12)" }}
           >
             Data Management Platform
           </span>
         </div>
 
         {/* Título */}
-        <h1 className="text-center font-black leading-none mb-2" style={{ fontSize: "2rem", color: "#0d1b3e" }}>
+        <h1 className="text-center font-black leading-none mb-2" style={{ fontSize: "2rem", color: "#eef2ff" }}>
           Campaign
         </h1>
-        <h1 className="text-center font-black leading-none mb-8" style={{ fontSize: "2.4rem", color: "#1565c0" }}>
+        <h1
+          className="text-center font-black leading-none mb-8"
+          style={{
+            fontSize: "2.4rem",
+            backgroundImage: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 60%, #2563eb 100%)",
+            backgroundClip: "text",
+            WebkitBackgroundClip: "text",
+            color: "transparent",
+          }}
+        >
           Data Repository
         </h1>
 

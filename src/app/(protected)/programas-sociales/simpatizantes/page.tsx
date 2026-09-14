@@ -45,13 +45,13 @@ function formatFecha(iso: string) {
 
 function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: React.ReactNode; color: string }) {
   return (
-    <div className="stat-card bg-white rounded-2xl shadow p-5 flex items-center gap-4">
+    <div className="stat-card glow-card rounded-2xl p-5 flex items-center gap-4">
       <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: `${color}18` }}>
         <span style={{ color }}>{icon}</span>
       </div>
       <div>
         <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</p>
-        <p className="text-xl font-bold" style={{ color: "#0d1b3e" }}>{value}</p>
+        <p className="text-xl font-bold" style={{ color: "#eef2ff" }}>{value}</p>
       </div>
     </div>
   );
@@ -147,7 +147,7 @@ export default function SimpatizantesPage() {
     <div className="p-4 md:p-6 space-y-6">
 
       <div>
-        <h1 className="text-2xl font-black" style={{ color: "#0d1b3e" }}>Simpatizantes</h1>
+        <h1 className="text-2xl font-black" style={{ color: "#eef2ff" }}>Simpatizantes</h1>
         <p className="text-sm text-gray-400 mt-1">Personas registradas como simpatizantes de la campaña</p>
       </div>
 
@@ -158,10 +158,10 @@ export default function SimpatizantesPage() {
         <StatCard label="Con DNI"             value={data.filter(s => s.dni).length}          icon={<BadgeIcon />}     color="#7c3aed" />
       </div>
 
-      <div className="bg-white rounded-2xl shadow overflow-hidden">
+      <div className="glow-card rounded-2xl overflow-hidden">
 
         {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b border-gray-100">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b border-[rgba(148,163,184,0.14)]">
           <TextField
             size="small"
             placeholder="Buscar por nombre, apellidos, DNI o teléfono..."
@@ -213,7 +213,7 @@ export default function SimpatizantesPage() {
         </div>
 
         {/* Contador */}
-        <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-50 flex items-center gap-2">
+        <div className="px-4 py-2 text-xs text-gray-400 border-b border-[rgba(148,163,184,0.10)] flex items-center gap-2">
           {loading ? "Cargando..." : `${filtrados.length} registro${filtrados.length !== 1 ? "s" : ""}`}
           {selCount > 0 && (
             <span className="font-semibold" style={{ color: "#1565c0" }}>
@@ -226,7 +226,7 @@ export default function SimpatizantesPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ background: "#f8fafc" }}>
+              <tr style={{ background: "#0f1730" }}>
                 {/* Checkbox select-all */}
                 <th className="px-4 py-3 w-10">
                   <Checkbox
@@ -239,7 +239,7 @@ export default function SimpatizantesPage() {
                   />
                 </th>
                 {["Nombre y Apellidos", "DNI", "Teléfono", "Fecha de registro", ""].map((h) => (
-                  <th key={h} className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wide" style={{ color: "#64748b" }}>
+                  <th key={h} className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wide" style={{ color: "#94a3b8" }}>
                     {h}
                   </th>
                 ))}
@@ -272,8 +272,8 @@ export default function SimpatizantesPage() {
                   return (
                     <tr
                       key={s.id}
-                      className="table-row-animate border-t border-gray-50 hover:bg-blue-50 transition-colors"
-                      style={{ background: checked ? "#eff6ff" : i % 2 === 0 ? "#ffffff" : "#fafbff" }}
+                      className="table-row-animate border-t border-[rgba(148,163,184,0.10)] hover:bg-[rgba(59,130,246,0.10)] transition-colors"
+                      style={{ background: checked ? "rgba(59,130,246,0.16)" : i % 2 === 0 ? "#121a30" : "#0d1526" }}
                     >
                       {/* Checkbox */}
                       <td className="px-4 py-4 w-10">
@@ -295,23 +295,23 @@ export default function SimpatizantesPage() {
                           >
                             {s.nombre?.charAt(0)?.toUpperCase() ?? "?"}
                           </div>
-                          <p className="font-semibold text-gray-800">{nombreCompleto(s.nombre, s.apellidos)}</p>
+                          <p className="font-semibold text-[#e7ecfb]">{nombreCompleto(s.nombre, s.apellidos)}</p>
                         </div>
                       </td>
 
                       {/* DNI */}
                       <td className="px-5 py-4">
                         {s.dni ? (
-                          <span className="font-mono text-sm font-medium text-gray-700">{s.dni}</span>
+                          <span className="font-mono text-sm font-medium text-[#cbd5e1]">{s.dni}</span>
                         ) : (
-                          <span className="text-gray-300 text-xs">—</span>
+                          <span className="text-[#475569] text-xs">—</span>
                         )}
                       </td>
 
                       {/* Teléfono */}
                       <td className="px-5 py-4">
                         {s.telefono ? (
-                          <span className="inline-flex items-center gap-1.5 text-sm text-gray-700">
+                          <span className="inline-flex items-center gap-1.5 text-sm text-[#cbd5e1]">
                             <PhoneIcon sx={{ fontSize: 14, color: "#94a3b8" }} />
                             {s.telefono.startsWith("+") ? s.telefono : `+51 ${s.telefono}`}
                           </span>
@@ -323,7 +323,7 @@ export default function SimpatizantesPage() {
                       {/* Fecha */}
                       <td className="px-5 py-4">
                         <div className="flex flex-col">
-                          <span className="font-medium text-gray-700">{fecha}</span>
+                          <span className="font-medium text-[#cbd5e1]">{fecha}</span>
                           <span className="text-xs text-gray-400">{hora}</span>
                         </div>
                       </td>
@@ -354,7 +354,7 @@ export default function SimpatizantesPage() {
           </table>
         </div>
 
-        <div className="px-5 py-3 border-t border-gray-100 flex justify-between items-center text-xs text-gray-400">
+        <div className="px-5 py-3 border-t border-[rgba(148,163,184,0.14)] flex justify-between items-center text-xs text-gray-400">
           <span>{!loading && `Mostrando ${filtrados.length} de ${data.length} registros`}</span>
           <span style={{ color: "#1565c0", fontWeight: 600 }}>Campaign Data Repository</span>
         </div>

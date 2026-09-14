@@ -3,8 +3,8 @@
 
 /* ─── Variables ─────────────────────────────────────────────────────────────── */
 :root {
-  --background: #f0f4ff;
-  --foreground: #0d1b3e;
+  --background: #0a0f1e;
+  --foreground: #e7ecfb;
 
   --brand-navy:      #0d1b3e;
   --brand-blue:      #1565c0;
@@ -12,11 +12,22 @@
   --brand-blue-dark: #0d47a1;
   --brand-light:     #eff6ff;
 
-  --programas-sociales:      #1565c0;
-  --programas-sociales-hover:#0d47a1;
-  --programas-sociales-bg:   #eff6ff;
-  --servicios-sociales:      #0d47a1;
-  --servicios-sociales-hover:#0a3880;
+  /* Superficies oscuras (tarjetas, paneles) y acentos neón — tema oscuro global */
+  --surface:      #121a30;
+  --surface-2:    #182142;
+  --border-soft:  rgba(148, 163, 184, 0.14);
+  --text-primary:   #eef2ff;
+  --text-secondary: #94a3b8;
+  --accent:         #3b82f6;
+  --accent-strong:  #2563eb;
+  --accent-light:   #60a5fa;
+  --glow-blue:      rgba(59, 130, 246, 0.35);
+
+  --programas-sociales:      #3b82f6;
+  --programas-sociales-hover:#2563eb;
+  --programas-sociales-bg:   rgba(59, 130, 246, 0.12);
+  --servicios-sociales:      #2563eb;
+  --servicios-sociales-hover:#1d4ed8;
 }
 
 @theme inline {
@@ -43,8 +54,8 @@ body {
 /* ─── Custom Scrollbar ───────────────────────────────────────────────────────── */
 ::-webkit-scrollbar              { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track        { background: transparent; }
-::-webkit-scrollbar-thumb        { background: #c7d2fe; border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover  { background: #93c5fd; }
+::-webkit-scrollbar-thumb        { background: rgba(59, 130, 246, 0.35); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover  { background: rgba(59, 130, 246, 0.6); }
 
 /* ─── Keyframe Animations ────────────────────────────────────────────────────── */
 @keyframes fadeIn {
@@ -94,7 +105,7 @@ body {
 }
 .stat-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(21, 101, 192, 0.14) !important;
+  box-shadow: 0 12px 32px rgba(59, 130, 246, 0.25) !important;
 }
 
 /* ─── Table Rows ─────────────────────────────────────────────────────────────── */
@@ -142,9 +153,27 @@ body {
 
 /* ─── Card Glass Effect ──────────────────────────────────────────────────────── */
 .glass-card {
-  background: rgba(255,255,255,0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(18, 26, 48, 0.72);
+  border: 1px solid var(--border-soft);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* ─── Glow Card (tarjetas/paneles del tema oscuro con borde neón) ────────────── */
+.glow-card {
+  background: var(--surface);
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  box-shadow:
+    0 0 0 1px rgba(59, 130, 246, 0.06),
+    0 20px 60px rgba(2, 6, 23, 0.55),
+    0 0 40px rgba(37, 99, 235, 0.08);
+}
+.glow-card-strong {
+  border-color: rgba(59, 130, 246, 0.45);
+  box-shadow:
+    0 0 0 1px rgba(59, 130, 246, 0.15),
+    0 24px 70px rgba(2, 6, 23, 0.6),
+    0 0 60px rgba(37, 99, 235, 0.25);
 }
 
 /* ─── MUI Overrides ──────────────────────────────────────────────────────────── */
@@ -159,9 +188,9 @@ body {
 /* ─── Layout Background ──────────────────────────────────────────────────────── */
 .bg-programas-sociales-light {
   background:
-    radial-gradient(ellipse 80% 60% at 80% -10%, rgba(21,101,192,0.07) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at -5% 90%,  rgba(13,27,62,0.04)  0%, transparent 50%),
-    linear-gradient(160deg, #f0f4ff 0%, #e8f0fe 50%, #dbeafe 100%);
+    radial-gradient(ellipse 70% 55% at 85% -10%, rgba(59,130,246,0.16) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 45% at -5% 100%,  rgba(37,99,235,0.10) 0%, transparent 55%),
+    linear-gradient(160deg, #0a0f1e 0%, #0a1122 50%, #0b1428 100%);
   min-height: 100%;
 }
 

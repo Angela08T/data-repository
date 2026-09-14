@@ -53,7 +53,7 @@ export default function EditableCell({
   const contenido = displayValue ?? (value || "—");
 
   if (!editable) {
-    return <span className="text-sm text-gray-600 block" style={{ textAlign: align }}>{contenido}</span>;
+    return <span className="text-sm text-[#cbd5e1] block" style={{ textAlign: align }}>{contenido}</span>;
   }
 
   if (!editing) {
@@ -62,7 +62,7 @@ export default function EditableCell({
         type="button"
         onClick={() => setEditing(true)}
         title="Clic para editar"
-        className="block w-full rounded px-1 -mx-1 hover:bg-blue-50 transition-colors cursor-text"
+        className="block w-full rounded px-1 -mx-1 hover:bg-[rgba(59,130,246,0.10)] transition-colors cursor-text"
         style={{ textAlign: align, border: error ? "1px solid #dc2626" : "1px solid transparent" }}
       >
         {contenido}
@@ -70,6 +70,9 @@ export default function EditableCell({
     );
   }
 
+  // Los <select>/<input> nativos no heredan el tema oscuro de MUI, así que se les
+  // fija fondo y texto a mano — de lo contrario aparecen en blanco (fondo por
+  // defecto del navegador) sobre la fila oscura mientras se edita la celda.
   if (type === "select") {
     return (
       <select
@@ -80,7 +83,7 @@ export default function EditableCell({
         onBlur={commit}
         onKeyDown={(e) => { if (e.key === "Escape") cancel(); }}
         className="text-sm border rounded px-1 py-0.5 w-full outline-none"
-        style={{ borderColor: "#1565c0", textAlign: align }}
+        style={{ borderColor: "#3b82f6", textAlign: align, backgroundColor: "#121a30", color: "#eef2ff" }}
       >
         {options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
@@ -100,7 +103,7 @@ export default function EditableCell({
         if (e.key === "Escape") cancel();
       }}
       className="text-sm border rounded px-1.5 py-0.5 w-full outline-none"
-      style={{ borderColor: "#1565c0", textAlign: align }}
+      style={{ borderColor: "#3b82f6", textAlign: align, backgroundColor: "#121a30", color: "#eef2ff" }}
     />
   );
 }

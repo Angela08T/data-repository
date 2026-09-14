@@ -17,6 +17,7 @@ import PhoneInTalkIcon from "@mui/icons-material/PhoneInTalk";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import SendMessageModal, { Contacto } from "@/components/messaging/SendMessageModal";
 import SuccessToast from "@/components/feedback/SuccessToast";
+import ResultadoLlamadaSelect from "@/components/shared/ResultadoLlamadaSelect";
 
 const COMUNAS = Array.from({ length: 18 }, (_, i) => i + 1);
 
@@ -42,6 +43,7 @@ interface Dirigente {
   celular?: string | null;
   llamado?: boolean | null;
   fecha_llamada?: string | null;
+  resultado_llamada?: string | null;
   created_at?: string | null;
 }
 
@@ -54,7 +56,7 @@ function LlamadoBadge({ llamado }: { llamado?: boolean | null }) {
     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
       style={llamado
         ? { background: "#f0fdf4", color: "#166534" }
-        : { background: "#f1f5f9", color: "#64748b" }}>
+        : { background: "rgba(148,163,184,0.14)", color: "#94a3b8" }}>
       {llamado ? <PhoneInTalkIcon sx={{ fontSize: 12 }} /> : <PendingActionsIcon sx={{ fontSize: 12 }} />}
       {llamado ? "Llamado" : "Pendiente"}
     </span>
@@ -63,13 +65,13 @@ function LlamadoBadge({ llamado }: { llamado?: boolean | null }) {
 
 function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: React.ReactNode; color: string }) {
   return (
-    <div className="stat-card bg-white rounded-2xl shadow p-5 flex items-center gap-4">
+    <div className="stat-card glow-card rounded-2xl p-5 flex items-center gap-4">
       <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: `${color}18` }}>
         <span style={{ color }}>{icon}</span>
       </div>
       <div>
         <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</p>
-        <p className="text-xl font-bold" style={{ color: "#0d1b3e" }}>{value}</p>
+        <p className="text-xl font-bold" style={{ color: "#eef2ff" }}>{value}</p>
       </div>
     </div>
   );
@@ -185,10 +187,20 @@ export default function DirigentesPage() {
     setModalOpen(true);
   };
 
+  // Guarda el resultado de la llamada (select siempre visible en la tabla).
+  // Devuelve el mensaje de error (o null si salió bien) para que el select
+  // decida si mostrar el borde rojo.
+  const handleActualizarResultado = async (id: string, valor: string | null): Promise<string | null> => {
+    const { error } = await supabase.from("dirigentes").update({ resultado_llamada: valor }).eq("id", id);
+    if (error) return error.message;
+    setData((prev) => prev.map((d) => (d.id === id ? { ...d, resultado_llamada: valor } : d)));
+    return null;
+  };
+
   const totalOrganizaciones = new Set(data.map((d) => d.organizacion?.trim()).filter(Boolean)).size;
   const totalLlamados       = data.filter((d) => d.llamado).length;
   const selCount             = filtrados.filter((d) => selectedIds.has(d.id)).length;
-  const COLS                 = 9; // checkbox + comuna + promotor + n° + nombre + apellido + organización + celular + llamado + acciones
+  const COLS                 = 10; // checkbox + comuna + promotor + n° + nombre + apellido + organización + celular + llamado + resultado + acciones
 
   // Solo se puede descargar/marcar en lote a quienes aún están pendientes
   // (respetando los demás filtros activos: búsqueda, comuna, promotor).
@@ -238,7 +250,7 @@ export default function DirigentesPage() {
     <div className="p-4 md:p-6 space-y-6">
 
       <div>
-        <h1 className="text-2xl font-black" style={{ color: "#0d1b3e" }}>Dirigentes</h1>
+        <h1 className="text-2xl font-black" style={{ color: "#eef2ff" }}>Dirigentes</h1>
         <p className="text-sm text-gray-400 mt-1">Registro de dirigentes y promotores por comuna</p>
       </div>
 
@@ -250,10 +262,10 @@ export default function DirigentesPage() {
         <StatCard label="Llamados"           value={totalLlamados}           icon={<PhoneInTalkIcon />}   color="#166534" />
       </div>
 
-      <div className="bg-white rounded-2xl shadow overflow-hidden">
+      <div className="glow-card rounded-2xl overflow-hidden">
 
         {/* Toolbar principal */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b border-gray-100">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b border-[rgba(148,163,184,0.14)]">
           <TextField
             size="small"
             placeholder="Buscar por nombre, apellido, comuna, promotor u organización..."
@@ -309,13 +321,13 @@ export default function DirigentesPage() {
                 sx: {
                   borderRadius: "16px",
                   boxShadow: "0 16px 40px rgba(15,23,42,0.16)",
-                  border: "1px solid #e2e8f0",
+                  border: "1px solid rgba(148,163,184,0.22)",
                 },
               },
             }}
           >
             <Box sx={{ p: 3, width: 300 }}>
-              <Typography variant="subtitle2" fontWeight={700} color="#0d1b3e" sx={{ fontFamily: "'Poppins', sans-serif" }}>
+              <Typography variant="subtitle2" fontWeight={700} color="#eef2ff" sx={{ fontFamily: "'Poppins', sans-serif" }}>
                 Descargar por lotes
               </Typography>
               <Typography variant="caption" color="#94a3b8" sx={{ display: "block", mt: 0.25, mb: 2 }}>
@@ -344,7 +356,7 @@ export default function DirigentesPage() {
               <Box display="flex" justifyContent="flex-end" mt={3} gap={1}>
                 <Button size="small"
                   onClick={() => setExportAnchor(null)}
-                  sx={{ color: "#64748b", textTransform: "none", fontWeight: 600, fontFamily: "'Poppins', sans-serif", "&:hover": { background: "#f1f5f9" } }}>
+                  sx={{ color: "#94a3b8", textTransform: "none", fontWeight: 600, fontFamily: "'Poppins', sans-serif", "&:hover": { background: "rgba(148,163,184,0.14)" } }}>
                   Cancelar
                 </Button>
                 <Button size="small" variant="contained"
@@ -364,7 +376,7 @@ export default function DirigentesPage() {
         </div>
 
         {/* Barra de filtros: Comuna + Promotor */}
-        <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-gray-100" style={{ background: "#fafbff" }}>
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-[rgba(148,163,184,0.14)]" style={{ background: "#0d1526" }}>
 
           {/* Filtro Comuna */}
           <div className="flex items-center gap-2">
@@ -374,9 +386,9 @@ export default function DirigentesPage() {
               onChange={(e) => setFiltroComuna(e.target.value)}
               className="text-xs border rounded-full px-3 py-1.5 outline-none cursor-pointer font-semibold transition-all"
               style={{
-                borderColor: filtroComuna !== "todos" ? "#1565c0" : "#e2e8f0",
-                color: filtroComuna !== "todos" ? "#1565c0" : "#64748b",
-                background: filtroComuna !== "todos" ? "#eff6ff" : "#fff",
+                borderColor: filtroComuna !== "todos" ? "#1565c0" : "rgba(148,163,184,0.22)",
+                color: filtroComuna !== "todos" ? "#1565c0" : "#94a3b8",
+                background: filtroComuna !== "todos" ? "rgba(59,130,246,0.16)" : "#121a30",
                 fontFamily: "'Poppins', sans-serif",
               }}
             >
@@ -388,7 +400,7 @@ export default function DirigentesPage() {
           </div>
 
           {/* Separador */}
-          <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
+          <div style={{ width: 1, height: 20, background: "rgba(148,163,184,0.22)" }} />
 
           {/* Filtro Promotor */}
           <div className="flex items-center gap-2">
@@ -398,9 +410,9 @@ export default function DirigentesPage() {
               onChange={(e) => setFiltroPromotor(e.target.value)}
               className="text-xs border rounded-full px-3 py-1.5 outline-none cursor-pointer font-semibold transition-all"
               style={{
-                borderColor: filtroPromotor !== "todos" ? "#d97706" : "#e2e8f0",
-                color: filtroPromotor !== "todos" ? "#d97706" : "#64748b",
-                background: filtroPromotor !== "todos" ? "#fffbeb" : "#fff",
+                borderColor: filtroPromotor !== "todos" ? "#d97706" : "rgba(148,163,184,0.22)",
+                color: filtroPromotor !== "todos" ? "#d97706" : "#94a3b8",
+                background: filtroPromotor !== "todos" ? "rgba(217,119,6,0.18)" : "#121a30",
                 fontFamily: "'Poppins', sans-serif",
                 maxWidth: 220,
               }}
@@ -413,7 +425,7 @@ export default function DirigentesPage() {
           </div>
 
           {/* Separador */}
-          <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
+          <div style={{ width: 1, height: 20, background: "rgba(148,163,184,0.22)" }} />
 
           {/* Filtro Llamado (para seguimiento de callcenter) */}
           <div className="flex items-center gap-2">
@@ -427,7 +439,7 @@ export default function DirigentesPage() {
                 className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
                 style={filtroLlamado === f.value
                   ? { background: "#166534", color: "#fff", borderColor: "#166534" }
-                  : { background: "#fff", color: "#64748b", borderColor: "#e2e8f0" }}>
+                  : { background: "#121a30", color: "#94a3b8", borderColor: "rgba(148,163,184,0.22)" }}>
                 {f.label}
               </button>
             ))}
@@ -438,14 +450,14 @@ export default function DirigentesPage() {
             <button
               onClick={() => { setFiltroComuna("todos"); setFiltroPromotor("todos"); setFiltroLlamado("todos"); }}
               className="text-xs font-semibold px-3 py-1 rounded-full transition-all"
-              style={{ background: "#fee2e2", color: "#dc2626", border: "1px solid #fecaca" }}>
+              style={{ background: "rgba(220,38,38,0.16)", color: "#f87171", border: "1px solid rgba(220,38,38,0.4)" }}>
               Limpiar filtros
             </button>
           )}
         </div>
 
         {/* Contador */}
-        <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-50 flex items-center gap-2">
+        <div className="px-4 py-2 text-xs text-gray-400 border-b border-[rgba(148,163,184,0.10)] flex items-center gap-2">
           {loading ? "Cargando..." : `${filtrados.length} registro${filtrados.length !== 1 ? "s" : ""}`}
           {selCount > 0 && (
             <span className="font-semibold" style={{ color: "#1565c0" }}>
@@ -458,14 +470,14 @@ export default function DirigentesPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ background: "#f8fafc" }}>
+              <tr style={{ background: "#0f1730" }}>
                 <th className="px-4 py-3 w-10">
                   <Checkbox size="small" checked={allChecked} indeterminate={someChecked && !allChecked}
                     onChange={toggleSelectAll} disabled={loading || conTelefono.length === 0}
                     sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" }, "&.MuiCheckbox-indeterminate": { color: "#1565c0" } }} />
                 </th>
-                {["Comuna", "Promotor", "N°", "Nombre", "Apellido", "Organización", "Celular", "Llamado", ""].map((h) => (
-                  <th key={h} className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap" style={{ color: "#64748b" }}>
+                {["Comuna", "Promotor", "N°", "Nombre", "Apellido", "Organización", "Celular", "Llamado", "Resultado", ""].map((h) => (
+                  <th key={h} className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap" style={{ color: "#94a3b8" }}>
                     {h}
                   </th>
                 ))}
@@ -491,8 +503,8 @@ export default function DirigentesPage() {
                   const tienePhone = hasPhone(d);
                   return (
                     <tr key={d.id}
-                      className="table-row-animate border-t border-gray-50 hover:bg-blue-50 transition-colors"
-                      style={{ background: checked ? "#eff6ff" : i % 2 === 0 ? "#ffffff" : "#fafbff" }}>
+                      className="table-row-animate border-t border-[rgba(148,163,184,0.10)] hover:bg-[rgba(59,130,246,0.10)] transition-colors"
+                      style={{ background: checked ? "rgba(59,130,246,0.16)" : i % 2 === 0 ? "#121a30" : "#0d1526" }}>
 
                       {/* Checkbox */}
                       <td className="px-4 py-3 w-10">
@@ -517,7 +529,7 @@ export default function DirigentesPage() {
 
                       {/* N° */}
                       <td className="px-4 py-3 text-center">
-                        <span className="font-mono text-sm text-gray-600">{d.numero || "—"}</span>
+                        <span className="font-mono text-sm text-[#cbd5e1]">{d.numero || "—"}</span>
                       </td>
 
                       {/* Nombre */}
@@ -527,23 +539,23 @@ export default function DirigentesPage() {
                             style={{ background: "#1565c0" }}>
                             {d.nombre?.charAt(0) ?? "?"}
                           </div>
-                          <span className="font-semibold text-gray-800">{d.nombre}</span>
+                          <span className="font-semibold text-[#e7ecfb]">{d.nombre}</span>
                         </div>
                       </td>
 
                       {/* Apellido */}
                       <td className="px-4 py-3">
-                        <span className="text-sm text-gray-700">{d.apellido || "—"}</span>
+                        <span className="text-sm text-[#cbd5e1]">{d.apellido || "—"}</span>
                       </td>
 
                       {/* Organización */}
                       <td className="px-4 py-3 max-w-[200px]">
-                        <span className="text-sm text-gray-600 truncate block" title={d.organizacion ?? ""}>{d.organizacion || "—"}</span>
+                        <span className="text-sm text-[#cbd5e1] truncate block" title={d.organizacion ?? ""}>{d.organizacion || "—"}</span>
                       </td>
 
                       {/* Celular */}
                       <td className="px-4 py-3">
-                        <span className="text-sm text-gray-600">{tienePhone ? (d.celular!.startsWith("+") ? d.celular : `+51 ${d.celular}`) : "—"}</span>
+                        <span className="text-sm text-[#cbd5e1]">{tienePhone ? (d.celular!.startsWith("+") ? d.celular : `+51 ${d.celular}`) : "—"}</span>
                       </td>
 
                       {/* Llamado */}
@@ -551,6 +563,14 @@ export default function DirigentesPage() {
                         <Tooltip title={d.fecha_llamada ? `Llamado el ${dayjs(d.fecha_llamada).format("DD/MM/YYYY HH:mm")}` : "Aún no ha sido llamado"}>
                           <span><LlamadoBadge llamado={d.llamado} /></span>
                         </Tooltip>
+                      </td>
+
+                      {/* Resultado de llamada */}
+                      <td className="px-4 py-3">
+                        <ResultadoLlamadaSelect
+                          value={d.resultado_llamada ?? null}
+                          onSave={(v) => handleActualizarResultado(d.id, v)}
+                        />
                       </td>
 
                       {/* Acciones */}
@@ -584,11 +604,11 @@ export default function DirigentesPage() {
             rowsPerPageOptions={[25, 50, 100, 250]}
             labelRowsPerPage="Filas por página:"
             labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
-            sx={{ borderTop: "1px solid #e2e8f0", "& .MuiTablePagination-selectIcon": { color: "#64748b" } }}
+            sx={{ borderTop: "1px solid rgba(148,163,184,0.22)", "& .MuiTablePagination-selectIcon": { color: "#94a3b8" } }}
           />
         )}
 
-        <div className="px-5 py-3 border-t border-gray-100 flex justify-between items-center text-xs text-gray-400">
+        <div className="px-5 py-3 border-t border-[rgba(148,163,184,0.14)] flex justify-between items-center text-xs text-gray-400">
           <span>{!loading && `Mostrando ${filtrados.length} de ${data.length} registros`}</span>
           <span style={{ color: "#1565c0", fontWeight: 600 }}>Campaign Data Repository</span>
         </div>

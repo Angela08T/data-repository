@@ -42,7 +42,7 @@ function DatoFila({ label, value }: { label: string; value?: string | null }) {
         alignItems: { xs: "flex-start", sm: "baseline" },
         gap: { xs: 0.25, sm: 2 },
         py: 1,
-        borderBottom: "1px solid #e2e8f0",
+        borderBottom: "1px solid rgba(148,163,184,0.18)",
         "&:last-of-type": { borderBottom: "none" },
       }}
     >
@@ -52,7 +52,7 @@ function DatoFila({ label, value }: { label: string; value?: string | null }) {
       <Typography
         variant="body2"
         fontWeight={600}
-        color="#0d1b3e"
+        color="#eef2ff"
         sx={{ textAlign: { xs: "left", sm: "right" }, wordBreak: "break-word" }}
       >
         {value}
@@ -140,7 +140,10 @@ export default function SoyPersoneroPage() {
       sx={{
         minHeight: "100dvh",
         display: "flex",
-        backgroundColor: "#f8fafc",
+        background:
+          "radial-gradient(ellipse 70% 55% at 80% -10%, rgba(59,130,246,0.20) 0%, transparent 60%)," +
+          "radial-gradient(ellipse 55% 45% at -5% 100%, rgba(37,99,235,0.14) 0%, transparent 55%)," +
+          "linear-gradient(160deg, #060a16 0%, #0a1122 50%, #0b1428 100%)",
         pt: "max(env(safe-area-inset-top), 20px)",
         pb: "max(env(safe-area-inset-bottom), 20px)",
         pl: "env(safe-area-inset-left)",
@@ -174,15 +177,15 @@ export default function SoyPersoneroPage() {
                 justifyContent: "center",
                 mx: "auto",
                 mb: 1.5,
-                background: "#eff6ff",
+                background: "rgba(59,130,246,0.16)",
               }}
             >
-              <BadgeIcon sx={{ fontSize: { xs: 26, sm: 28 }, color: "#1565c0" }} />
+              <BadgeIcon sx={{ fontSize: { xs: 26, sm: 28 }, color: "#60a5fa" }} />
             </Box>
             <Typography
               component="h1"
               fontWeight={700}
-              color="#0d1b3e"
+              color="#eef2ff"
               gutterBottom
               sx={{ fontSize: { xs: "1.3rem", sm: "1.5rem" }, lineHeight: 1.25 }}
             >
@@ -250,8 +253,8 @@ export default function SoyPersoneroPage() {
                 </Typography>
               </Box>
 
-              <Box sx={{ background: "#f1f5f9", p: { xs: 2, sm: 2.5 }, borderRadius: "12px" }}>
-                <Typography variant="body1" fontWeight={700} color="#0d1b3e" sx={{ wordBreak: "break-word" }}>
+              <Box sx={{ background: "rgba(148,163,184,0.10)", p: { xs: 2, sm: 2.5 }, borderRadius: "12px" }}>
+                <Typography variant="body1" fontWeight={700} color="#eef2ff" sx={{ wordBreak: "break-word" }}>
                   {nombreCompleto(resultado.personero) || "Registro encontrado"}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">DNI {dni}</Typography>
@@ -281,10 +284,10 @@ export default function SoyPersoneroPage() {
           {resultado?.tipo === "no-inscrito" && (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
               <Box textAlign="center" py={1}>
-                <HowToRegIcon sx={{ fontSize: { xs: 44, sm: 48 }, color: "#1565c0", mb: 1 }} />
+                <HowToRegIcon sx={{ fontSize: { xs: 44, sm: 48 }, color: "#60a5fa", mb: 1 }} />
                 <Typography
                   fontWeight={700}
-                  color="#0d1b3e"
+                  color="#eef2ff"
                   gutterBottom
                   sx={{ fontSize: { xs: "1.15rem", sm: "1.25rem" } }}
                 >

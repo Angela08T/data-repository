@@ -29,6 +29,7 @@ import SendMessageModal, { Contacto } from "@/components/messaging/SendMessageMo
 import SuccessToast from "@/components/feedback/SuccessToast";
 import AgregarPersoneroModal, { PersoneroCreado } from "@/components/personeros/AgregarPersoneroModal";
 import EditableCell from "@/components/personeros/EditableCell";
+import ResultadoLlamadaSelect from "@/components/shared/ResultadoLlamadaSelect";
 
 dayjs.locale("es");
 
@@ -143,6 +144,7 @@ interface Personero {
   zona?: string | null;
   llamado?: boolean | null;
   fecha_llamada?: string | null;
+  resultado_llamada?: string | null;
 }
 
 function personeroToRow(p: Personero) {
@@ -169,6 +171,7 @@ function personeroToRow(p: Personero) {
     "N° de Mesa":            p.numero_mesa ?? "",
     "Zona":                  p.zona ?? "",
     "Llamado":               p.llamado ? "Sí" : "No",
+    "Resultado de Llamada":  p.resultado_llamada ?? "",
   };
 }
 
@@ -209,7 +212,7 @@ function LlamadoBadge({ llamado }: { llamado?: boolean | null }) {
     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
       style={llamado
         ? { background: "#f0fdf4", color: "#166534" }
-        : { background: "#f1f5f9", color: "#64748b" }}>
+        : { background: "rgba(148,163,184,0.14)", color: "#94a3b8" }}>
       {llamado ? <PhoneInTalkIcon sx={{ fontSize: 12 }} /> : <PendingActionsIcon sx={{ fontSize: 12 }} />}
       {llamado ? "Llamado" : "Pendiente"}
     </span>
@@ -218,13 +221,13 @@ function LlamadoBadge({ llamado }: { llamado?: boolean | null }) {
 
 function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: React.ReactNode; color: string }) {
   return (
-    <div className="stat-card bg-white rounded-2xl shadow p-5 flex items-center gap-4">
+    <div className="stat-card glow-card rounded-2xl p-5 flex items-center gap-4">
       <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: `${color}18` }}>
         <span style={{ color }}>{icon}</span>
       </div>
       <div>
         <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</p>
-        <p className="text-xl font-bold" style={{ color: "#0d1b3e" }}>{value}</p>
+        <p className="text-xl font-bold" style={{ color: "#eef2ff" }}>{value}</p>
       </div>
     </div>
   );
@@ -379,7 +382,7 @@ export default function PersonerosPage() {
   const totalHombres      = data.filter((p) => normalizarSexo(p.sexo) === "M").length;
   const porRegistrador    = data.filter(esPorRegistrador).length;
   const selCount          = filtrados.filter((p) => selectedIds.has(p.id)).length;
-  const COLS              = 17; // checkbox + cols + tipo + registrador + colegio + mesa + zona + llamado + acciones
+  const COLS              = 18; // checkbox + cols + tipo + registrador + colegio + mesa + zona + llamado + resultado + acciones
 
   // Solo se puede descargar/marcar en lote a quienes aún están pendientes
   // (respetando los demás filtros activos: búsqueda, sexo, comuna, colegio, tipo, cumpleaños, edad, llamado).
@@ -460,7 +463,7 @@ export default function PersonerosPage() {
     <div className="p-4 md:p-6 space-y-6">
 
       <div>
-        <h1 className="text-2xl font-black" style={{ color: "#0d1b3e" }}>Personeros</h1>
+        <h1 className="text-2xl font-black" style={{ color: "#eef2ff" }}>Personeros</h1>
         <p className="text-sm text-gray-400 mt-1">Registro de personeros inscritos en la campaña</p>
       </div>
 
@@ -472,10 +475,10 @@ export default function PersonerosPage() {
         <StatCard label="Por registrador"   value={porRegistrador}   icon={<HowToRegIcon />}  color="#d97706" />
       </div>
 
-      <div className="bg-white rounded-2xl shadow overflow-hidden">
+      <div className="glow-card rounded-2xl overflow-hidden">
 
         {/* Toolbar principal */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b border-gray-100">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b border-[rgba(148,163,184,0.14)]">
           <TextField
             size="small"
             placeholder="Buscar por nombre, DNI, distrito, comuna o registrador..."
@@ -530,7 +533,7 @@ export default function PersonerosPage() {
                 className="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all"
                 style={filtroSexo === f.value
                   ? { background: "#1565c0", color: "#fff", borderColor: "#1565c0" }
-                  : { background: "transparent", color: "#64748b", borderColor: "#e2e8f0" }}>
+                  : { background: "transparent", color: "#94a3b8", borderColor: "rgba(148,163,184,0.22)" }}>
                 {f.label}
               </button>
             ))}
@@ -565,13 +568,13 @@ export default function PersonerosPage() {
                 sx: {
                   borderRadius: "16px",
                   boxShadow: "0 16px 40px rgba(15,23,42,0.16)",
-                  border: "1px solid #e2e8f0",
+                  border: "1px solid rgba(148,163,184,0.22)",
                 },
               },
             }}
           >
             <Box sx={{ p: 3, width: 300 }}>
-              <Typography variant="subtitle2" fontWeight={700} color="#0d1b3e" sx={{ fontFamily: "'Poppins', sans-serif" }}>
+              <Typography variant="subtitle2" fontWeight={700} color="#eef2ff" sx={{ fontFamily: "'Poppins', sans-serif" }}>
                 Descargar por lotes
               </Typography>
               <Typography variant="caption" color="#94a3b8" sx={{ display: "block", mt: 0.25, mb: 2 }}>
@@ -600,7 +603,7 @@ export default function PersonerosPage() {
               <Box display="flex" justifyContent="flex-end" mt={3} gap={1}>
                 <Button size="small"
                   onClick={() => setExportAnchor(null)}
-                  sx={{ color: "#64748b", textTransform: "none", fontWeight: 600, fontFamily: "'Poppins', sans-serif", "&:hover": { background: "#f1f5f9" } }}>
+                  sx={{ color: "#94a3b8", textTransform: "none", fontWeight: 600, fontFamily: "'Poppins', sans-serif", "&:hover": { background: "rgba(148,163,184,0.14)" } }}>
                   Cancelar
                 </Button>
                 <Button size="small" variant="contained"
@@ -620,7 +623,7 @@ export default function PersonerosPage() {
         </div>
 
         {/* Barra de filtros: Tipo de registro + Comuna */}
-        <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-gray-100" style={{ background: "#fafbff" }}>
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-[rgba(148,163,184,0.14)]" style={{ background: "#0d1526" }}>
 
           {/* Filtro tipo de registro */}
           <div className="flex items-center gap-2">
@@ -634,14 +637,14 @@ export default function PersonerosPage() {
                 className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
                 style={filtroTipoRegistro === f.value
                   ? { background: "#d97706", color: "#fff", borderColor: "#d97706" }
-                  : { background: "#fff", color: "#64748b", borderColor: "#e2e8f0" }}>
+                  : { background: "#121a30", color: "#94a3b8", borderColor: "rgba(148,163,184,0.22)" }}>
                 {f.label}
               </button>
             ))}
           </div>
 
           {/* Separador */}
-          <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
+          <div style={{ width: 1, height: 20, background: "rgba(148,163,184,0.22)" }} />
 
           {/* Filtro Comuna */}
           <div className="flex items-center gap-2">
@@ -651,9 +654,9 @@ export default function PersonerosPage() {
               onChange={(e) => setFiltroComuna(e.target.value)}
               className="text-xs border rounded-full px-3 py-1.5 outline-none cursor-pointer font-semibold transition-all"
               style={{
-                borderColor: filtroComuna !== "todos" ? "#1565c0" : "#e2e8f0",
-                color: filtroComuna !== "todos" ? "#1565c0" : "#64748b",
-                background: filtroComuna !== "todos" ? "#eff6ff" : "#fff",
+                borderColor: filtroComuna !== "todos" ? "#1565c0" : "rgba(148,163,184,0.22)",
+                color: filtroComuna !== "todos" ? "#1565c0" : "#94a3b8",
+                background: filtroComuna !== "todos" ? "rgba(59,130,246,0.16)" : "#121a30",
                 fontFamily: "'Poppins', sans-serif",
               }}
             >
@@ -665,7 +668,7 @@ export default function PersonerosPage() {
           </div>
 
           {/* Separador */}
-          <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
+          <div style={{ width: 1, height: 20, background: "rgba(148,163,184,0.22)" }} />
 
           {/* Filtro Colegio */}
           <div className="flex items-center gap-2">
@@ -675,9 +678,9 @@ export default function PersonerosPage() {
               onChange={(e) => setFiltroColegio(e.target.value)}
               className="text-xs border rounded-full px-3 py-1.5 outline-none cursor-pointer font-semibold transition-all"
               style={{
-                borderColor: filtroColegio !== "todos" ? "#7c3aed" : "#e2e8f0",
-                color: filtroColegio !== "todos" ? "#7c3aed" : "#64748b",
-                background: filtroColegio !== "todos" ? "#f5f3ff" : "#fff",
+                borderColor: filtroColegio !== "todos" ? "#7c3aed" : "rgba(148,163,184,0.22)",
+                color: filtroColegio !== "todos" ? "#7c3aed" : "#94a3b8",
+                background: filtroColegio !== "todos" ? "rgba(124,58,237,0.18)" : "#121a30",
                 fontFamily: "'Poppins', sans-serif",
                 maxWidth: 220,
               }}
@@ -690,7 +693,7 @@ export default function PersonerosPage() {
           </div>
 
           {/* Separador */}
-          <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
+          <div style={{ width: 1, height: 20, background: "rgba(148,163,184,0.22)" }} />
 
           {/* Filtro Zona */}
           <div className="flex items-center gap-2">
@@ -700,9 +703,9 @@ export default function PersonerosPage() {
               onChange={(e) => setFiltroZona(e.target.value)}
               className="text-xs border rounded-full px-3 py-1.5 outline-none cursor-pointer font-semibold transition-all"
               style={{
-                borderColor: filtroZona !== "todos" ? "#0891b2" : "#e2e8f0",
-                color: filtroZona !== "todos" ? "#0891b2" : "#64748b",
-                background: filtroZona !== "todos" ? "#ecfeff" : "#fff",
+                borderColor: filtroZona !== "todos" ? "#0891b2" : "rgba(148,163,184,0.22)",
+                color: filtroZona !== "todos" ? "#0891b2" : "#94a3b8",
+                background: filtroZona !== "todos" ? "rgba(8,145,178,0.18)" : "#121a30",
                 fontFamily: "'Poppins', sans-serif",
               }}
             >
@@ -714,7 +717,7 @@ export default function PersonerosPage() {
           </div>
 
           {/* Separador */}
-          <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
+          <div style={{ width: 1, height: 20, background: "rgba(148,163,184,0.22)" }} />
 
           {/* Filtro Cumpleaños (calendario) */}
           <div className="flex items-center gap-2">
@@ -738,16 +741,16 @@ export default function PersonerosPage() {
                         height: 32,
                         fontSize: "0.78rem",
                         fontWeight: 600,
-                        background: filtroFechaCumple ? "#fdf2f8" : "#fff",
+                        background: filtroFechaCumple ? "rgba(219,39,119,0.16)" : "#121a30",
                         transition: "all 0.15s ease",
-                        "& fieldset": { borderColor: filtroFechaCumple ? "#f472b6" : "#e2e8f0" },
+                        "& fieldset": { borderColor: filtroFechaCumple ? "#f472b6" : "rgba(148,163,184,0.22)" },
                         "&:hover fieldset": { borderColor: "#db2777" },
                         "&.Mui-focused": { boxShadow: "0 0 0 3px rgba(219,39,119,0.12)" },
                         "&.Mui-focused fieldset": { borderColor: "#db2777", borderWidth: "1.5px" },
                       },
                       "& .MuiOutlinedInput-input": {
                         padding: "0 2px 0 6px",
-                        color: filtroFechaCumple ? "#db2777" : "#334155",
+                        color: filtroFechaCumple ? "#f9a8d4" : "#cbd5e1",
                         "&::placeholder": { color: "#94a3b8", opacity: 1 },
                       },
                     },
@@ -766,20 +769,20 @@ export default function PersonerosPage() {
             {filtroFechaCumple ? (
               <button onClick={() => setFiltroFechaCumple(null)}
                 className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
-                style={{ background: "#fdf2f8", color: "#db2777", borderColor: "#f9a8d4" }}>
+                style={{ background: "rgba(219,39,119,0.16)", color: "#f9a8d4", borderColor: "rgba(219,39,119,0.4)" }}>
                 ✕ Quitar
               </button>
             ) : (
               <button onClick={() => setFiltroFechaCumple(dayjs())}
                 className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
-                style={{ background: "#fff", color: "#db2777", borderColor: "#fbcfe8" }}>
+                style={{ background: "#121a30", color: "#f472b6", borderColor: "rgba(219,39,119,0.3)" }}>
                 Hoy
               </button>
             )}
           </div>
 
           {/* Separador */}
-          <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
+          <div style={{ width: 1, height: 20, background: "rgba(148,163,184,0.22)" }} />
 
           {/* Filtro Llamado (para seguimiento de callcenter) */}
           <div className="flex items-center gap-2">
@@ -793,14 +796,14 @@ export default function PersonerosPage() {
                 className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
                 style={filtroLlamado === f.value
                   ? { background: "#166534", color: "#fff", borderColor: "#166534" }
-                  : { background: "#fff", color: "#64748b", borderColor: "#e2e8f0" }}>
+                  : { background: "#121a30", color: "#94a3b8", borderColor: "rgba(148,163,184,0.22)" }}>
                 {f.label}
               </button>
             ))}
           </div>
 
           {/* Separador */}
-          <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
+          <div style={{ width: 1, height: 20, background: "rgba(148,163,184,0.22)" }} />
 
           {/* Filtro Edad (calculada a partir de fecha_nacimiento) */}
           <div className="flex items-center gap-2">
@@ -809,8 +812,8 @@ export default function PersonerosPage() {
               onClick={(e) => { setEdadRangeDraft(edadRange); setEdadAnchor(e.currentTarget); }}
               className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
               style={isEdadFiltered
-                ? { background: "#ecfeff", color: "#0891b2", borderColor: "#0891b2" }
-                : { background: "#fff", color: "#64748b", borderColor: "#e2e8f0" }}>
+                ? { background: "rgba(8,145,178,0.18)", color: "#67e8f9", borderColor: "#0891b2" }
+                : { background: "#121a30", color: "#94a3b8", borderColor: "rgba(148,163,184,0.22)" }}>
               {isEdadFiltered ? `${edadRange[0]} - ${edadRange[1]} años` : "Todas"}
             </button>
           </div>
@@ -827,13 +830,13 @@ export default function PersonerosPage() {
                 sx: {
                   borderRadius: "16px",
                   boxShadow: "0 16px 40px rgba(15,23,42,0.16)",
-                  border: "1px solid #e2e8f0",
+                  border: "1px solid rgba(148,163,184,0.22)",
                 },
               },
             }}
           >
             <Box sx={{ p: 3, width: 300 }}>
-              <Typography variant="subtitle2" fontWeight={700} color="#0d1b3e" sx={{ fontFamily: "'Poppins', sans-serif" }}>
+              <Typography variant="subtitle2" fontWeight={700} color="#eef2ff" sx={{ fontFamily: "'Poppins', sans-serif" }}>
                 Rango de edad
               </Typography>
               <Typography variant="caption" color="#94a3b8" sx={{ display: "block", mt: 0.25, mb: 2 }}>
@@ -867,7 +870,7 @@ export default function PersonerosPage() {
                     "&.Mui-active": { boxShadow: "0 0 0 10px rgba(8,145,178,0.2)" },
                   },
                   "& .MuiSlider-track": { backgroundColor: "#0891b2", border: "none" },
-                  "& .MuiSlider-rail": { backgroundColor: "#e2e8f0", opacity: 1 },
+                  "& .MuiSlider-rail": { backgroundColor: "rgba(148,163,184,0.22)", opacity: 1 },
                   "& .MuiSlider-valueLabel": { backgroundColor: "#0891b2", borderRadius: "6px", fontSize: "0.7rem", fontWeight: 700 },
                 }}
               />
@@ -879,7 +882,7 @@ export default function PersonerosPage() {
               <Box display="flex" justifyContent="flex-end" mt={3} gap={1}>
                 <Button size="small"
                   onClick={() => { setEdadRangeDraft([0, EDAD_MAX]); setEdadRange([0, EDAD_MAX]); }}
-                  sx={{ color: "#64748b", textTransform: "none", fontWeight: 600, fontFamily: "'Poppins', sans-serif", "&:hover": { background: "#f1f5f9" } }}>
+                  sx={{ color: "#94a3b8", textTransform: "none", fontWeight: 600, fontFamily: "'Poppins', sans-serif", "&:hover": { background: "rgba(148,163,184,0.14)" } }}>
                   Limpiar todo
                 </Button>
                 <Button size="small" variant="contained"
@@ -901,14 +904,14 @@ export default function PersonerosPage() {
             <button
               onClick={() => { setFiltroComuna("todos"); setFiltroTipoRegistro("todos"); setFiltroColegio("todos"); setFiltroZona("todos"); setFiltroFechaCumple(null); setFiltroLlamado("todos"); setEdadRange([0, EDAD_MAX]); setEdadRangeDraft([0, EDAD_MAX]); }}
               className="text-xs font-semibold px-3 py-1 rounded-full transition-all"
-              style={{ background: "#fee2e2", color: "#dc2626", border: "1px solid #fecaca" }}>
+              style={{ background: "rgba(220,38,38,0.16)", color: "#f87171", border: "1px solid rgba(220,38,38,0.4)" }}>
               Limpiar filtros
             </button>
           )}
         </div>
 
         {/* Contador */}
-        <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-50 flex items-center gap-2">
+        <div className="px-4 py-2 text-xs text-gray-400 border-b border-[rgba(148,163,184,0.10)] flex items-center gap-2">
           {loading ? "Cargando..." : `${filtrados.length} registro${filtrados.length !== 1 ? "s" : ""}`}
           {selCount > 0 && (
             <span className="font-semibold" style={{ color: "#1565c0" }}>
@@ -921,14 +924,14 @@ export default function PersonerosPage() {
         <div className="overflow-auto" style={{ maxHeight: "65vh" }}>
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10">
-              <tr style={{ background: "#f8fafc" }}>
+              <tr style={{ background: "#0f1730" }}>
                 <th className="px-4 py-3 w-10">
                   <Checkbox size="small" checked={allChecked} indeterminate={someChecked && !allChecked}
                     onChange={toggleSelectAll} disabled={loading || conTelefono.length === 0}
                     sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" }, "&.MuiCheckbox-indeterminate": { color: "#1565c0" } }} />
                 </th>
-                {["Apellidos y Nombres", "DNI", "Nacimiento", "Edad", "Sexo", "Distrito", "Dirección", "Teléfono", "Comuna", "Tipo", "Registrador", "Colegio de Votación", "N° Mesa", "Zona", "Llamado", ""].map((h) => (
-                  <th key={h} className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap" style={{ color: "#64748b" }}>
+                {["Apellidos y Nombres", "DNI", "Nacimiento", "Edad", "Sexo", "Distrito", "Dirección", "Teléfono", "Comuna", "Tipo", "Registrador", "Colegio de Votación", "N° Mesa", "Zona", "Llamado", "Resultado", ""].map((h) => (
+                  <th key={h} className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap" style={{ color: "#94a3b8" }}>
                     {h}
                   </th>
                 ))}
@@ -954,8 +957,8 @@ export default function PersonerosPage() {
                   const tienePhone  = hasPhone(p);
                   return (
                     <tr key={p.id}
-                      className="table-row-animate border-t border-gray-50 hover:bg-blue-50 transition-colors"
-                      style={{ background: checked ? "#eff6ff" : i % 2 === 0 ? "#ffffff" : "#fafbff" }}>
+                      className="table-row-animate border-t border-[rgba(148,163,184,0.10)] hover:bg-[rgba(59,130,246,0.10)] transition-colors"
+                      style={{ background: checked ? "rgba(59,130,246,0.16)" : i % 2 === 0 ? "#121a30" : "#0d1526" }}>
 
                       {/* Checkbox */}
                       <td className="px-4 py-3 w-10">
@@ -973,10 +976,10 @@ export default function PersonerosPage() {
                           </div>
                           <div className="flex flex-col gap-0.5">
                             <EditableCell value={p.apellido_paterno ?? ""} editable={puedeAgregar}
-                              displayValue={<span className="font-semibold text-gray-800">{p.apellido_paterno || "—"}</span>}
+                              displayValue={<span className="font-semibold text-[#e7ecfb]">{p.apellido_paterno || "—"}</span>}
                               onSave={(v) => handleActualizarCampo(p.id, "apellido_paterno", v)} />
                             <EditableCell value={p.apellido_materno ?? ""} editable={puedeAgregar}
-                              displayValue={<span className="font-semibold text-gray-800">{p.apellido_materno || "—"}</span>}
+                              displayValue={<span className="font-semibold text-[#e7ecfb]">{p.apellido_materno || "—"}</span>}
                               onSave={(v) => handleActualizarCampo(p.id, "apellido_materno", v)} />
                             <EditableCell value={p.nombres ?? ""} editable={puedeAgregar}
                               displayValue={<span className="text-xs text-gray-400">{p.nombres || "—"}</span>}
@@ -986,7 +989,7 @@ export default function PersonerosPage() {
                       </td>
 
                       {/* DNI */}
-                      <td className="px-4 py-3 font-mono font-medium text-gray-700">
+                      <td className="px-4 py-3 font-mono font-medium text-[#cbd5e1]">
                         <EditableCell value={p.dni ?? ""} editable={puedeAgregar}
                           sanitize={(v) => v.replace(/\D/g, "").slice(0, 8)}
                           onSave={(v) => handleActualizarCampo(p.id, "dni", v)} />
@@ -1007,7 +1010,7 @@ export default function PersonerosPage() {
                               {edad}
                             </span>
                           ) : (
-                            <span className="text-gray-300 text-xs">—</span>
+                            <span className="text-[#475569] text-xs">—</span>
                           );
                         })()}
                       </td>
@@ -1070,7 +1073,7 @@ export default function PersonerosPage() {
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex flex-col gap-0.5">
                           <EditableCell value={p.registrador_nombres ?? ""} editable={puedeAgregar}
-                            displayValue={<span className="text-xs font-semibold text-gray-700">{p.registrador_nombres || "—"}</span>}
+                            displayValue={<span className="text-xs font-semibold text-[#cbd5e1]">{p.registrador_nombres || "—"}</span>}
                             onSave={(v) => handleActualizarCampo(p.id, "registrador_nombres", v)} />
                           <EditableCell value={p.registrador_apellidos ?? ""} editable={puedeAgregar}
                             displayValue={<span className="text-xs text-gray-400">{p.registrador_apellidos || "Registrador"}</span>}
@@ -1090,7 +1093,7 @@ export default function PersonerosPage() {
                           sanitize={(v) => v.replace(/\D/g, "")}
                           displayValue={p.numero_mesa ? (
                             <span className="inline-block px-2 py-0.5 rounded font-mono text-xs font-bold"
-                              style={{ background: "#eff6ff", color: "#1565c0" }}>
+                              style={{ background: "rgba(59,130,246,0.16)", color: "#1565c0" }}>
                               {p.numero_mesa}
                             </span>
                           ) : "—"}
@@ -1108,6 +1111,14 @@ export default function PersonerosPage() {
                         <Tooltip title={p.fecha_llamada ? `Llamado el ${dayjs(p.fecha_llamada).format("DD/MM/YYYY HH:mm")}` : "Aún no ha sido llamado"}>
                           <span><LlamadoBadge llamado={p.llamado} /></span>
                         </Tooltip>
+                      </td>
+
+                      {/* Resultado de llamada */}
+                      <td className="px-4 py-3">
+                        <ResultadoLlamadaSelect
+                          value={p.resultado_llamada ?? null}
+                          onSave={(v) => handleActualizarCampo(p.id, "resultado_llamada", v ?? "")}
+                        />
                       </td>
 
                       {/* Acciones */}
@@ -1141,11 +1152,11 @@ export default function PersonerosPage() {
             rowsPerPageOptions={[25, 50, 100, 250]}
             labelRowsPerPage="Filas por página:"
             labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
-            sx={{ borderTop: "1px solid #e2e8f0", "& .MuiTablePagination-selectIcon": { color: "#64748b" } }}
+            sx={{ borderTop: "1px solid rgba(148,163,184,0.22)", "& .MuiTablePagination-selectIcon": { color: "#94a3b8" } }}
           />
         )}
 
-        <div className="px-5 py-3 border-t border-gray-100 flex justify-between items-center text-xs text-gray-400">
+        <div className="px-5 py-3 border-t border-[rgba(148,163,184,0.14)] flex justify-between items-center text-xs text-gray-400">
           <span>{!loading && `Mostrando ${paginados.length} de ${filtrados.length} filtrados · ${data.length} en total`}</span>
           <span style={{ color: "#1565c0", fontWeight: 600 }}>Campaign Data Repository</span>
         </div>

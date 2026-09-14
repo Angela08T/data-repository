@@ -104,8 +104,8 @@ export function BeneficiarioDetailsDialog({
     >
       <DialogTitle
         sx={{
-          backgroundColor: "#f8fafc",
-          borderBottom: "1px solid #e2e8f0",
+          backgroundColor: "rgba(148,163,184,0.08)",
+          borderBottom: "1px solid rgba(148,163,184,0.16)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -115,7 +115,7 @@ export function BeneficiarioDetailsDialog({
         <Box display="flex" alignItems="center" gap={1.5}>
           {icon ?? <Person sx={{ color: accentColor }} />}
           <Box>
-            <Typography variant="h6" fontWeight={600} color="#334155">
+            <Typography variant="h6" fontWeight={600} color="#eef2ff">
               {title}
             </Typography>
             {subtitle && (
@@ -140,7 +140,7 @@ export function BeneficiarioDetailsDialog({
         ) : secciones ? (
           secciones.map((seccion, si) => (
             <Box key={si} mb={si < secciones.length - 1 ? 3 : 0}>
-              <Typography variant="subtitle2" fontWeight={600} color="#475569" gutterBottom>
+              <Typography variant="subtitle2" fontWeight={600} color="#94a3b8" gutterBottom>
                 {seccion.titulo}
               </Typography>
               <Divider sx={{ mb: 2 }} />
@@ -159,8 +159,8 @@ export function BeneficiarioDetailsDialog({
         ) : null}
       </DialogContent>
 
-      <DialogActions sx={{ p: 2, borderTop: "1px solid #e2e8f0" }}>
-        <Button onClick={onClose} sx={{ textTransform: "none", color: "#64748b" }}>
+      <DialogActions sx={{ p: 2, borderTop: "1px solid rgba(148,163,184,0.16)" }}>
+        <Button onClick={onClose} sx={{ textTransform: "none", color: "#94a3b8" }}>
           Cerrar
         </Button>
       </DialogActions>

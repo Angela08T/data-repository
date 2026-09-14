@@ -352,7 +352,10 @@ export default function ReportarVotosPage() {
     <Box
       sx={{
         minHeight: "100dvh",
-        backgroundColor: "#f8fafc",
+        background:
+          "radial-gradient(ellipse 70% 55% at 80% -10%, rgba(59,130,246,0.20) 0%, transparent 60%)," +
+          "radial-gradient(ellipse 55% 45% at -5% 100%, rgba(37,99,235,0.14) 0%, transparent 55%)," +
+          "linear-gradient(160deg, #060a16 0%, #0a1122 50%, #0b1428 100%)",
         pt: "max(env(safe-area-inset-top), 24px)",
         pb: "max(env(safe-area-inset-bottom), 24px)",
       }}
@@ -363,11 +366,11 @@ export default function ReportarVotosPage() {
           <Box textAlign="center" mb={4}>
             <Box
               className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3"
-              style={{ background: "#eff6ff" }}
+              style={{ background: "rgba(59,130,246,0.16)" }}
             >
               <HowToVoteIcon sx={{ fontSize: 28, color: "#1565c0" }} />
             </Box>
-            <Typography variant="h5" component="h1" fontWeight={700} color="#0d1b3e" gutterBottom>
+            <Typography variant="h5" component="h1" fontWeight={700} color="#eef2ff" gutterBottom>
               Reportar Acta de Mesa
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -412,8 +415,8 @@ export default function ReportarVotosPage() {
 
           {step === "foto" && personero && (
             <div className="space-y-5">
-              <Box sx={{ background: "#f1f5f9", p: 2, borderRadius: "12px" }}>
-                <Typography variant="body1" fontWeight={600} color="#0d1b3e">
+              <Box sx={{ background: "rgba(148,163,184,0.14)", p: 2, borderRadius: "12px" }}>
+                <Typography variant="body1" fontWeight={600} color="#eef2ff">
                   {personero.nombres} {personero.apellido_paterno} {personero.apellido_materno}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -429,7 +432,7 @@ export default function ReportarVotosPage() {
               </Typography>
 
               <Box>
-                <Typography variant="subtitle2" fontWeight={600} color="#0d1b3e" mb={1}>
+                <Typography variant="subtitle2" fontWeight={600} color="#eef2ff" mb={1}>
                   Foto del acta
                 </Typography>
                 <Button
@@ -480,8 +483,8 @@ export default function ReportarVotosPage() {
 
           {step === "revisar" && personero && (
             <div className="space-y-4">
-              <Box sx={{ background: "#f1f5f9", p: 2, borderRadius: "12px" }}>
-                <Typography variant="body1" fontWeight={600} color="#0d1b3e">
+              <Box sx={{ background: "rgba(148,163,184,0.14)", p: 2, borderRadius: "12px" }}>
+                <Typography variant="body1" fontWeight={600} color="#eef2ff">
                   {personero.nombres} {personero.apellido_paterno} {personero.apellido_materno}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -511,14 +514,14 @@ export default function ReportarVotosPage() {
                 />
               )}
 
-              <Typography variant="subtitle2" fontWeight={700} color="#0d1b3e">
+              <Typography variant="subtitle2" fontWeight={700} color="#eef2ff">
                 Votos por candidato
               </Typography>
-              <Box sx={{ maxHeight: 340, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: "12px" }}>
+              <Box sx={{ maxHeight: 340, overflowY: "auto", border: "1px solid rgba(148,163,184,0.22)", borderRadius: "12px" }}>
                 {candidatos.map((c) => (
-                  <Box key={c.id} sx={{ display: "flex", alignItems: "center", gap: 1.5, px: 2, py: 1, borderBottom: "1px solid #f1f5f9" }}>
+                  <Box key={c.id} sx={{ display: "flex", alignItems: "center", gap: 1.5, px: 2, py: 1, borderBottom: "1px solid rgba(148,163,184,0.14)" }}>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography variant="body2" fontWeight={600} color="#0d1b3e" noWrap>
+                      <Typography variant="body2" fontWeight={600} color="#eef2ff" noWrap>
                         {c.numero_lista}. {c.nombre}
                       </Typography>
                       <Typography variant="caption" color="text.secondary" noWrap sx={{ display: "block" }}>

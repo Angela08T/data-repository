@@ -91,13 +91,13 @@ function formatFecha(iso: string) {
 
 function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: React.ReactNode; color: string }) {
   return (
-    <div className="stat-card bg-white rounded-2xl shadow p-5 flex items-center gap-4">
+    <div className="stat-card glow-card rounded-2xl p-5 flex items-center gap-4">
       <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: `${color}18` }}>
         <span style={{ color }}>{icon}</span>
       </div>
       <div>
         <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</p>
-        <p className="text-xl font-bold" style={{ color: "#0d1b3e" }}>{value}</p>
+        <p className="text-xl font-bold" style={{ color: "#eef2ff" }}>{value}</p>
       </div>
     </div>
   );
@@ -105,14 +105,14 @@ function StatCard({ label, value, icon, color }: { label: string; value: string 
 
 function EncuestaCard({ resultado }: { resultado: ResultadoEncuesta }) {
   return (
-    <div className="bg-white rounded-2xl shadow overflow-hidden">
+    <div className="glow-card rounded-2xl overflow-hidden">
       {/* Header */}
       <div className="px-6 pt-5 pb-4 flex items-start gap-3">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-          style={{ background: "#eff6ff" }}>
+          style={{ background: "rgba(59,130,246,0.16)" }}>
           <PollIcon sx={{ fontSize: 18, color: "#1565c0" }} />
         </div>
-        <h3 className="font-semibold text-base leading-snug" style={{ color: "#0d1b3e" }}>
+        <h3 className="font-semibold text-base leading-snug" style={{ color: "#eef2ff" }}>
           {resultado.pregunta}
         </h3>
       </div>
@@ -122,9 +122,9 @@ function EncuestaCard({ resultado }: { resultado: ResultadoEncuesta }) {
         {resultado.opciones.map((op, i) => (
           <div key={i}>
             <div className="flex justify-between items-center mb-1">
-              <span className="text-sm font-medium text-gray-700">{op.label}</span>
+              <span className="text-sm font-medium text-[#cbd5e1]">{op.label}</span>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold" style={{ color: op.esLider ? "#1565c0" : "#64748b" }}>
+                <span className="text-sm font-bold" style={{ color: op.esLider ? "#1565c0" : "#94a3b8" }}>
                   {op.pct}%
                 </span>
                 {op.esLider && resultado.total > 0 && (
@@ -138,7 +138,7 @@ function EncuestaCard({ resultado }: { resultado: ResultadoEncuesta }) {
               </div>
             </div>
             <div className="h-9 rounded-xl overflow-hidden relative"
-              style={{ background: op.esLider && resultado.total > 0 ? "#dbeafe" : "#f1f5f9" }}>
+              style={{ background: op.esLider && resultado.total > 0 ? "rgba(21,101,192,0.22)" : "rgba(148,163,184,0.14)" }}>
               <div
                 className="h-full rounded-xl transition-all duration-700"
                 style={{
@@ -147,7 +147,7 @@ function EncuestaCard({ resultado }: { resultado: ResultadoEncuesta }) {
                   opacity: 0.25,
                 }}
               />
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-600">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-medium text-[#cbd5e1]">
                 {resultado.total > 0 ? `${op.votos} voto${op.votos !== 1 ? "s" : ""}` : "Sin votos aún"}
               </span>
             </div>
@@ -156,11 +156,11 @@ function EncuestaCard({ resultado }: { resultado: ResultadoEncuesta }) {
       </div>
 
       {/* Footer */}
-      <div className="px-6 py-3 border-t border-gray-100 flex items-center gap-2">
+      <div className="px-6 py-3 border-t border-[rgba(148,163,184,0.14)] flex items-center gap-2">
         <PeopleIcon sx={{ fontSize: 14, color: "#94a3b8" }} />
         <span className="text-xs text-gray-400">
           {resultado.total > 0
-            ? <><strong className="text-gray-600">{resultado.total}</strong> votos registrados</>
+            ? <><strong className="text-[#cbd5e1]">{resultado.total}</strong> votos registrados</>
             : "Aún no hay votos en esta encuesta"}
         </span>
       </div>
@@ -214,7 +214,7 @@ export default function EncuestasPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black" style={{ color: "#0d1b3e" }}>Resultados de Encuestas</h1>
+          <h1 className="text-2xl font-black" style={{ color: "#eef2ff" }}>Resultados de Encuestas</h1>
           <p className="text-sm text-gray-400 mt-1">Resultados en tiempo real de las votaciones públicas</p>
         </div>
         <div className="flex items-center gap-1">
@@ -245,7 +245,7 @@ export default function EncuestasPage() {
           <p className="text-gray-400 text-sm mt-4">Cargando resultados...</p>
         </div>
       ) : error ? (
-        <div className="bg-white rounded-2xl shadow p-10 text-center text-red-400 text-sm">
+        <div className="glow-card rounded-2xl p-10 text-center text-red-400 text-sm">
           Error al cargar datos: {error}
         </div>
       ) : (
@@ -258,17 +258,17 @@ export default function EncuestasPage() {
 
       {/* Tabla votos recientes */}
       {!loading && votos.length > 0 && (
-        <div className="bg-white rounded-2xl shadow overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h3 className="font-bold text-base" style={{ color: "#0d1b3e" }}>Votos recientes</h3>
+        <div className="glow-card rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-[rgba(148,163,184,0.14)]">
+            <h3 className="font-bold text-base" style={{ color: "#eef2ff" }}>Votos recientes</h3>
             <p className="text-xs text-gray-400">Últimos 20 registros</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr style={{ background: "#f8fafc" }}>
+                <tr style={{ background: "#0f1730" }}>
                   {["Pregunta", "Opción votada", "Fecha y hora"].map((h) => (
-                    <th key={h} className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wide" style={{ color: "#64748b" }}>
+                    <th key={h} className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wide" style={{ color: "#94a3b8" }}>
                       {h}
                     </th>
                   ))}
@@ -279,16 +279,16 @@ export default function EncuestasPage() {
                   const enc  = ENCUESTAS[v.encuesta_id];
                   const opcion = enc?.opciones[Number(v.opcion_id)] ?? `Opción ${v.opcion_id}`;
                   return (
-                    <tr key={v.id} className="border-t border-gray-50 hover:bg-blue-50 transition-colors"
-                      style={{ background: i % 2 === 0 ? "#ffffff" : "#fafbff" }}>
+                    <tr key={v.id} className="border-t border-[rgba(148,163,184,0.10)] hover:bg-[rgba(59,130,246,0.10)] transition-colors"
+                      style={{ background: i % 2 === 0 ? "#121a30" : "#0d1526" }}>
                       <td className="px-5 py-3">
-                        <span className="text-xs font-medium text-gray-600 line-clamp-1">
+                        <span className="text-xs font-medium text-[#cbd5e1] line-clamp-1">
                           {enc?.pregunta ?? `Encuesta #${v.encuesta_id}`}
                         </span>
                       </td>
                       <td className="px-5 py-3">
                         <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold"
-                          style={{ background: "#eff6ff", color: "#1565c0" }}>
+                          style={{ background: "rgba(59,130,246,0.16)", color: "#1565c0" }}>
                           {opcion}
                         </span>
                       </td>
@@ -301,7 +301,7 @@ export default function EncuestasPage() {
               </tbody>
             </table>
           </div>
-          <div className="px-5 py-3 border-t border-gray-100 flex justify-between text-xs text-gray-400">
+          <div className="px-5 py-3 border-t border-[rgba(148,163,184,0.14)] flex justify-between text-xs text-gray-400">
             <span>Mostrando los últimos 20 de {votos.length} votos</span>
             <span style={{ color: "#1565c0", fontWeight: 600 }}>Campaign Data Repository</span>
           </div>

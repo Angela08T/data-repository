@@ -64,7 +64,7 @@ function TipoBadge({ tipo }: { tipo: TipoContacto }) {
     <span
       className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
       style={esPersonero
-        ? { background: "#eff6ff", color: "#1565c0" }
+        ? { background: "rgba(59,130,246,0.16)", color: "#1565c0" }
         : { background: "#f0fdf4", color: "#166534" }}
     >
       {esPersonero ? <BadgeIcon sx={{ fontSize: 13 }} /> : <GroupsIcon sx={{ fontSize: 13 }} />}
@@ -81,9 +81,9 @@ function StatCard({
 }) {
   return (
     <div
-      className="stat-card rounded-2xl p-5 flex items-center gap-4"
+      className={`stat-card rounded-2xl p-5 flex items-center gap-4 ${highlight ? "" : "glow-card"}`}
       style={{
-        background: highlight ? `linear-gradient(135deg, ${color}ee, ${color}cc)` : "#fff",
+        background: highlight ? `linear-gradient(135deg, ${color}ee, ${color}cc)` : undefined,
         boxShadow: highlight ? `0 8px 24px ${color}40` : undefined,
       }}
     >
@@ -97,7 +97,7 @@ function StatCard({
         <p className="text-xs font-medium uppercase tracking-wide" style={{ color: highlight ? "rgba(255,255,255,0.8)" : "#94a3b8" }}>
           {label}
         </p>
-        <p className="text-xl font-bold" style={{ color: highlight ? "#fff" : "#0d1b3e" }}>{value}</p>
+        <p className="text-xl font-bold" style={{ color: highlight ? "#fff" : "#eef2ff" }}>{value}</p>
         {sublabel && (
           <p className="text-xs mt-0.5" style={{ color: highlight ? "rgba(255,255,255,0.7)" : "#94a3b8" }}>
             {sublabel}
@@ -224,7 +224,7 @@ export default function ContactosChatPage() {
             >
               <ChatBubbleIcon sx={{ fontSize: 18, color: "#fff" }} />
             </div>
-            <h1 className="text-2xl font-black" style={{ color: "#0d1b3e" }}>Contactos del Chat</h1>
+            <h1 className="text-2xl font-black" style={{ color: "#eef2ff" }}>Contactos del Chat</h1>
           </div>
           <p className="text-sm text-gray-400 ml-12">Personas registradas a través del chatbot de campaña</p>
         </div>
@@ -246,10 +246,10 @@ export default function ContactosChatPage() {
       </div>
 
       {/* Tabla */}
-      <div className="bg-white rounded-2xl shadow overflow-hidden">
+      <div className="glow-card rounded-2xl overflow-hidden">
 
         {/* Toolbar principal */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b border-gray-100">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b border-[rgba(148,163,184,0.14)]">
           <TextField
             size="small"
             placeholder="Buscar por nombre, apellidos o teléfono..."
@@ -300,7 +300,7 @@ export default function ContactosChatPage() {
                 style={
                   filtroTipo === f.value
                     ? { background: "#1565c0", color: "#fff", borderColor: "#1565c0" }
-                    : { background: "transparent", color: "#64748b", borderColor: "#e2e8f0" }
+                    : { background: "transparent", color: "#94a3b8", borderColor: "rgba(148,163,184,0.22)" }
                 }
               >
                 {f.label}
@@ -323,8 +323,8 @@ export default function ContactosChatPage() {
 
         {/* Barra de filtro de fecha */}
         <div
-          className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-gray-100"
-          style={{ background: "#fafbff" }}
+          className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-[rgba(148,163,184,0.14)]"
+          style={{ background: "#0d1526" }}
         >
           <CalendarTodayIcon sx={{ fontSize: 15, color: "#94a3b8" }} />
           <span className="text-xs font-semibold text-gray-400 mr-1">Filtrar por fecha:</span>
@@ -340,7 +340,7 @@ export default function ContactosChatPage() {
                 style={
                   active
                     ? { background: "#7c3aed", color: "#fff", borderColor: "#7c3aed" }
-                    : { background: "#fff", color: "#64748b", borderColor: "#e2e8f0" }
+                    : { background: "#121a30", color: "#94a3b8", borderColor: "rgba(148,163,184,0.22)" }
                 }
               >
                 {q.label}
@@ -348,7 +348,7 @@ export default function ContactosChatPage() {
             );
           })}
 
-          <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
+          <div style={{ width: 1, height: 20, background: "rgba(148,163,184,0.22)" }} />
 
           <input
             type="date"
@@ -357,10 +357,10 @@ export default function ContactosChatPage() {
             max={offsetDate(0)}
             className="text-xs border rounded-full px-3 py-1 outline-none transition-all cursor-pointer"
             style={{
-              borderColor: filtroFecha && !QUICK_DATES.map(q => q.value()).includes(filtroFecha) ? "#7c3aed" : "#e2e8f0",
-              color: filtroFecha && !QUICK_DATES.map(q => q.value()).includes(filtroFecha) ? "#7c3aed" : "#64748b",
+              borderColor: filtroFecha && !QUICK_DATES.map(q => q.value()).includes(filtroFecha) ? "#7c3aed" : "rgba(148,163,184,0.22)",
+              color: filtroFecha && !QUICK_DATES.map(q => q.value()).includes(filtroFecha) ? "#7c3aed" : "#94a3b8",
               fontWeight: 600,
-              background: filtroFecha && !QUICK_DATES.map(q => q.value()).includes(filtroFecha) ? "#f5f3ff" : "#fff",
+              background: filtroFecha && !QUICK_DATES.map(q => q.value()).includes(filtroFecha) ? "rgba(124,58,237,0.18)" : "#121a30",
             }}
           />
 
@@ -368,7 +368,7 @@ export default function ContactosChatPage() {
             <button
               onClick={() => setFiltroFecha(null)}
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all"
-              style={{ background: "#fee2e2", color: "#dc2626", border: "1px solid #fecaca" }}
+              style={{ background: "rgba(220,38,38,0.16)", color: "#f87171", border: "1px solid rgba(220,38,38,0.4)" }}
             >
               <CloseIcon sx={{ fontSize: 11 }} />
               Quitar filtro
@@ -383,7 +383,7 @@ export default function ContactosChatPage() {
         </div>
 
         {/* Contador */}
-        <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-50 flex items-center gap-2">
+        <div className="px-4 py-2 text-xs text-gray-400 border-b border-[rgba(148,163,184,0.10)] flex items-center gap-2">
           {loading
             ? "Cargando..."
             : `${filtrados.length} registro${filtrados.length !== 1 ? "s" : ""}${filtroFecha ? ` el ${formatDateLabel(filtroFecha)}` : ""}`}
@@ -398,7 +398,7 @@ export default function ContactosChatPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ background: "#f8fafc" }}>
+              <tr style={{ background: "#0f1730" }}>
                 {/* Checkbox select-all */}
                 <th className="px-4 py-3 w-10">
                   <Checkbox
@@ -414,7 +414,7 @@ export default function ContactosChatPage() {
                   <th
                     key={h}
                     className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap"
-                    style={{ color: "#64748b" }}
+                    style={{ color: "#94a3b8" }}
                   >
                     {h}
                   </th>
@@ -439,15 +439,15 @@ export default function ContactosChatPage() {
                 <tr>
                   <td colSpan={COLS} className="text-center py-20">
                     <div className="flex flex-col items-center gap-3">
-                      <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: "#f5f3ff" }}>
+                      <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: "rgba(124,58,237,0.18)" }}>
                         <CalendarTodayIcon sx={{ fontSize: 28, color: "#7c3aed" }} />
                       </div>
-                      <p className="text-gray-500 text-sm font-semibold">Sin registros{filtroFecha ? ` el ${formatDateLabel(filtroFecha)}` : ""}</p>
+                      <p className="text-[#cbd5e1] text-sm font-semibold">Sin registros{filtroFecha ? ` el ${formatDateLabel(filtroFecha)}` : ""}</p>
                       {filtroFecha && (
                         <button
                           onClick={() => setFiltroFecha(null)}
                           className="text-xs font-semibold px-4 py-1.5 rounded-full"
-                          style={{ background: "#eff6ff", color: "#1565c0" }}
+                          style={{ background: "rgba(59,130,246,0.16)", color: "#1565c0" }}
                         >
                           Ver todos los registros
                         </button>
@@ -464,8 +464,8 @@ export default function ContactosChatPage() {
                   return (
                     <tr
                       key={c.id}
-                      className="table-row-animate border-t border-gray-50 hover:bg-blue-50 transition-colors"
-                      style={{ background: checked ? "#eff6ff" : i % 2 === 0 ? "#ffffff" : "#fafbff" }}
+                      className="table-row-animate border-t border-[rgba(148,163,184,0.10)] hover:bg-[rgba(59,130,246,0.10)] transition-colors"
+                      style={{ background: checked ? "rgba(59,130,246,0.16)" : i % 2 === 0 ? "#121a30" : "#0d1526" }}
                     >
                       {/* Checkbox */}
                       <td className="px-4 py-4 w-10">
@@ -486,19 +486,19 @@ export default function ContactosChatPage() {
                           >
                             {inicial}
                           </div>
-                          <span className="font-semibold text-gray-800">{c.nombre}</span>
+                          <span className="font-semibold text-[#e7ecfb]">{c.nombre}</span>
                         </div>
                       </td>
 
                       <td className="px-5 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-700 font-medium">
+                        <span className="text-sm text-[#cbd5e1] font-medium">
                           {c.apellido_paterno} {c.apellido_materno}
                         </span>
                       </td>
 
                       <td className="px-5 py-4">
                         {c.telefono ? (
-                          <span className="inline-flex items-center gap-1.5 text-sm text-gray-700">
+                          <span className="inline-flex items-center gap-1.5 text-sm text-[#cbd5e1]">
                             <PhoneIcon sx={{ fontSize: 14, color: "#94a3b8" }} />
                             {c.telefono.startsWith("+") ? c.telefono : `+51 ${c.telefono}`}
                           </span>
@@ -513,7 +513,7 @@ export default function ContactosChatPage() {
 
                       <td className="px-5 py-4">
                         <div className="flex flex-col">
-                          <span className="font-medium text-gray-700">{fecha}</span>
+                          <span className="font-medium text-[#cbd5e1]">{fecha}</span>
                           <span className="text-xs text-gray-400">{hora}</span>
                         </div>
                       </td>
@@ -544,7 +544,7 @@ export default function ContactosChatPage() {
           </table>
         </div>
 
-        <div className="px-5 py-3 border-t border-gray-100 flex justify-between items-center text-xs text-gray-400">
+        <div className="px-5 py-3 border-t border-[rgba(148,163,184,0.14)] flex justify-between items-center text-xs text-gray-400">
           <span>{!loading && `Mostrando ${filtrados.length} de ${data.length} registros`}</span>
           <span style={{ color: "#1565c0", fontWeight: 600 }}>Campaign Data Repository</span>
         </div>
