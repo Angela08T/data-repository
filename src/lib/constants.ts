@@ -279,6 +279,14 @@ export const MODULOS_PROGRAMAS_SOCIALES: MenuItem[] = [
     descripcion: "Personas registradas a través del chatbot",
     permisos: ["all_programas_sociales", "all"],
   },
+  {
+    id: "seguimiento-general",
+    nombre: "Seguimiento General",
+    ruta: "/programas-sociales/seguimiento-general",
+    icono: "Assessment",
+    descripcion: "Vista unificada de Personeros, Dirigentes, Ciudadanos, Corredores y Participantes para seguimiento de llamadas",
+    permisos: ["all_programas_sociales", "all", "campo"],
+  },
 ];
 
 // Mantenido vacío — Servicios Sociales fue removido del sistema
