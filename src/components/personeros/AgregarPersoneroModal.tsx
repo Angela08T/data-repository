@@ -238,7 +238,7 @@ export default function AgregarPersoneroModal({ open, onClose, onCreated, regist
                       className="flex-1 px-3 py-2 rounded-lg text-xs font-semibold border transition-all"
                       style={form.sexo === s.value
                         ? { background: "#1565c0", color: "#fff", borderColor: "#1565c0" }
-                        : { background: "#fff", color: "#64748b", borderColor: "#e2e8f0" }}>
+                        : { background: "#121a30", color: "#94a3b8", borderColor: "rgba(148,163,184,0.25)" }}>
                       {s.label}
                     </button>
                   ))}
@@ -315,8 +315,8 @@ export default function AgregarPersoneroModal({ open, onClose, onCreated, regist
               <Button fullWidth variant="outlined" onClick={handleClose} disabled={saving}
                 sx={{
                   borderRadius: "12px", textTransform: "none", fontWeight: 700,
-                  fontFamily: "'Poppins', sans-serif", borderColor: "#e2e8f0", color: "#64748b",
-                  "&:hover": { borderColor: "#cbd5e1", background: "#f8fafc" },
+                  fontFamily: "'Poppins', sans-serif", borderColor: "rgba(148,163,184,0.3)", color: "#94a3b8",
+                  "&:hover": { borderColor: "#64748b", background: "rgba(148,163,184,0.08)" },
                 }}>
                 Cancelar
               </Button>

@@ -146,7 +146,7 @@ export default function SendMessageModal({ open, onClose, contactos }: Props) {
           <div className="space-y-4">
 
             {/* Contactos */}
-            <div className="p-3 rounded-xl" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+            <div className="p-3 rounded-xl" style={{ background: "rgba(148,163,184,0.08)", border: "1px solid rgba(148,163,184,0.18)" }}>
               <div className="flex items-center gap-2 mb-2">
                 <PeopleIcon sx={{ fontSize: 15, color: "#94a3b8" }} />
                 <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Destinatarios</span>
@@ -154,7 +154,7 @@ export default function SendMessageModal({ open, onClose, contactos }: Props) {
               <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
                 {contactos.map((c, i) => (
                   <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
-                    style={{ background: "#eff6ff", color: "#1565c0" }}>
+                    style={{ background: "rgba(59,130,246,0.16)", color: "#60a5fa" }}>
                     {c.nombre}
                   </span>
                 ))}
@@ -163,7 +163,7 @@ export default function SendMessageModal({ open, onClose, contactos }: Props) {
 
             {/* Canal */}
             <div>
-              <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Canal</p>
+              <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">Canal</p>
               <div className="grid grid-cols-2 gap-2">
                 {([
                   { value: "sms",      label: "SMS",       icon: <SmsIcon sx={{ fontSize: 18 }} />,      color: "#1565c0" },
@@ -177,7 +177,7 @@ export default function SendMessageModal({ open, onClose, contactos }: Props) {
                     style={
                       canal === c.value
                         ? { background: c.color, color: "#fff", borderColor: c.color, boxShadow: `0 4px 12px ${c.color}40` }
-                        : { background: "#f8fafc", color: "#64748b", borderColor: "#e2e8f0" }
+                        : { background: "#121a30", color: "#94a3b8", borderColor: "rgba(148,163,184,0.25)" }
                     }
                   >
                     {c.icon}{c.label}
@@ -189,8 +189,8 @@ export default function SendMessageModal({ open, onClose, contactos }: Props) {
             {/* Mensaje */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Mensaje</p>
-                <span className="text-xs" style={{ color: chars > maxChars ? "#dc2626" : "#94a3b8" }}>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Mensaje</p>
+                <span className="text-xs" style={{ color: chars > maxChars ? "#f87171" : "#94a3b8" }}>
                   {chars}/{maxChars}
                 </span>
               </div>
@@ -201,13 +201,14 @@ export default function SendMessageModal({ open, onClose, contactos }: Props) {
                 rows={4}
                 className="w-full text-sm border rounded-xl px-3 py-2.5 outline-none resize-none transition-all"
                 style={{
-                  borderColor: "#e2e8f0",
+                  backgroundColor: "#121a30",
+                  borderColor: "rgba(148,163,184,0.25)",
                   fontFamily: "'Poppins', sans-serif",
-                  color: "#0d1b3e",
+                  color: "#eef2ff",
                   lineHeight: 1.6,
                 }}
-                onFocus={(e) => (e.target.style.borderColor = "#1565c0")}
-                onBlur={(e) => (e.target.style.borderColor = "#e2e8f0")}
+                onFocus={(e) => (e.target.style.borderColor = "#3b82f6")}
+                onBlur={(e) => (e.target.style.borderColor = "rgba(148,163,184,0.25)")}
               />
             </div>
 
@@ -216,8 +217,8 @@ export default function SendMessageModal({ open, onClose, contactos }: Props) {
               <Button fullWidth variant="outlined" onClick={handleClose} disabled={estado === "sending"}
                 sx={{
                   borderRadius: "12px", textTransform: "none", fontWeight: 700,
-                  fontFamily: "'Poppins', sans-serif", borderColor: "#e2e8f0", color: "#64748b",
-                  "&:hover": { borderColor: "#cbd5e1", background: "#f8fafc" },
+                  fontFamily: "'Poppins', sans-serif", borderColor: "rgba(148,163,184,0.3)", color: "#94a3b8",
+                  "&:hover": { borderColor: "#64748b", background: "rgba(148,163,184,0.08)" },
                 }}>
                 Cancelar
               </Button>
