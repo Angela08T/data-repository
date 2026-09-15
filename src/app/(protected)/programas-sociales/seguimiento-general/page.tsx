@@ -10,6 +10,7 @@ import LayersIcon from "@mui/icons-material/Layers";
 import CallSplitIcon from "@mui/icons-material/CallSplit";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import ResultadoLlamadaSelect, { OPCIONES_RESULTADO_LLAMADA } from "@/components/shared/ResultadoLlamadaSelect";
+import EditableCell from "@/components/personeros/EditableCell";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
@@ -20,8 +21,8 @@ type TablaOrigen = "personeros" | "ciudadanos" | "corredores" | "dirigentes" | "
 interface PersoneroRow { id: string; nombres: string | null; apellido_paterno: string | null; apellido_materno: string | null; dni: string | null; telefono: string | null; comuna: string | null; llamado: boolean | null; resultado_llamada: string | null; }
 interface CiudadanoRow { id: string; nombres: string | null; apellido_paterno: string | null; apellido_materno: string | null; dni: string | null; telefono: string | null; comuna: string | null; llamado: boolean | null; resultado_llamada: string | null; }
 interface CorredorRow { id: string; nombre_completo: string | null; dni: string | null; telefono: string | null; llamado: boolean | null; resultado_llamada: string | null; }
-interface DirigenteRow { id: string; nombre: string | null; apellido: string | null; comuna: string | null; celular: string | null; llamado: boolean | null; resultado_llamada: string | null; }
-interface ParticipanteRow { id: string; nombre_completo: string | null; telefono: string | null; comuna: string | null; llamado: boolean | null; resultado_llamada: string | null; }
+interface DirigenteRow { id: string; nombre: string | null; apellido: string | null; dni: string | null; comuna: string | null; celular: string | null; llamado: boolean | null; resultado_llamada: string | null; }
+interface ParticipanteRow { id: string; nombre_completo: string | null; dni: string | null; telefono: string | null; comuna: string | null; llamado: boolean | null; resultado_llamada: string | null; }
 
 // Forma común a la que se normaliza cada fila de origen, sea cual sea su tabla.
 interface FilaOrigen {
@@ -60,6 +61,18 @@ const SECCION_INFO: Record<TablaOrigen, { label: string; color: string }> = {
 
 const TODAS_LAS_TABLAS: TablaOrigen[] = ["personeros", "ciudadanos", "corredores", "dirigentes", "participantes_actividades"];
 
+// Personeros y Ciudadanos separan el nombre en 3 columnas (nombres/apellido
+// paterno/apellido materno) y Dirigentes en 2 (nombre/apellido); no hay forma
+// segura de repartir un "nombre completo" editado entre esas columnas sin
+// arriesgarse a desordenar los datos. Por eso el nombre solo se deja editar
+// cuando la persona tiene alguna fila en una tabla que lo guarda en un solo
+// campo de texto (nombre_completo).
+const TABLAS_CON_NOMBRE_UNICO = new Set<TablaOrigen>(["corredores", "participantes_actividades"]);
+
+// Comuna sí es un solo campo de texto en todas las tablas que lo tienen —
+// Corredores es la única de las 5 que no tiene columna de comuna.
+const TABLAS_CON_COMUNA = new Set<TablaOrigen>(["personeros", "ciudadanos", "dirigentes", "participantes_actividades"]);
+
 function hasPhone(telefono?: string | null): boolean {
   return !!telefono && telefono !== "EMPTY";
 }
@@ -87,10 +100,11 @@ async function fetchTodos<T>(tabla: TablaOrigen, select: string): Promise<T[]> {
   return todos;
 }
 
-// El DNI es el único identificador confiable que comparten Personeros,
-// Ciudadanos y Corredores. Dirigentes y Participantes de Actividades no tienen
-// campo DNI en su tabla, así que sus filas nunca se fusionan con otras — se
-// listan tal cual, cada una en su propio registro.
+// El DNI es el único identificador confiable entre las 5 secciones. Una fila
+// sin DNI (por ejemplo, un Dirigente o Participante al que todavía no se le
+// completó el dato) queda sola en su propio registro hasta que alguien le
+// agregue el DNI desde esta misma pantalla — ahí se fusiona sola en el
+// siguiente refresco.
 function normalizarDni(dni?: string | null): string | null {
   const limpio = (dni ?? "").replace(/\D/g, "");
   return limpio.length >= 6 ? limpio : null;
@@ -106,7 +120,13 @@ function agruparPorPersona(filas: FilaOrigen[]): RegistroUnificado[] {
   });
 
   return Array.from(grupos.entries()).map(([key, grupo]) => {
-    const conNombre     = grupo.find((f) => f.nombreCompleto.trim()) ?? grupo[0];
+    // El nombre mostrado prioriza una fila editable (nombre_completo en un solo
+    // campo) cuando existe, para que lo que se ve sea siempre lo mismo que se
+    // puede editar — si no hay ninguna, se muestra la primera que tenga nombre
+    // (aunque esa no se pueda editar desde acá).
+    const conNombre = grupo.find((f) => TABLAS_CON_NOMBRE_UNICO.has(f.tabla) && f.nombreCompleto.trim())
+      ?? grupo.find((f) => f.nombreCompleto.trim())
+      ?? grupo[0];
     const conDni        = grupo.find((f) => f.dni);
     const conTelefono   = grupo.find((f) => f.telefono);
     const conComuna     = grupo.find((f) => f.comuna);
@@ -186,8 +206,8 @@ export default function SeguimientoGeneralPage() {
       fetchTodos<PersoneroRow>("personeros", "id,nombres,apellido_paterno,apellido_materno,dni,telefono,comuna,llamado,resultado_llamada"),
       fetchTodos<CiudadanoRow>("ciudadanos", "id,nombres,apellido_paterno,apellido_materno,dni,telefono,comuna,llamado,resultado_llamada"),
       fetchTodos<CorredorRow>("corredores", "id,nombre_completo,dni,telefono,llamado,resultado_llamada"),
-      fetchTodos<DirigenteRow>("dirigentes", "id,nombre,apellido,comuna,celular,llamado,resultado_llamada"),
-      fetchTodos<ParticipanteRow>("participantes_actividades", "id,nombre_completo,telefono,comuna,llamado,resultado_llamada"),
+      fetchTodos<DirigenteRow>("dirigentes", "id,nombre,apellido,dni,comuna,celular,llamado,resultado_llamada"),
+      fetchTodos<ParticipanteRow>("participantes_actividades", "id,nombre_completo,dni,telefono,comuna,llamado,resultado_llamada"),
     ]);
 
     const fallas: string[] = [];
@@ -233,7 +253,7 @@ export default function SeguimientoGeneralPage() {
       todasLasFilas.push(...rDirigentes.value.map((d): FilaOrigen => ({
         tabla: "dirigentes", id: d.id,
         nombreCompleto: [d.nombre, d.apellido].filter(Boolean).join(" ").trim(),
-        dni: null,
+        dni: d.dni?.trim() || null,
         telefono: hasPhone(d.celular) ? d.celular : null,
         comuna: d.comuna?.trim() || null,
         llamado: !!d.llamado,
@@ -245,7 +265,7 @@ export default function SeguimientoGeneralPage() {
       todasLasFilas.push(...rParticipantes.value.map((p): FilaOrigen => ({
         tabla: "participantes_actividades", id: p.id,
         nombreCompleto: (p.nombre_completo ?? "").trim(),
-        dni: null,
+        dni: p.dni?.trim() || null,
         telefono: hasPhone(p.telefono) ? p.telefono : null,
         comuna: p.comuna?.trim() || null,
         llamado: !!p.llamado,
@@ -270,6 +290,48 @@ export default function SeguimientoGeneralPage() {
     const fallo = resultados.find((r) => r.error);
     if (fallo?.error) return fallo.error.message;
     setData((prev) => prev.map((r) => (r.key === registro.key ? { ...r, resultado_llamada: valor } : r)));
+    return null;
+  };
+
+  // Nombre: solo se escribe en las filas cuya tabla lo guarda en un solo campo
+  // (nombre_completo) — Personeros/Ciudadanos/Dirigentes no se tocan desde acá
+  // porque separan el nombre en varias columnas (ver TABLAS_CON_NOMBRE_UNICO).
+  const handleActualizarNombre = async (registro: RegistroUnificado, valor: string): Promise<string | null> => {
+    const nombre = valor.trim();
+    if (!nombre) return "El nombre no puede quedar vacío.";
+    const objetivo = registro.secciones.filter((s) => TABLAS_CON_NOMBRE_UNICO.has(s.tabla));
+    if (objetivo.length === 0) return "Esta persona no tiene ninguna fila editable de nombre (viene de Personeros, Ciudadanos o Dirigentes).";
+    const resultados = await Promise.all(objetivo.map((s) => supabase.from(s.tabla).update({ nombre_completo: nombre }).eq("id", s.id)));
+    const fallo = resultados.find((r) => r.error);
+    if (fallo?.error) return fallo.error.message;
+    setData((prev) => prev.map((r) => (r.key === registro.key ? { ...r, nombreCompleto: nombre } : r)));
+    return null;
+  };
+
+  // DNI: se escribe en TODAS las filas de origen de la persona. Completar el
+  // DNI que le faltaba a una fila puede hacer que ahora deba fusionarse con
+  // otra ya existente (o separarse de un grupo al que no correspondía) — por
+  // eso, en vez de tratar de adivinar el nuevo agrupamiento en el navegador,
+  // se vuelve a traer y agrupar todo desde Supabase.
+  const handleActualizarDni = async (registro: RegistroUnificado, valor: string): Promise<string | null> => {
+    const dni = valor.trim() || null;
+    const resultados = await Promise.all(registro.secciones.map((s) => supabase.from(s.tabla).update({ dni }).eq("id", s.id)));
+    const fallo = resultados.find((r) => r.error);
+    if (fallo?.error) return fallo.error.message;
+    await fetchData();
+    return null;
+  };
+
+  // Comuna: se escribe en todas las filas de origen que tengan ese campo
+  // (todas menos Corredores).
+  const handleActualizarComuna = async (registro: RegistroUnificado, valor: string): Promise<string | null> => {
+    const comuna = valor.trim() || null;
+    const objetivo = registro.secciones.filter((s) => TABLAS_CON_COMUNA.has(s.tabla));
+    if (objetivo.length === 0) return "Esta persona no tiene ninguna fila con campo de comuna (viene solo de Corredores).";
+    const resultados = await Promise.all(objetivo.map((s) => supabase.from(s.tabla).update({ comuna }).eq("id", s.id)));
+    const fallo = resultados.find((r) => r.error);
+    if (fallo?.error) return fallo.error.message;
+    setData((prev) => prev.map((r) => (r.key === registro.key ? { ...r, comuna } : r)));
     return null;
   };
 
@@ -454,6 +516,8 @@ export default function SeguimientoGeneralPage() {
               ) : (
                 paginados.map((r, i) => {
                   const colorPrincipal = SECCION_INFO[r.secciones[0].tabla].color;
+                  const nombreEditable = r.secciones.some((s) => TABLAS_CON_NOMBRE_UNICO.has(s.tabla));
+                  const comunaEditable = r.secciones.some((s) => TABLAS_CON_COMUNA.has(s.tabla));
                   return (
                   <tr key={r.key}
                     className="table-row-animate border-t border-[rgba(148,163,184,0.10)] hover:bg-[rgba(59,130,246,0.10)] transition-colors"
@@ -466,12 +530,30 @@ export default function SeguimientoGeneralPage() {
                           style={{ background: colorPrincipal }}>
                           {r.nombreCompleto.charAt(0) || "?"}
                         </div>
-                        <span className="font-semibold text-[#e7ecfb]">{r.nombreCompleto || "—"}</span>
+                        <div className="min-w-0 flex-1">
+                          <Tooltip title={nombreEditable ? "Clic para editar" : "Viene de Personeros, Ciudadanos o Dirigentes — se edita desde esa sección"}>
+                            <span>
+                              <EditableCell
+                                value={r.nombreCompleto}
+                                editable={nombreEditable}
+                                displayValue={<span className="font-semibold text-[#e7ecfb]">{r.nombreCompleto || "—"}</span>}
+                                onSave={(v) => handleActualizarNombre(r, v)}
+                              />
+                            </span>
+                          </Tooltip>
+                        </div>
                       </div>
                     </td>
 
                     {/* DNI */}
-                    <td className="px-4 py-3 font-mono text-sm text-[#cbd5e1]">{r.dni || "—"}</td>
+                    <td className="px-4 py-3 font-mono text-sm text-[#cbd5e1]">
+                      <EditableCell
+                        value={r.dni ?? ""}
+                        editable
+                        sanitize={(v) => v.replace(/\D/g, "").slice(0, 8)}
+                        onSave={(v) => handleActualizarDni(r, v)}
+                      />
+                    </td>
 
                     {/* Teléfono */}
                     <td className="px-4 py-3 text-sm text-[#cbd5e1]">
@@ -480,9 +562,18 @@ export default function SeguimientoGeneralPage() {
 
                     {/* Comuna */}
                     <td className="px-4 py-3">
-                      {r.comuna
-                        ? <span className="inline-block px-2 py-0.5 rounded text-xs font-medium" style={{ background: "#f0fdf4", color: "#166534" }}>{r.comuna}</span>
-                        : <span className="text-[#475569] text-xs">—</span>}
+                      <Tooltip title={comunaEditable ? "Clic para editar" : "Esta persona solo viene de Corredores, que no guarda comuna"}>
+                        <span>
+                          <EditableCell
+                            value={r.comuna ?? ""}
+                            editable={comunaEditable}
+                            displayValue={r.comuna
+                              ? <span className="inline-block px-2 py-0.5 rounded text-xs font-medium" style={{ background: "#f0fdf4", color: "#166534" }}>{r.comuna}</span>
+                              : <span className="text-[#475569] text-xs">—</span>}
+                            onSave={(v) => handleActualizarComuna(r, v)}
+                          />
+                        </span>
+                      </Tooltip>
                     </td>
 
                     {/* Sección */}
