@@ -2,18 +2,51 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendWhatsApp } from "@/lib/ultramsg";
 import { supabase } from "@/lib/supabase";
 
-// Respuesta automática cuando alguien escribe por WhatsApp preguntando cómo
-// inscribirse de personero. UltraMsg llama a esta URL (webhook) cada vez que
-// llega un evento a la instancia — acá solo se reacciona al mensaje recibido.
+// Respuestas automáticas de WhatsApp. UltraMsg llama a esta URL (webhook) cada
+// vez que llega un mensaje — se revisa el texto contra cada regla, en orden, y
+// se responde con la primera que coincida. Para agregar una respuesta nueva
+// más adelante, solo hay que sumar un objeto a REGLAS.
 const FICHA_INSCRIPCION_URL = "https://jesusmaldonadooficial.com/#personero";
-const MENSAJE_AUTOMATICO =
-  "¡Hola! 👋 Para inscribirte como personero de campaña, completa esta ficha:\n" +
-  `${FICHA_INSCRIPCION_URL}\n\n` +
-  "En un momento un miembro del equipo te escribe si tienes otra consulta.";
 
-// Coincide con "personero", "personera", "personeros", "personeras" (con o sin
-// mayúsculas/tildes atípicas) en cualquier parte del mensaje.
-const PATRON_PERSONERO = /personer[oa]s?/i;
+// El link de Drive se configura como variable de entorno (DRIVE_REUNIONES_URL)
+// en vez de quedar escrito en el código — así, cuando lo tengan, alguien lo
+// agrega en Vercel sin depender de un nuevo cambio de código ni deploy. Si
+// todavía no está configurado, esta regla simplemente no responde nada (mejor
+// eso que mandar un mensaje con un link roto o "undefined").
+const DRIVE_REUNIONES_URL = process.env.DRIVE_REUNIONES_URL;
+
+interface Regla {
+  id: string;
+  patron: RegExp;
+  respuesta: () => string | null;
+  registrarComo?: "personero" | "simpatizante";
+}
+
+const REGLAS: Regla[] = [
+  {
+    id: "personero",
+    // "personero", "personera", "personeros", "personeras".
+    patron: /personer[oa]s?/i,
+    respuesta: () =>
+      "¡Hola! 👋 Para inscribirte como personero de campaña, completa esta ficha:\n" +
+      `${FICHA_INSCRIPCION_URL}\n\n` +
+      "En un momento un miembro del equipo te escribe si tienes otra consulta.",
+    registrarComo: "personero",
+  },
+  {
+    id: "reuniones",
+    // "comuna"/"comunas" o "reunion(es)"/"reunión(es)" en cualquier parte del texto.
+    patron: /\bcomunas?\b|reuni[oó]n(es)?/i,
+    respuesta: () => {
+      if (!DRIVE_REUNIONES_URL) return null;
+      return (
+        "Sii, aquí puedes ver la programación de reuniones por comuna:\n" +
+        `${DRIVE_REUNIONES_URL}\n` +
+        "Ubica la direccion mas cercana a la que puedas asistir según las fechas correspondientes del cronograma, te estaremos esperando."
+      );
+    },
+  },
+];
 
 // Protege el webhook: sin este secreto en la URL, cualquiera podría llamarlo y
 // hacer que la cuenta de WhatsApp mande mensajes. Se configura como query param
@@ -71,8 +104,22 @@ export async function POST(req: NextRequest) {
   }
 
   const texto = (data.body ?? "").trim();
-  if (!texto || !PATRON_PERSONERO.test(texto)) {
-    return NextResponse.json({ ok: true, skipped: "no menciona personero" });
+  if (!texto) {
+    return NextResponse.json({ ok: true, skipped: "mensaje vacío" });
+  }
+
+  // Primera regla que coincida Y tenga una respuesta lista (ver DRIVE_REUNIONES_URL).
+  let regla: Regla | undefined;
+  let mensaje: string | null = null;
+  for (const r of REGLAS) {
+    if (r.patron.test(texto)) {
+      const texto_respuesta = r.respuesta();
+      if (texto_respuesta) { regla = r; mensaje = texto_respuesta; break; }
+    }
+  }
+
+  if (!regla || !mensaje) {
+    return NextResponse.json({ ok: true, skipped: "ninguna regla coincide" });
   }
 
   const telefono = extraerTelefono(data.from);
@@ -81,7 +128,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await sendWhatsApp(telefono, MENSAJE_AUTOMATICO);
+    await sendWhatsApp(telefono, mensaje);
   } catch (err) {
     const msg = err instanceof Error ? err.message : "error desconocido";
     // Se responde 200 igual: un fallo de envío no es algo que UltraMsg deba
@@ -92,17 +139,19 @@ export async function POST(req: NextRequest) {
   // Registro best-effort en "Contactos del Chat" para que este lead quede
   // visible junto a los demás contactos del chatbot. Si la tabla no acepta
   // inserts desde acá (permisos), no debe romper la respuesta automática.
-  try {
-    await supabase.from("contactos_chat").insert({
-      nombre: data.pushname?.trim() || "Contacto WhatsApp",
-      apellido_paterno: "",
-      apellido_materno: "",
-      telefono,
-      tipo: "personero",
-    });
-  } catch {
-    // silencioso a propósito
+  if (regla.registrarComo) {
+    try {
+      await supabase.from("contactos_chat").insert({
+        nombre: data.pushname?.trim() || "Contacto WhatsApp",
+        apellido_paterno: "",
+        apellido_materno: "",
+        telefono,
+        tipo: regla.registrarComo,
+      });
+    } catch {
+      // silencioso a propósito
+    }
   }
 
-  return NextResponse.json({ ok: true, respondido: telefono });
+  return NextResponse.json({ ok: true, regla: regla.id, respondido: telefono });
 }
