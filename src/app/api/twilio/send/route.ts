@@ -1,36 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { normalizePhone, sendWhatsApp } from "@/lib/ultramsg";
 
 // Twilio (SMS)
 const TWILIO_SID    = process.env.TWILIO_ACCOUNT_SID!;
 const TWILIO_TOKEN  = process.env.TWILIO_AUTH_TOKEN!;
 const TWILIO_FROM   = process.env.TWILIO_PHONE_NUMBER!;
-
-// UltraMsg (WhatsApp)
-const UM_INSTANCE   = process.env.ULTRAMSG_INSTANCE_ID!;
-const UM_TOKEN      = process.env.ULTRAMSG_TOKEN!;
-
-function normalizePhone(phone: string): string {
-  const digits = phone.replace(/\D/g, "");
-  if (digits.startsWith("51") && digits.length === 11) return `+${digits}`;
-  if (digits.length === 9) return `+51${digits}`;
-  if (digits.startsWith("1") && digits.length >= 10) return `+${digits}`;
-  return `+${digits}`;
-}
-
-async function sendWhatsApp(to: string, body: string): Promise<void> {
-  const response = await fetch(
-    `https://api.ultramsg.com/${UM_INSTANCE}/messages/chat`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ token: UM_TOKEN, to, body }).toString(),
-    }
-  );
-  const data = await response.json();
-  if (!response.ok || data?.sent === "false" || data?.error) {
-    throw new Error(data?.error ?? data?.message ?? "Error UltraMsg");
-  }
-}
 
 async function sendSMS(to: string, body: string): Promise<void> {
   const credentials = Buffer.from(`${TWILIO_SID}:${TWILIO_TOKEN}`).toString("base64");
