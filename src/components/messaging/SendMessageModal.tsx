@@ -21,6 +21,8 @@ interface Props {
   open: boolean;
   onClose: () => void;
   contactos: Contacto[];
+  /** Texto con el que arranca el mensaje al abrir el modal (opcional). */
+  mensajePredeterminado?: string;
 }
 
 type Canal = "sms" | "whatsapp";
@@ -32,15 +34,15 @@ interface Resultado {
   total: number;
 }
 
-export default function SendMessageModal({ open, onClose, contactos }: Props) {
+export default function SendMessageModal({ open, onClose, contactos, mensajePredeterminado = "" }: Props) {
   const [canal, setCanal]     = useState<Canal>("sms");
-  const [mensaje, setMensaje] = useState("");
+  const [mensaje, setMensaje] = useState(mensajePredeterminado);
   const [estado, setEstado]   = useState<Estado>("idle");
   const [resultado, setResultado] = useState<Resultado | null>(null);
 
   const handleClose = () => {
     if (estado === "sending") return;
-    setMensaje("");
+    setMensaje(mensajePredeterminado);
     setEstado("idle");
     setResultado(null);
     onClose();

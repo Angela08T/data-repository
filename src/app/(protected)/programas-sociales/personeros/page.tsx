@@ -33,6 +33,19 @@ import ResultadoLlamadaSelect from "@/components/shared/ResultadoLlamadaSelect";
 
 dayjs.locale("es");
 
+// Mensaje con el que arranca el modal de "Enviar mensaje" en esta página —
+// tal cual como lo pidió la campaña, sin tocar los emojis ni el texto.
+const MENSAJE_COMUNICADO_PERSONEROS =
+  "COMUNICADO❗️\n" +
+  "Estimados PERSONEROS del gran cambio de SJL:\n" +
+  "Agradecemos profundamente a los màs de 2,000 personeros que ya se han inscrito para defender el voto de SOMOS PERÙ -Jesùs MaLdonado-, en estas Elecciones Municipales del 04 de octubre. 🙌🏼❤️💙\n" +
+  "Estamos iniciando las jornadas de capacitación. Adjuntamos el cronograma. Inicia tu capacitaciòn en el local que te quede màs cerca.\n" +
+  "Tu presencia y vigilancia en las mesas de votación son la GARANTÌA de este proceso. 😉💪🏼\n" +
+  "Inscríbete y comparte el siguiente enlace:  https://www.jesusmaldonadooficial.com/#personero\n" +
+  "\n" +
+  "JESÚS MALDONADO\n" +
+  "Partido Democrático SOMOS PERÚ";
+
 // fecha_nacimiento viene como texto: "DD/MM/YYYY" o, en algunos registros, "YYYY-MM-DD".
 // Extraemos día/mes por posición (sin validar el año completo), porque hay registros
 // con el año mal tipeado (ej. "29/12/19986") que aun así deben poder filtrarse por cumpleaños.
@@ -1162,7 +1175,12 @@ export default function PersonerosPage() {
         </div>
       </div>
 
-      <SendMessageModal open={modalOpen} onClose={() => setModalOpen(false)} contactos={modalContactos} />
+      <SendMessageModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        contactos={modalContactos}
+        mensajePredeterminado={MENSAJE_COMUNICADO_PERSONEROS}
+      />
       <AgregarPersoneroModal
         open={puedeAgregar && agregarOpen}
         onClose={() => setAgregarOpen(false)}
