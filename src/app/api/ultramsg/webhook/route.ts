@@ -15,20 +15,12 @@ const FICHA_INSCRIPCION_URL = "https://jesusmaldonadooficial.com/#personero";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://data-repository-eight.vercel.app";
 const MAPA_COMUNAS_URL = `${SITE_URL}/mapa-comuna.jpg`;
 
-// El link de Drive se configura como variable de entorno (DRIVE_REUNIONES_URL)
-// en vez de quedar escrito en el código — así, cuando lo tengan, alguien lo
-// agrega en Vercel sin depender de un nuevo cambio de código ni deploy. Si
-// todavía no está configurado, las respuestas que lo necesitan simplemente no
-// se mandan (mejor eso que un mensaje con un link roto o "undefined").
-const DRIVE_REUNIONES_URL = process.env.DRIVE_REUNIONES_URL;
-
-function mensajeReuniones(): string {
-  return (
-    "Sii, aquí puedes ver la programación de reuniones por comuna:\n" +
-    `${DRIVE_REUNIONES_URL}\n` +
-    "Ubica la direccion mas cercana a la que puedas asistir según las fechas correspondientes del cronograma, te estaremos esperando."
-  );
-}
+// La programación de reuniones es una imagen (cronograma semanal), no un link
+// de Drive — vive en /public igual que el mapa de comunas.
+const PROGRAMACION_REUNIONES_URL = `${SITE_URL}/programacion-reuniones.png`;
+const CAPTION_REUNIONES =
+  "Sii, aquí puedes ver la programación de reuniones por comuna.\n" +
+  "Ubica la dirección más cercana a la que puedas asistir según las fechas correspondientes del cronograma, te estaremos esperando.";
 
 type Accion =
   | { tipo: "texto"; mensaje: string }
@@ -69,20 +61,17 @@ const REGLAS: Regla[] = [
     // "qué comuna me toca". Va antes que la regla general de "comuna" porque es
     // más específica (si no, nunca se alcanzaría a evaluar).
     patron: /no\s+s[eé].*comuna|a\s+qu[eé]\s+comuna|cu[aá]l\s+es\s+mi\s+comuna|qu[eé]\s+comuna\s+(me\s+toca|soy|pertenezco)/i,
-    acciones: () => {
-      const acciones: Accion[] = [
-        { tipo: "imagen", url: MAPA_COMUNAS_URL, caption: "Busca en el mapa a qué comuna o zona perteneces." },
-      ];
-      if (DRIVE_REUNIONES_URL) acciones.push({ tipo: "texto", mensaje: mensajeReuniones() });
-      return acciones;
-    },
+    acciones: () => [
+      { tipo: "imagen", url: MAPA_COMUNAS_URL, caption: "Busca en el mapa a qué comuna o zona perteneces." },
+      { tipo: "imagen", url: PROGRAMACION_REUNIONES_URL, caption: CAPTION_REUNIONES },
+    ],
   },
   {
     id: "reuniones",
     // Ya sabe su comuna (la menciona directo, ej. "vivo en la comuna 2") o
-    // pregunta directo por la reunión — acá solo va el mensaje de programación.
+    // pregunta directo por la reunión — acá solo va la imagen de programación.
     patron: /\bcomunas?\b|reuni[oó]n(es)?/i,
-    acciones: () => (DRIVE_REUNIONES_URL ? [{ tipo: "texto", mensaje: mensajeReuniones() }] : null),
+    acciones: () => [{ tipo: "imagen", url: PROGRAMACION_REUNIONES_URL, caption: CAPTION_REUNIONES }],
   },
 ];
 
