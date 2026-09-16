@@ -28,3 +28,21 @@ export async function sendWhatsApp(to: string, body: string): Promise<void> {
     throw new Error(data?.error ?? data?.message ?? "Error UltraMsg");
   }
 }
+
+// imageUrl debe ser una URL pública (UltraMsg la descarga desde ahí) — por eso
+// las imágenes que se mandan automáticamente viven en /public de este mismo
+// proyecto en vez de subirse a otro lado.
+export async function sendImage(to: string, imageUrl: string, caption?: string): Promise<void> {
+  const response = await fetch(
+    `https://api.ultramsg.com/${UM_INSTANCE}/messages/image`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ token: UM_TOKEN, to, image: imageUrl, caption: caption ?? "" }).toString(),
+    }
+  );
+  const data = await response.json();
+  if (!response.ok || data?.sent === "false" || data?.error) {
+    throw new Error(data?.error ?? data?.message ?? "Error UltraMsg (imagen)");
+  }
+}

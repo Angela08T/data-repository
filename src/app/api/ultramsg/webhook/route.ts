@@ -1,24 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendWhatsApp } from "@/lib/ultramsg";
+import { sendWhatsApp, sendImage } from "@/lib/ultramsg";
 import { supabase } from "@/lib/supabase";
 
 // Respuestas automáticas de WhatsApp. UltraMsg llama a esta URL (webhook) cada
-// vez que llega un mensaje — se revisa el texto contra cada regla, en orden, y
-// se responde con la primera que coincida. Para agregar una respuesta nueva
-// más adelante, solo hay que sumar un objeto a REGLAS.
+// vez que llega un mensaje — se revisa el texto contra cada regla, EN ORDEN, y
+// se responde con la primera que coincida y tenga algo listo para mandar. Para
+// agregar una respuesta nueva más adelante, alcanza con sumar un objeto a REGLAS.
 const FICHA_INSCRIPCION_URL = "https://jesusmaldonadooficial.com/#personero";
+
+// Dominio público de esta misma app, para armar URLs absolutas de imágenes
+// (UltraMsg necesita poder descargarlas, no le sirve una ruta relativa). Si el
+// dominio cambiara, se ajusta con la variable de entorno NEXT_PUBLIC_SITE_URL
+// en vez de tocar código.
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://data-repository-eight.vercel.app";
+const MAPA_COMUNAS_URL = `${SITE_URL}/mapa-comuna.jpg`;
 
 // El link de Drive se configura como variable de entorno (DRIVE_REUNIONES_URL)
 // en vez de quedar escrito en el código — así, cuando lo tengan, alguien lo
 // agrega en Vercel sin depender de un nuevo cambio de código ni deploy. Si
-// todavía no está configurado, esta regla simplemente no responde nada (mejor
-// eso que mandar un mensaje con un link roto o "undefined").
+// todavía no está configurado, las respuestas que lo necesitan simplemente no
+// se mandan (mejor eso que un mensaje con un link roto o "undefined").
 const DRIVE_REUNIONES_URL = process.env.DRIVE_REUNIONES_URL;
+
+function mensajeReuniones(): string {
+  return (
+    "Sii, aquí puedes ver la programación de reuniones por comuna:\n" +
+    `${DRIVE_REUNIONES_URL}\n` +
+    "Ubica la direccion mas cercana a la que puedas asistir según las fechas correspondientes del cronograma, te estaremos esperando."
+  );
+}
+
+type Accion =
+  | { tipo: "texto"; mensaje: string }
+  | { tipo: "imagen"; url: string; caption?: string };
 
 interface Regla {
   id: string;
   patron: RegExp;
-  respuesta: () => string | null;
+  // Devuelve las acciones a mandar, en orden (ej. imagen y luego texto). Un
+  // arreglo vacío/null significa "esta regla coincide pero no tiene nada listo
+  // para responder todavía" (ej. falta configurar un link) — se sigue probando
+  // con la siguiente regla.
+  acciones: () => Accion[] | null;
   registrarComo?: "personero" | "simpatizante";
 }
 
@@ -27,24 +50,36 @@ const REGLAS: Regla[] = [
     id: "personero",
     // "personero", "personera", "personeros", "personeras".
     patron: /personer[oa]s?/i,
-    respuesta: () =>
-      "¡Hola! 👋 Para inscribirte como personero de campaña, completa esta ficha:\n" +
-      `${FICHA_INSCRIPCION_URL}\n\n` +
-      "En un momento un miembro del equipo te escribe si tienes otra consulta.",
+    acciones: () => [{
+      tipo: "texto",
+      mensaje:
+        "¡Hola! 👋 Para inscribirte como personero de campaña, completa esta ficha:\n" +
+        `${FICHA_INSCRIPCION_URL}\n\n` +
+        "En un momento un miembro del equipo te escribe si tienes otra consulta.",
+    }],
     registrarComo: "personero",
   },
   {
-    id: "reuniones",
-    // "comuna"/"comunas" o "reunion(es)"/"reunión(es)" en cualquier parte del texto.
-    patron: /\bcomunas?\b|reuni[oó]n(es)?/i,
-    respuesta: () => {
-      if (!DRIVE_REUNIONES_URL) return null;
-      return (
-        "Sii, aquí puedes ver la programación de reuniones por comuna:\n" +
-        `${DRIVE_REUNIONES_URL}\n` +
-        "Ubica la direccion mas cercana a la que puedas asistir según las fechas correspondientes del cronograma, te estaremos esperando."
-      );
+    id: "duda_comuna",
+    // Preguntas de quien NO sabe a qué comuna pertenece: "no sé de qué comuna
+    // soy", "no sé mi comuna", "a qué comuna pertenezco", "cuál es mi comuna",
+    // "qué comuna me toca". Va antes que la regla general de "comuna" porque es
+    // más específica (si no, nunca se alcanzaría a evaluar).
+    patron: /no\s+s[eé].*comuna|a\s+qu[eé]\s+comuna|cu[aá]l\s+es\s+mi\s+comuna|qu[eé]\s+comuna\s+(me\s+toca|soy|pertenezco)/i,
+    acciones: () => {
+      const acciones: Accion[] = [
+        { tipo: "imagen", url: MAPA_COMUNAS_URL, caption: "Busca en el mapa a qué comuna o zona perteneces." },
+      ];
+      if (DRIVE_REUNIONES_URL) acciones.push({ tipo: "texto", mensaje: mensajeReuniones() });
+      return acciones;
     },
+  },
+  {
+    id: "reuniones",
+    // Ya sabe su comuna (la menciona directo, ej. "vivo en la comuna 2") o
+    // pregunta directo por la reunión — acá solo va el mensaje de programación.
+    patron: /\bcomunas?\b|reuni[oó]n(es)?/i,
+    acciones: () => (DRIVE_REUNIONES_URL ? [{ tipo: "texto", mensaje: mensajeReuniones() }] : null),
   },
 ];
 
@@ -108,17 +143,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, skipped: "mensaje vacío" });
   }
 
-  // Primera regla que coincida Y tenga una respuesta lista (ver DRIVE_REUNIONES_URL).
+  // Primera regla que coincida Y tenga al menos una acción lista para mandar.
   let regla: Regla | undefined;
-  let mensaje: string | null = null;
+  let acciones: Accion[] | null = null;
   for (const r of REGLAS) {
     if (r.patron.test(texto)) {
-      const texto_respuesta = r.respuesta();
-      if (texto_respuesta) { regla = r; mensaje = texto_respuesta; break; }
+      const listas = r.acciones();
+      if (listas && listas.length > 0) { regla = r; acciones = listas; break; }
     }
   }
 
-  if (!regla || !mensaje) {
+  if (!regla || !acciones) {
     return NextResponse.json({ ok: true, skipped: "ninguna regla coincide" });
   }
 
@@ -128,7 +163,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await sendWhatsApp(telefono, mensaje);
+    // En orden (no en paralelo): si es imagen + texto, WhatsApp debe mostrarlos
+    // en ese orden, uno detrás del otro.
+    for (const accion of acciones) {
+      if (accion.tipo === "imagen") await sendImage(telefono, accion.url, accion.caption);
+      else await sendWhatsApp(telefono, accion.mensaje);
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : "error desconocido";
     // Se responde 200 igual: un fallo de envío no es algo que UltraMsg deba
