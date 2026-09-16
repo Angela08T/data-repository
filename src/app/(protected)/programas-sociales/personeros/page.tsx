@@ -44,7 +44,10 @@ const MENSAJE_COMUNICADO_PERSONEROS =
   "Inscríbete y comparte el siguiente enlace:  https://www.jesusmaldonadooficial.com/#personero\n" +
   "\n" +
   "JESÚS MALDONADO\n" +
-  "Partido Democrático SOMOS PERÚ";
+  "Partido Democrático SOMOS PERÚ\n" +
+  "\n" +
+  "Te invitamos a unirte al grupo de WhatsApp de personeros para enterarte de cualquier novedad.\n" +
+  "Abre este enlace para unirte a mi grupo de WhatsApp: https://chat.whatsapp.com/HWrVVjmgPwx86V8dv34vFa?s=sw&p=a&mlu=4&ilr=4";
 
 // fecha_nacimiento viene como texto: "DD/MM/YYYY" o, en algunos registros, "YYYY-MM-DD".
 // Extraemos día/mes por posición (sin validar el año completo), porque hay registros
