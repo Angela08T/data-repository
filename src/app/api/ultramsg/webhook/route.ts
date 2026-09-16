@@ -22,6 +22,11 @@ const MAPA_COMUNAS_URL = `${SITE_URL}/mapa-comuna.jpg`;
 // se mandan (mejor eso que un mensaje con un link roto o "undefined").
 const DRIVE_REUNIONES_URL = process.env.DRIVE_REUNIONES_URL;
 
+const GRUPO_WHATSAPP_URL = "https://chat.whatsapp.com/HWrVVjmgPwx86V8dv34vFa?s=sw&p=a&mlu=4&ilr=4";
+const MENSAJE_GRUPO_WHATSAPP =
+  "Te invitamos a unirte al grupo de WhatsApp de personeros para enterarte de cualquier novedad.\n" +
+  `Abre este enlace para unirte a mi grupo de WhatsApp: ${GRUPO_WHATSAPP_URL}`;
+
 function mensajeReuniones(): string {
   return (
     "Sii, aquí puedes ver la programación de reuniones por comuna:\n" +
@@ -50,13 +55,16 @@ const REGLAS: Regla[] = [
     id: "personero",
     // "personero", "personera", "personeros", "personeras".
     patron: /personer[oa]s?/i,
-    acciones: () => [{
-      tipo: "texto",
-      mensaje:
-        "¡Hola! 👋 Para inscribirte como personero de campaña, completa esta ficha:\n" +
-        `${FICHA_INSCRIPCION_URL}\n\n` +
-        "En un momento un miembro del equipo te escribe si tienes otra consulta.",
-    }],
+    acciones: () => [
+      {
+        tipo: "texto",
+        mensaje:
+          "¡Hola! 👋 Para inscribirte como personero de campaña, completa esta ficha:\n" +
+          `${FICHA_INSCRIPCION_URL}\n\n` +
+          "En un momento un miembro del equipo te escribe si tienes otra consulta.",
+      },
+      { tipo: "texto", mensaje: MENSAJE_GRUPO_WHATSAPP },
+    ],
     registrarComo: "personero",
   },
   {
