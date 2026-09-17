@@ -99,7 +99,6 @@ export default function ReportarVotosPage() {
 
   // Estado del acta (nueva o existente)
   const [modoEdicion, setModoEdicion] = useState(false);
-  const [actaId, setActaId] = useState<string | null>(null);
   const [fechaReporte, setFechaReporte] = useState<string | null>(null);
   const [fotoActaUrlExistente, setFotoActaUrlExistente] = useState<string | null>(null);
 
@@ -193,7 +192,6 @@ export default function ReportarVotosPage() {
         }
 
         setModoEdicion(true);
-        setActaId(a.id);
         setFechaReporte(a.created_at);
         setFotoActaUrlExistente(a.foto_acta_url);
         setSjl({ votos: sjlVotos, votosBlancos: a.votos_blancos_sjl ?? 0, votosNulos: a.votos_nulos_sjl ?? 0, votosImpugnados: a.votos_impugnados_sjl ?? 0 });
@@ -219,7 +217,6 @@ export default function ReportarVotosPage() {
         setStep("revisar");
       } else {
         setModoEdicion(false);
-        setActaId(null);
         setSjl(seccionVacia(porAmbito.sjl));
         setLima(seccionVacia(porAmbito.lima));
         setLecturaIA(null);
@@ -350,30 +347,24 @@ export default function ReportarVotosPage() {
         updated_at: new Date().toISOString(),
       };
 
-      let idActa = actaId;
+      // upsert por numero_mesa (columna con restricción unique) en vez de
+      // "buscar y luego insertar o actualizar": con miles de personeros
+      // reportando cerca de la misma hora, ese patrón deja una ventana de
+      // carrera donde dos envíos casi simultáneos para la misma mesa podrían
+      // crear dos actas duplicadas. El upsert es una sola operación atómica.
+      const { data: guardada, error: actaError } = await supabase
+        .from("actas_mesa")
+        .upsert(actaPayload, { onConflict: "numero_mesa" })
+        .select("id")
+        .single();
 
-      if (modoEdicion && idActa) {
-        const { error: actaError } = await supabase.from("actas_mesa").update(actaPayload).eq("id", idActa);
-        if (actaError) {
-          setSubmitError(`No se pudo guardar el reporte: ${actaError.message}`);
-          return;
-        }
-      } else {
-        const { data: inserted, error: actaError } = await supabase
-          .from("actas_mesa")
-          .insert(actaPayload)
-          .select("id")
-          .single();
-        if (actaError) {
-          setSubmitError(`No se pudo guardar el reporte: ${actaError.message}`);
-          return;
-        }
-        idActa = inserted.id;
-        // Si el personero corrige la mesa desde la pantalla de éxito, el próximo
-        // guardado debe actualizar esta misma fila en vez de intentar duplicarla.
-        setActaId(idActa);
-        setModoEdicion(true);
+      if (actaError) {
+        setSubmitError(`No se pudo guardar el reporte: ${actaError.message}`);
+        return;
       }
+
+      const idActa = guardada.id;
+      setModoEdicion(true);
 
       const filasVotos = [
         ...porAmbito.sjl.map((p) => ({

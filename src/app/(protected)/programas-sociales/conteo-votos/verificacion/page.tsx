@@ -6,7 +6,7 @@ import Swal from "sweetalert2";
 import { supabase } from "@/lib/supabase";
 import { exportToExcel } from "@/lib/utils/exportExcel";
 import { showError } from "@/lib/utils/swalConfig";
-import { fetchPartidosActivos, PartidoEleccion, Ambito } from "@/lib/partidos-eleccion";
+import { Ambito } from "@/lib/partidos-eleccion";
 import { BeneficiarioDetailsDialog } from "@/components/modals/BeneficiarioDetailsDialog";
 import SearchIcon from "@mui/icons-material/Search";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
@@ -45,31 +45,21 @@ interface ActaMesa {
   personeros: PersoneroMini | null;
 }
 
-interface VotoPartidoRow {
+// Fila de la función agregada resumen_actas_por_ambito (Postgres) — reemplaza
+// bajar cada fila cruda de votos_partido (mesas × partidos) solo para calcular
+// un total y un líder por mesa, algo que se vuelve pesado con miles de mesas.
+interface ResumenActaAmbitoRow {
   acta_id: string;
-  partido_id: string;
-  votos: number | null;
+  ambito: Ambito;
+  total_votos: number | string;
+  lider_nombre: string | null;
+  lider_votos: number | null;
 }
 
 interface VotoDetalleRow {
   votos: number | null;
   votos_ia: number | null;
   partidos_eleccion: { nombre: string; ambito: Ambito; numero_lista: number } | null;
-}
-
-interface ResumenAmbito {
-  total: number;
-  liderNombre: string;
-  liderVotos: number;
-}
-
-interface ResumenActa {
-  sjl: ResumenAmbito;
-  lima: ResumenAmbito;
-}
-
-function resumenVacio(): ResumenAmbito {
-  return { total: 0, liderNombre: "—", liderVotos: -1 };
 }
 
 function formatFecha(iso: string) {
@@ -79,16 +69,16 @@ function formatFecha(iso: string) {
   return { fecha, hora };
 }
 
-function totalVotosActaAmbito(a: ActaMesa, ambito: Ambito, resumen: Map<string, ResumenActa>): number {
-  const r = resumen.get(a.id)?.[ambito] ?? resumenVacio();
-  if (ambito === "sjl") return r.total + (a.votos_blancos_sjl ?? 0) + (a.votos_nulos_sjl ?? 0) + (a.votos_impugnados_sjl ?? 0);
-  return r.total + (a.votos_blancos_lima ?? 0) + (a.votos_nulos_lima ?? 0) + (a.votos_impugnados_lima ?? 0);
+function totalVotosActaAmbito(a: ActaMesa, ambito: Ambito, resumen: Map<string, ResumenActaAmbitoRow>): number {
+  const base = Number(resumen.get(`${a.id}|${ambito}`)?.total_votos) || 0;
+  if (ambito === "sjl") return base + (a.votos_blancos_sjl ?? 0) + (a.votos_nulos_sjl ?? 0) + (a.votos_impugnados_sjl ?? 0);
+  return base + (a.votos_blancos_lima ?? 0) + (a.votos_nulos_lima ?? 0) + (a.votos_impugnados_lima ?? 0);
 }
 
-function liderActaAmbito(a: ActaMesa, ambito: Ambito, resumen: Map<string, ResumenActa>): string {
-  const r = resumen.get(a.id)?.[ambito];
-  if (!r || r.liderVotos <= 0) return "—";
-  return `${r.liderNombre} (${r.liderVotos})`;
+function liderActaAmbito(a: ActaMesa, ambito: Ambito, resumen: Map<string, ResumenActaAmbitoRow>): string {
+  const r = resumen.get(`${a.id}|${ambito}`);
+  if (!r || !r.lider_nombre || (r.lider_votos ?? 0) <= 0) return "—";
+  return `${r.lider_nombre} (${r.lider_votos})`;
 }
 
 function ConfianzaBadge({ confianza }: { confianza: string | null }) {
@@ -121,8 +111,7 @@ function StatCard({ label, value, icon, color }: { label: string; value: string 
 
 export default function RegistroVotosPage() {
   const [data, setData]       = useState<ActaMesa[]>([]);
-  const [votosPartido, setVotosPartido] = useState<VotoPartidoRow[]>([]);
-  const [partidos, setPartidos] = useState<PartidoEleccion[]>([]);
+  const [resumenActas, setResumenActas] = useState<ResumenActaAmbitoRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
   const [search, setSearch]   = useState("");
@@ -130,23 +119,19 @@ export default function RegistroVotosPage() {
   const [detalleVotos, setDetalleVotos] = useState<VotoDetalleRow[] | null>(null);
   const [detalleLoading, setDetalleLoading] = useState(false);
 
-  useEffect(() => {
-    fetchPartidosActivos().catch(() => {}).then((p) => { if (p) setPartidos(p); });
-  }, []);
-
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const [resActas, resVotos] = await Promise.all([
+    const [resActas, resResumen] = await Promise.all([
       supabase
         .from("actas_mesa")
         .select("*, personeros(nombres, apellido_paterno, apellido_materno)")
         .order("created_at", { ascending: false }),
-      supabase.from("votos_partido").select("acta_id, partido_id, votos"),
+      supabase.rpc("resumen_actas_por_ambito"),
     ]);
     if (resActas.error) setError(resActas.error.message);
     else setData((resActas.data as unknown as ActaMesa[]) ?? []);
-    setVotosPartido((resVotos.data as VotoPartidoRow[]) ?? []);
+    setResumenActas((resResumen.data as ResumenActaAmbitoRow[]) ?? []);
     setLoading(false);
   }, []);
 
@@ -173,23 +158,10 @@ export default function RegistroVotosPage() {
       });
   }, [detalleActa]);
 
-  // Total y partido líder por mesa y por ámbito (SJL / Lima), precalculados una
-  // vez por fetch a partir de votos_partido (1 fila por partido por acta).
-  const partidosPorId = new Map(partidos.map((p) => [p.id, p]));
-  const resumenPorActa = new Map<string, ResumenActa>();
-  for (const v of votosPartido) {
-    const cantidad = Number(v.votos) || 0;
-    const partido = partidosPorId.get(v.partido_id);
-    if (!partido) continue;
-    const actual = resumenPorActa.get(v.acta_id) ?? { sjl: resumenVacio(), lima: resumenVacio() };
-    const r = actual[partido.ambito];
-    r.total += cantidad;
-    if (cantidad > r.liderVotos) {
-      r.liderNombre = partido.nombre;
-      r.liderVotos = cantidad;
-    }
-    resumenPorActa.set(v.acta_id, actual);
-  }
+  // Total y partido líder por mesa y por ámbito (SJL / Lima) — ya vienen
+  // agregados desde Postgres, indexados aquí por "acta_id|ambito".
+  const resumenPorActa = new Map<string, ResumenActaAmbitoRow>();
+  for (const r of resumenActas) resumenPorActa.set(`${r.acta_id}|${r.ambito}`, r);
 
   const filtrados = data.filter((a) => {
     const nombrePersonero = a.personeros

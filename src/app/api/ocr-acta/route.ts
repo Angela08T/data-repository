@@ -20,6 +20,31 @@ export const maxDuration = 60;
 const MODEL = "claude-sonnet-5";
 const TOOL_NAME = "registrar_lectura_acta";
 
+// Con miles de personeros reportando en horas pico (sobre todo al cierre de
+// mesas), es normal toparse de vez en cuando con un 429 (rate limit) o 529
+// (servidor de Anthropic saturado) — son errores transitorios, no de la
+// lectura en sí, así que conviene reintentar un par de veces con backoff en
+// vez de fallarle al personero a la primera.
+async function crearLecturaConReintentos(
+  params: Anthropic.MessageCreateParamsNonStreaming,
+  intentosMax = 3
+): Promise<Anthropic.Message> {
+  let ultimoError: unknown;
+  for (let intento = 0; intento < intentosMax; intento++) {
+    try {
+      return await anthropic.messages.create(params);
+    } catch (err) {
+      ultimoError = err;
+      const status = (err as { status?: number } | undefined)?.status;
+      const esReintentable = status === 429 || status === 500 || status === 503 || status === 529;
+      if (!esReintentable || intento === intentosMax - 1) throw err;
+      const espera = 600 * Math.pow(2, intento) + Math.random() * 300;
+      await new Promise((resolve) => setTimeout(resolve, espera));
+    }
+  }
+  throw ultimoError;
+}
+
 // El acta de esta elección trae DOS secciones de resultados en la misma hoja:
 // la del DISTRITO de San Juan de Lurigancho (la que más nos importa) y la de
 // la PROVINCIA de Lima Metropolitana. Cada una lista solo nombres de partidos
@@ -123,7 +148,7 @@ Lee la foto con cuidado, dígito por dígito, para cada una de las dos secciones
 
 Reporta los votos de todos los partidos de cada lista aunque algunos tengan 0 votos. Usa la tool "${TOOL_NAME}" para reportar tu lectura, con un objeto "sjl" y un objeto "lima" completos e independientes.`;
 
-    const response = await anthropic.messages.create({
+    const response = await crearLecturaConReintentos({
       model: MODEL,
       max_tokens: 3072,
       tools: [tool],
@@ -156,7 +181,11 @@ Reporta los votos de todos los partidos de cada lista aunque algunos tengan 0 vo
 
     return NextResponse.json(toolUse.input);
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Error interno al leer el acta.";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    const status = (err as { status?: number } | undefined)?.status;
+    const saturado = status === 429 || status === 529;
+    const msg = saturado
+      ? "El sistema de lectura está muy saturado en este momento. Espera unos segundos y vuelve a intentar."
+      : err instanceof Error ? err.message : "Error interno al leer el acta.";
+    return NextResponse.json({ error: msg }, { status: saturado ? 503 : 500 });
   }
 }

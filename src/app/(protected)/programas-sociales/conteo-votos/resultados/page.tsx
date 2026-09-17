@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { IconButton, Tooltip, CircularProgress } from "@mui/material";
 import { supabase } from "@/lib/supabase";
 import { exportMultiSheetExcel } from "@/lib/utils/exportExcel";
-import { fetchPartidosActivos, agruparPorAmbito, PartidoEleccion, Ambito } from "@/lib/partidos-eleccion";
+import { Ambito } from "@/lib/partidos-eleccion";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import BarChartIcon from "@mui/icons-material/BarChart";
@@ -48,10 +48,21 @@ interface ActaMesa {
   personeros: { comuna: string | null } | null;
 }
 
-interface VotoPartidoRow {
+// Estas dos vistas vienen de funciones agregadas en Postgres (resultados_por_partido
+// y resumen_actas_por_ambito) en vez de bajar las ~150 mil filas crudas de
+// votos_partido (mesas × partidos) al navegador en cada refresh — con miles de
+// mesas reportando, esa diferencia es lo que mantiene la página fluida.
+interface ResultadoPartidoRow {
+  ambito: Ambito;
+  numero_lista: number;
+  nombre: string;
+  votos: number | string;
+}
+
+interface ResumenActaAmbitoRow {
   acta_id: string;
-  partido_id: string;
-  votos: number | null;
+  ambito: Ambito;
+  total_votos: number | string;
 }
 
 interface ResultadoPartido {
@@ -83,22 +94,23 @@ function claveDiaLima(d: Date): string {
   return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
 }
 
-// El total de votos válidos de una mesa (por ámbito) vive en votos_partido
-// (tabla normalizada, no una columna en actas_mesa), así que se pasa el mapa
-// acta_id -> suma de votos de ese ámbito, precalculado una vez por fetch.
-function totalVotosActa(a: ActaMesa, ambito: Ambito, votosPorActa: Record<Ambito, Record<string, number>>): number {
-  const base = votosPorActa[ambito][a.id] ?? 0;
+// El total de votos válidos de una mesa (por ámbito) viene de la función
+// agregada resumen_actas_por_ambito (ver fetchData) en vez de sumarse a mano
+// recorriendo cada fila de votos_partido, así que se pasa un mapa
+// "acta_id|ambito" -> total, precalculado una vez por fetch.
+function totalVotosActa(a: ActaMesa, ambito: Ambito, resumenPorActaAmbito: Map<string, number>): number {
+  const base = resumenPorActaAmbito.get(`${a.id}|${ambito}`) ?? 0;
   if (ambito === "sjl") return base + (a.votos_blancos_sjl ?? 0) + (a.votos_nulos_sjl ?? 0) + (a.votos_impugnados_sjl ?? 0);
   return base + (a.votos_blancos_lima ?? 0) + (a.votos_nulos_lima ?? 0) + (a.votos_impugnados_lima ?? 0);
 }
 
-function buildEvolucionHoy(actas: ActaMesa[], ambito: Ambito, votosPorActa: Record<Ambito, Record<string, number>>): PuntoEvolucion[] {
+function buildEvolucionHoy(actas: ActaMesa[], ambito: Ambito, resumenPorActaAmbito: Map<string, number>): PuntoEvolucion[] {
   const ahoraLima = aHoraLima(new Date());
   const horaFin = Math.max(ahoraLima.getUTCHours(), HORA_INICIO_VOTACION);
   const hoyKey = claveDiaLima(ahoraLima);
 
   const actasHoyLima = actas
-    .map((a) => ({ fechaLima: aHoraLima(new Date(a.created_at)), total: totalVotosActa(a, ambito, votosPorActa) }))
+    .map((a) => ({ fechaLima: aHoraLima(new Date(a.created_at)), total: totalVotosActa(a, ambito, resumenPorActaAmbito) }))
     .filter((a) => claveDiaLima(a.fechaLima) === hoyKey);
 
   const puntos: PuntoEvolucion[] = [];
@@ -537,8 +549,8 @@ function SeccionSecundaria({ titulo, resultados, totalVotos, mesasReportadas, co
 
 export default function ResultadosVotosPage() {
   const [actas, setActas] = useState<ActaMesa[]>([]);
-  const [votosPartido, setVotosPartido] = useState<VotoPartidoRow[]>([]);
-  const [partidos, setPartidos] = useState<PartidoEleccion[]>([]);
+  const [resultadosPartido, setResultadosPartido] = useState<ResultadoPartidoRow[]>([]);
+  const [resumenActas, setResumenActas] = useState<ResumenActaAmbitoRow[]>([]);
   const [mesasAsignadas, setMesasAsignadas] = useState(0);
   const [historial, setHistorial] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
@@ -547,27 +559,30 @@ export default function ResultadosVotosPage() {
   const [mostrarTodosSjl, setMostrarTodosSjl] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    fetchPartidosActivos().then(setPartidos).catch((e) => setError(e instanceof Error ? e.message : "No se pudo cargar la lista de partidos."));
-  }, []);
-
   const fetchData = useCallback(async () => {
     setError(null);
 
-    const [resActas, resVotos, resPersoneros] = await Promise.all([
+    // resultados_por_partido y resumen_actas_por_ambito son funciones de
+    // Postgres que agregan en la base de datos — con miles de mesas, traer
+    // cada voto por partido crudo (mesas × partidos) haría la página cada vez
+    // más lenta; así siempre bajan unas pocas decenas/cientos de filas.
+    const [resActas, resResultados, resResumen, resPersoneros] = await Promise.all([
       supabase
         .from("actas_mesa")
         .select("id, created_at, votos_blancos_sjl, votos_nulos_sjl, votos_impugnados_sjl, votos_blancos_lima, votos_nulos_lima, votos_impugnados_lima, personeros(comuna)"),
-      supabase.from("votos_partido").select("acta_id, partido_id, votos"),
+      supabase.rpc("resultados_por_partido"),
+      supabase.rpc("resumen_actas_por_ambito"),
       supabase.from("personeros").select("numero_mesa").not("numero_mesa", "is", null),
     ]);
 
     if (resActas.error) { setError(resActas.error.message); setLoading(false); return; }
-    if (resVotos.error) { setError(resVotos.error.message); setLoading(false); return; }
+    if (resResultados.error) { setError(resResultados.error.message); setLoading(false); return; }
+    if (resResumen.error) { setError(resResumen.error.message); setLoading(false); return; }
 
     const rows = (resActas.data as unknown as ActaMesa[]) ?? [];
     setActas(rows);
-    setVotosPartido((resVotos.data as VotoPartidoRow[]) ?? []);
+    setResultadosPartido((resResultados.data as ResultadoPartidoRow[]) ?? []);
+    setResumenActas((resResumen.data as ResumenActaAmbitoRow[]) ?? []);
     setHistorial((prev) => {
       const next = [...prev, rows.length];
       return next.length > HISTORIAL_MAX ? next.slice(next.length - HISTORIAL_MAX) : next;
@@ -586,28 +601,18 @@ export default function ResultadosVotosPage() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [fetchData]);
 
-  const porAmbito = agruparPorAmbito(partidos);
-  const partidosPorId = new Map(partidos.map((p) => [p.id, p]));
-
-  // Total de votos por partido de todas las mesas, y total por mesa (para
-  // evolución, cobertura y comuna) — separado por ámbito (SJL / Lima) y
-  // precalculado una vez por fetch.
-  const votosPorPartidoId: Record<string, number> = {};
-  const votosPorActa: Record<Ambito, Record<string, number>> = { sjl: {}, lima: {} };
-  for (const v of votosPartido) {
-    const cantidad = Number(v.votos) || 0;
-    const partido = partidosPorId.get(v.partido_id);
-    votosPorPartidoId[v.partido_id] = (votosPorPartidoId[v.partido_id] ?? 0) + cantidad;
-    if (partido) {
-      votosPorActa[partido.ambito][v.acta_id] = (votosPorActa[partido.ambito][v.acta_id] ?? 0) + cantidad;
-    }
+  // Mapa "acta_id|ambito" -> total de votos válidos de esa mesa en ese ámbito,
+  // ya sumado en la base de datos.
+  const resumenPorActaAmbito = new Map<string, number>();
+  for (const r of resumenActas) {
+    resumenPorActaAmbito.set(`${r.acta_id}|${r.ambito}`, Number(r.total_votos) || 0);
   }
 
   // 1 fila de actas_mesa = 1 mesa reportada.
   const mesasReportadas = actas.length;
   const coberturaPct = mesasAsignadas > 0 ? Math.round((mesasReportadas / mesasAsignadas) * 100) : 0;
-  const totalVotosValidosSjl = actas.reduce((sum, a) => sum + totalVotosActa(a, "sjl", votosPorActa), 0);
-  const totalVotosValidosLima = actas.reduce((sum, a) => sum + totalVotosActa(a, "lima", votosPorActa), 0);
+  const totalVotosValidosSjl = actas.reduce((sum, a) => sum + totalVotosActa(a, "sjl", resumenPorActaAmbito), 0);
+  const totalVotosValidosLima = actas.reduce((sum, a) => sum + totalVotosActa(a, "lima", resumenPorActaAmbito), 0);
   const promedioPorMesaSjl = mesasReportadas > 0 ? Math.round((totalVotosValidosSjl / mesasReportadas) * 10) / 10 : 0;
 
   const ahora = ultimaActualizacion?.getTime() ?? 0;
@@ -616,10 +621,9 @@ export default function ResultadosVotosPage() {
     : 0;
 
   function calcularResultados(ambito: Ambito): ResultadoPartido[] {
-    const resultados: ResultadoPartido[] = porAmbito[ambito].map((p) => {
-      const votos = votosPorPartidoId[p.id] ?? 0;
-      return { numero: p.numero_lista, nombre: p.nombre, votos, pct: 0 };
-    });
+    const resultados: ResultadoPartido[] = resultadosPartido
+      .filter((r) => r.ambito === ambito)
+      .map((r) => ({ numero: r.numero_lista, nombre: r.nombre, votos: Number(r.votos) || 0, pct: 0 }));
     const total = resultados.reduce((sum, r) => sum + r.votos, 0);
     resultados.forEach((r) => { r.pct = total > 0 ? (r.votos / total) * 100 : 0; });
     resultados.sort((a, b) => b.votos - a.votos);
@@ -635,7 +639,7 @@ export default function ResultadosVotosPage() {
     const comuna = a.personeros?.comuna?.trim() || "Sin comuna";
     if (!acc[comuna]) acc[comuna] = { mesas: 0, votos: 0 };
     acc[comuna].mesas += 1;
-    acc[comuna].votos += totalVotosActa(a, "sjl", votosPorActa);
+    acc[comuna].votos += totalVotosActa(a, "sjl", resumenPorActaAmbito);
     return acc;
   }, {});
 
@@ -644,8 +648,8 @@ export default function ResultadosVotosPage() {
     .sort((a, b) => b.votos - a.votos);
   const maxComunaVotos = Math.max(...porComuna.map((c) => c.votos), 1);
 
-  const puntosEvolucionSjl = buildEvolucionHoy(actas, "sjl", votosPorActa);
-  const puntosEvolucionLima = buildEvolucionHoy(actas, "lima", votosPorActa);
+  const puntosEvolucionSjl = buildEvolucionHoy(actas, "sjl", resumenPorActaAmbito);
+  const puntosEvolucionLima = buildEvolucionHoy(actas, "lima", resumenPorActaAmbito);
   const ultimoSjl = puntosEvolucionSjl[puntosEvolucionSjl.length - 1];
   const pctPadronSjl = ((ultimoSjl?.votos ?? 0) / ELECTORES_ESTIMADOS_SJL) * 100;
 
