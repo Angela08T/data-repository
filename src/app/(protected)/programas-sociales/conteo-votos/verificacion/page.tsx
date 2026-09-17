@@ -6,7 +6,7 @@ import Swal from "sweetalert2";
 import { supabase } from "@/lib/supabase";
 import { exportToExcel } from "@/lib/utils/exportExcel";
 import { showError } from "@/lib/utils/swalConfig";
-import { fetchCandidatosActivos, CandidatoAlcaldia } from "@/lib/candidatos-alcaldia";
+import { fetchPartidosActivos, PartidoEleccion, Ambito } from "@/lib/partidos-eleccion";
 import { BeneficiarioDetailsDialog } from "@/components/modals/BeneficiarioDetailsDialog";
 import SearchIcon from "@mui/icons-material/Search";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
@@ -15,6 +15,8 @@ import HowToVoteIcon from "@mui/icons-material/HowToVote";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import ImageIcon from "@mui/icons-material/Image";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import ApartmentIcon from "@mui/icons-material/Apartment";
+import LocationCityIcon from "@mui/icons-material/LocationCity";
 
 interface PersoneroMini {
   nombres: string;
@@ -30,30 +32,44 @@ interface ActaMesa {
   numero_mesa: string;
   foto_acta_url: string;
   created_at: string;
-  votos_blancos: number | null;
-  votos_nulos: number | null;
-  votos_impugnados: number | null;
-  confianza_ia: string | null;
-  advertencia_ia: string | null;
+  votos_blancos_sjl: number | null;
+  votos_nulos_sjl: number | null;
+  votos_impugnados_sjl: number | null;
+  confianza_ia_sjl: string | null;
+  advertencia_ia_sjl: string | null;
+  votos_blancos_lima: number | null;
+  votos_nulos_lima: number | null;
+  votos_impugnados_lima: number | null;
+  confianza_ia_lima: string | null;
+  advertencia_ia_lima: string | null;
   personeros: PersoneroMini | null;
 }
 
-interface VotoCandidatoRow {
+interface VotoPartidoRow {
   acta_id: string;
-  candidato_id: string;
+  partido_id: string;
   votos: number | null;
 }
 
 interface VotoDetalleRow {
   votos: number | null;
   votos_ia: number | null;
-  candidatos_alcaldia: { nombre: string; partido: string; numero_lista: number } | null;
+  partidos_eleccion: { nombre: string; ambito: Ambito; numero_lista: number } | null;
 }
 
-interface ResumenActa {
+interface ResumenAmbito {
   total: number;
   liderNombre: string;
   liderVotos: number;
+}
+
+interface ResumenActa {
+  sjl: ResumenAmbito;
+  lima: ResumenAmbito;
+}
+
+function resumenVacio(): ResumenAmbito {
+  return { total: 0, liderNombre: "—", liderVotos: -1 };
 }
 
 function formatFecha(iso: string) {
@@ -63,13 +79,14 @@ function formatFecha(iso: string) {
   return { fecha, hora };
 }
 
-function totalVotosActa(a: ActaMesa, resumen: Map<string, ResumenActa>): number {
-  const r = resumen.get(a.id);
-  return (r?.total ?? 0) + (a.votos_blancos ?? 0) + (a.votos_nulos ?? 0) + (a.votos_impugnados ?? 0);
+function totalVotosActaAmbito(a: ActaMesa, ambito: Ambito, resumen: Map<string, ResumenActa>): number {
+  const r = resumen.get(a.id)?.[ambito] ?? resumenVacio();
+  if (ambito === "sjl") return r.total + (a.votos_blancos_sjl ?? 0) + (a.votos_nulos_sjl ?? 0) + (a.votos_impugnados_sjl ?? 0);
+  return r.total + (a.votos_blancos_lima ?? 0) + (a.votos_nulos_lima ?? 0) + (a.votos_impugnados_lima ?? 0);
 }
 
-function liderActa(a: ActaMesa, resumen: Map<string, ResumenActa>): string {
-  const r = resumen.get(a.id);
+function liderActaAmbito(a: ActaMesa, ambito: Ambito, resumen: Map<string, ResumenActa>): string {
+  const r = resumen.get(a.id)?.[ambito];
   if (!r || r.liderVotos <= 0) return "—";
   return `${r.liderNombre} (${r.liderVotos})`;
 }
@@ -104,8 +121,8 @@ function StatCard({ label, value, icon, color }: { label: string; value: string 
 
 export default function RegistroVotosPage() {
   const [data, setData]       = useState<ActaMesa[]>([]);
-  const [votosCandidato, setVotosCandidato] = useState<VotoCandidatoRow[]>([]);
-  const [candidatos, setCandidatos] = useState<CandidatoAlcaldia[]>([]);
+  const [votosPartido, setVotosPartido] = useState<VotoPartidoRow[]>([]);
+  const [partidos, setPartidos] = useState<PartidoEleccion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
   const [search, setSearch]   = useState("");
@@ -114,7 +131,7 @@ export default function RegistroVotosPage() {
   const [detalleLoading, setDetalleLoading] = useState(false);
 
   useEffect(() => {
-    fetchCandidatosActivos().catch(() => {}).then((c) => { if (c) setCandidatos(c); });
+    fetchPartidosActivos().catch(() => {}).then((p) => { if (p) setPartidos(p); });
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -125,11 +142,11 @@ export default function RegistroVotosPage() {
         .from("actas_mesa")
         .select("*, personeros(nombres, apellido_paterno, apellido_materno)")
         .order("created_at", { ascending: false }),
-      supabase.from("votos_candidato").select("acta_id, candidato_id, votos"),
+      supabase.from("votos_partido").select("acta_id, partido_id, votos"),
     ]);
     if (resActas.error) setError(resActas.error.message);
     else setData((resActas.data as unknown as ActaMesa[]) ?? []);
-    setVotosCandidato((resVotos.data as VotoCandidatoRow[]) ?? []);
+    setVotosPartido((resVotos.data as VotoPartidoRow[]) ?? []);
     setLoading(false);
   }, []);
 
@@ -139,29 +156,37 @@ export default function RegistroVotosPage() {
     if (!detalleActa) return;
     setDetalleLoading(true);
     supabase
-      .from("votos_candidato")
-      .select("votos, votos_ia, candidatos_alcaldia(nombre, partido, numero_lista)")
+      .from("votos_partido")
+      .select("votos, votos_ia, partidos_eleccion(nombre, ambito, numero_lista)")
       .eq("acta_id", detalleActa.id)
       .then(({ data: rows }) => {
         const votos = ((rows as unknown as VotoDetalleRow[]) ?? [])
           .slice()
-          .sort((a, b) => (a.candidatos_alcaldia?.numero_lista ?? 0) - (b.candidatos_alcaldia?.numero_lista ?? 0));
+          .sort((a, b) => {
+            const ambA = a.partidos_eleccion?.ambito ?? "lima";
+            const ambB = b.partidos_eleccion?.ambito ?? "lima";
+            if (ambA !== ambB) return ambA === "sjl" ? -1 : 1;
+            return (a.partidos_eleccion?.numero_lista ?? 0) - (b.partidos_eleccion?.numero_lista ?? 0);
+          });
         setDetalleVotos(votos);
         setDetalleLoading(false);
       });
   }, [detalleActa]);
 
-  // Total y candidato líder por mesa, precalculados una vez por fetch a partir de
-  // votos_candidato (tabla normalizada: 1 fila por candidato por acta).
-  const candidatosPorId = new Map(candidatos.map((c) => [c.id, c]));
+  // Total y partido líder por mesa y por ámbito (SJL / Lima), precalculados una
+  // vez por fetch a partir de votos_partido (1 fila por partido por acta).
+  const partidosPorId = new Map(partidos.map((p) => [p.id, p]));
   const resumenPorActa = new Map<string, ResumenActa>();
-  for (const v of votosCandidato) {
+  for (const v of votosPartido) {
     const cantidad = Number(v.votos) || 0;
-    const actual = resumenPorActa.get(v.acta_id) ?? { total: 0, liderNombre: "—", liderVotos: -1 };
-    actual.total += cantidad;
-    if (cantidad > actual.liderVotos) {
-      actual.liderNombre = candidatosPorId.get(v.candidato_id)?.nombre ?? "—";
-      actual.liderVotos = cantidad;
+    const partido = partidosPorId.get(v.partido_id);
+    if (!partido) continue;
+    const actual = resumenPorActa.get(v.acta_id) ?? { sjl: resumenVacio(), lima: resumenVacio() };
+    const r = actual[partido.ambito];
+    r.total += cantidad;
+    if (cantidad > r.liderVotos) {
+      r.liderNombre = partido.nombre;
+      r.liderVotos = cantidad;
     }
     resumenPorActa.set(v.acta_id, actual);
   }
@@ -175,7 +200,8 @@ export default function RegistroVotosPage() {
   });
 
   const mesasReportadas = data.length;
-  const totalVotosValidos = data.reduce((sum, a) => sum + totalVotosActa(a, resumenPorActa), 0);
+  const totalVotosSjl = data.reduce((sum, a) => sum + totalVotosActaAmbito(a, "sjl", resumenPorActa), 0);
+  const totalVotosLima = data.reduce((sum, a) => sum + totalVotosActaAmbito(a, "lima", resumenPorActa), 0);
 
   const verFoto = async (acta: ActaMesa) => {
     const { data: signed, error: signErr } = await supabase.storage
@@ -203,9 +229,12 @@ export default function RegistroVotosPage() {
         "DNI": a.personero_dni,
         "Colegio": a.colegio,
         "N° Mesa": a.numero_mesa,
-        "Total votos válidos": totalVotosActa(a, resumenPorActa),
-        "Candidato líder": liderActa(a, resumenPorActa),
-        "Confianza IA": a.confianza_ia ?? "",
+        "Total SJL": totalVotosActaAmbito(a, "sjl", resumenPorActa),
+        "Partido líder SJL": liderActaAmbito(a, "sjl", resumenPorActa),
+        "Confianza IA SJL": a.confianza_ia_sjl ?? "",
+        "Total Lima": totalVotosActaAmbito(a, "lima", resumenPorActa),
+        "Partido líder Lima": liderActaAmbito(a, "lima", resumenPorActa),
+        "Confianza IA Lima": a.confianza_ia_lima ?? "",
         "Fecha": fecha,
         "Hora": hora,
       };
@@ -220,12 +249,13 @@ export default function RegistroVotosPage() {
 
       <div>
         <h1 className="text-2xl font-black" style={{ color: "#eef2ff" }}>Registro de Votos</h1>
-        <p className="text-sm text-gray-400 mt-1">Cada fila es un acta de mesa reportada por un personero, con su foto de respaldo</p>
+        <p className="text-sm text-gray-400 mt-1">Cada fila es un acta de mesa reportada por un personero, con sus dos conteos: SJL (distrital, prioritario) y Lima (provincial)</p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
-        <StatCard label="Total de votos válidos" value={totalVotosValidos} icon={<HowToVoteIcon />} color="#1565c0" />
-        <StatCard label="Mesas reportadas"        value={mesasReportadas}  icon={<FactCheckIcon />} color="#16a34a" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <StatCard label="Votos válidos SJL" value={totalVotosSjl} icon={<ApartmentIcon />} color="#1565c0" />
+        <StatCard label="Votos válidos Lima" value={totalVotosLima} icon={<LocationCityIcon />} color="#7c3aed" />
+        <StatCard label="Mesas reportadas"  value={mesasReportadas} icon={<FactCheckIcon />} color="#16a34a" />
       </div>
 
       <div className="glow-card rounded-2xl overflow-hidden">
@@ -269,7 +299,7 @@ export default function RegistroVotosPage() {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ background: "#0f1730" }}>
-                {["Personero", "Colegio / Mesa", "Total / Líder", "Confianza", "Fecha", "Acciones"].map((h) => (
+                {["Personero", "Colegio / Mesa", "SJL (prioritario)", "Lima", "Fecha", "Acciones"].map((h) => (
                   <th key={h} className="text-left px-5 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap" style={{ color: "#94a3b8" }}>
                     {h}
                   </th>
@@ -310,13 +340,16 @@ export default function RegistroVotosPage() {
                         <p className="text-xs text-gray-400">Mesa {a.numero_mesa}</p>
                       </td>
 
-                      <td className="px-5 py-4 max-w-[220px]">
-                        <p className="text-sm font-bold text-[#cbd5e1]">{totalVotosActa(a, resumenPorActa)} votos</p>
-                        <p className="text-xs text-gray-400 truncate" title={liderActa(a, resumenPorActa)}>{liderActa(a, resumenPorActa)}</p>
+                      <td className="px-5 py-4 max-w-[200px]">
+                        <p className="text-sm font-bold" style={{ color: "#60a5fa" }}>{totalVotosActaAmbito(a, "sjl", resumenPorActa)} votos</p>
+                        <p className="text-xs text-gray-400 truncate" title={liderActaAmbito(a, "sjl", resumenPorActa)}>{liderActaAmbito(a, "sjl", resumenPorActa)}</p>
+                        <ConfianzaBadge confianza={a.confianza_ia_sjl} />
                       </td>
 
-                      <td className="px-5 py-4">
-                        <ConfianzaBadge confianza={a.confianza_ia} />
+                      <td className="px-5 py-4 max-w-[200px]">
+                        <p className="text-sm font-bold" style={{ color: "#a78bfa" }}>{totalVotosActaAmbito(a, "lima", resumenPorActa)} votos</p>
+                        <p className="text-xs text-gray-400 truncate" title={liderActaAmbito(a, "lima", resumenPorActa)}>{liderActaAmbito(a, "lima", resumenPorActa)}</p>
+                        <ConfianzaBadge confianza={a.confianza_ia_lima} />
                       </td>
 
                       <td className="px-5 py-4 whitespace-nowrap">
@@ -361,20 +394,38 @@ export default function RegistroVotosPage() {
           isLoading={detalleLoading}
           secciones={[
             {
-              titulo: "Resumen",
+              titulo: "Resumen — San Juan de Lurigancho (prioritario)",
               campos: [
-                { label: "Confianza IA", value: <ConfianzaBadge confianza={detalleActa.confianza_ia} /> },
-                { label: "Total votos válidos", value: totalVotosActa(detalleActa, resumenPorActa) },
-                { label: "Votos en blanco", value: detalleActa.votos_blancos ?? 0 },
-                { label: "Votos nulos", value: detalleActa.votos_nulos ?? 0 },
-                { label: "Votos impugnados", value: detalleActa.votos_impugnados ?? 0 },
-                { label: "Advertencia de la IA", value: detalleActa.advertencia_ia ?? "Ninguna", fullWidth: true },
+                { label: "Confianza IA", value: <ConfianzaBadge confianza={detalleActa.confianza_ia_sjl} /> },
+                { label: "Total votos válidos", value: totalVotosActaAmbito(detalleActa, "sjl", resumenPorActa) },
+                { label: "Votos en blanco", value: detalleActa.votos_blancos_sjl ?? 0 },
+                { label: "Votos nulos", value: detalleActa.votos_nulos_sjl ?? 0 },
+                { label: "Votos impugnados", value: detalleActa.votos_impugnados_sjl ?? 0 },
+                { label: "Advertencia de la IA", value: detalleActa.advertencia_ia_sjl ?? "Ninguna", fullWidth: true },
               ],
             },
             {
-              titulo: "Votos por candidato — lectura IA vs. confirmado por el personero",
-              campos: (detalleVotos ?? []).map((v, i) => ({
-                label: `${v.candidatos_alcaldia?.numero_lista ?? i + 1}. ${v.candidatos_alcaldia?.nombre ?? "—"}`,
+              titulo: "Votos por partido — SJL (lectura IA vs. confirmado)",
+              campos: (detalleVotos ?? []).filter((v) => v.partidos_eleccion?.ambito === "sjl").map((v, i) => ({
+                label: `${v.partidos_eleccion?.numero_lista ?? i + 1}. ${v.partidos_eleccion?.nombre ?? "—"}`,
+                value: `IA: ${v.votos_ia ?? "—"}  ·  Confirmado: ${v.votos ?? 0}`,
+              })),
+            },
+            {
+              titulo: "Resumen — Lima Metropolitana (secundario)",
+              campos: [
+                { label: "Confianza IA", value: <ConfianzaBadge confianza={detalleActa.confianza_ia_lima} /> },
+                { label: "Total votos válidos", value: totalVotosActaAmbito(detalleActa, "lima", resumenPorActa) },
+                { label: "Votos en blanco", value: detalleActa.votos_blancos_lima ?? 0 },
+                { label: "Votos nulos", value: detalleActa.votos_nulos_lima ?? 0 },
+                { label: "Votos impugnados", value: detalleActa.votos_impugnados_lima ?? 0 },
+                { label: "Advertencia de la IA", value: detalleActa.advertencia_ia_lima ?? "Ninguna", fullWidth: true },
+              ],
+            },
+            {
+              titulo: "Votos por partido — Lima (lectura IA vs. confirmado)",
+              campos: (detalleVotos ?? []).filter((v) => v.partidos_eleccion?.ambito === "lima").map((v, i) => ({
+                label: `${v.partidos_eleccion?.numero_lista ?? i + 1}. ${v.partidos_eleccion?.nombre ?? "—"}`,
                 value: `IA: ${v.votos_ia ?? "—"}  ·  Confirmado: ${v.votos ?? 0}`,
               })),
             },

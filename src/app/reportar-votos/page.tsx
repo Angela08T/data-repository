@@ -2,15 +2,17 @@
 
 import { useState, useEffect } from "react";
 import {
-  Box, Container, Paper, Typography, Button, Alert, Collapse, CircularProgress, TextField,
+  Box, Container, Paper, Typography, Button, Alert, Collapse, CircularProgress, TextField, Chip,
 } from "@mui/material";
 import HowToVoteIcon from "@mui/icons-material/HowToVote";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import LocationCityIcon from "@mui/icons-material/LocationCity";
+import ApartmentIcon from "@mui/icons-material/Apartment";
 import { supabase } from "@/lib/supabase";
 import { compressImage, blobToBase64 } from "@/lib/utils/compressImage";
-import { fetchCandidatosActivos, CandidatoAlcaldia } from "@/lib/candidatos-alcaldia";
+import { fetchPartidosActivos, agruparPorAmbito, PartidoEleccion, Ambito } from "@/lib/partidos-eleccion";
 
 interface Personero {
   id: string;
@@ -25,24 +27,29 @@ interface Personero {
 interface ActaExistenteRow {
   id: string;
   foto_acta_url: string | null;
-  votos_blancos: number | null;
-  votos_nulos: number | null;
-  votos_impugnados: number | null;
-  confianza_ia: string | null;
-  advertencia_ia: string | null;
+  votos_blancos_sjl: number | null;
+  votos_nulos_sjl: number | null;
+  votos_impugnados_sjl: number | null;
+  confianza_ia_sjl: string | null;
+  advertencia_ia_sjl: string | null;
+  votos_blancos_lima: number | null;
+  votos_nulos_lima: number | null;
+  votos_impugnados_lima: number | null;
+  confianza_ia_lima: string | null;
+  advertencia_ia_lima: string | null;
   created_at: string | null;
 }
 
-interface VotoCandidatoRow {
+interface VotoPartidoRow {
   votos: number | null;
   votos_ia: number | null;
-  candidatos_alcaldia: { numero_lista: number | null } | null;
+  partidos_eleccion: { ambito: Ambito; numero_lista: number } | null;
 }
 
 type Confianza = "alta" | "media" | "baja";
 
-interface LecturaIA {
-  candidatos: Record<string, number>;
+interface SeccionLectura {
+  partidos: Record<string, number>;
   votos_blancos: number;
   votos_nulos: number;
   votos_impugnados: number;
@@ -50,18 +57,39 @@ interface LecturaIA {
   advertencia: string | null;
 }
 
+interface LecturaIA {
+  sjl: SeccionLectura;
+  lima: SeccionLectura;
+}
+
+interface SeccionEstado {
+  votos: Record<string, number>;
+  votosBlancos: number;
+  votosNulos: number;
+  votosImpugnados: number;
+}
+
 const MAX_FOTO_BYTES = 15 * 1024 * 1024;
 
 type Step = "dni" | "foto" | "revisar" | "success";
 
-function votosVacios(candidatos: CandidatoAlcaldia[]): Record<string, number> {
-  return Object.fromEntries(candidatos.map((c) => [String(c.numero_lista), 0]));
+function votosVacios(partidos: PartidoEleccion[]): Record<string, number> {
+  return Object.fromEntries(partidos.map((p) => [String(p.numero_lista), 0]));
+}
+
+function seccionVacia(partidos: PartidoEleccion[]): SeccionEstado {
+  return { votos: votosVacios(partidos), votosBlancos: 0, votosNulos: 0, votosImpugnados: 0 };
+}
+
+function totalSeccion(s: SeccionEstado): number {
+  return Object.values(s.votos).reduce((sum, v) => sum + (Number(v) || 0), 0)
+    + (Number(s.votosBlancos) || 0) + (Number(s.votosNulos) || 0) + (Number(s.votosImpugnados) || 0);
 }
 
 export default function ReportarVotosPage() {
   const [step, setStep] = useState<Step>("dni");
-  const [candidatos, setCandidatos] = useState<CandidatoAlcaldia[]>([]);
-  const [candidatosError, setCandidatosError] = useState<string | null>(null);
+  const [partidos, setPartidos] = useState<PartidoEleccion[]>([]);
+  const [partidosError, setPartidosError] = useState<string | null>(null);
 
   // Paso 1: DNI
   const [dni, setDni] = useState("");
@@ -83,19 +111,19 @@ export default function ReportarVotosPage() {
   const [ocrError, setOcrError] = useState<string | null>(null);
   const [lecturaIA, setLecturaIA] = useState<LecturaIA | null>(null);
 
-  // Paso 3: revisión/corrección
-  const [votos, setVotos] = useState<Record<string, number>>({});
-  const [votosBlancos, setVotosBlancos] = useState(0);
-  const [votosNulos, setVotosNulos] = useState(0);
-  const [votosImpugnados, setVotosImpugnados] = useState(0);
+  // Paso 3: revisión/corrección — un estado por sección (SJL primero, Lima después)
+  const [sjl, setSjl] = useState<SeccionEstado>({ votos: {}, votosBlancos: 0, votosNulos: 0, votosImpugnados: 0 });
+  const [lima, setLima] = useState<SeccionEstado>({ votos: {}, votosBlancos: 0, votosNulos: 0, votosImpugnados: 0 });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchCandidatosActivos()
-      .then(setCandidatos)
-      .catch((e) => setCandidatosError(e instanceof Error ? e.message : "No se pudo cargar la lista de candidatos."));
+    fetchPartidosActivos()
+      .then(setPartidos)
+      .catch((e) => setPartidosError(e instanceof Error ? e.message : "No se pudo cargar la lista de partidos."));
   }, []);
+
+  const porAmbito = agruparPorAmbito(partidos);
 
   const handleBuscarDni = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,8 +133,8 @@ export default function ReportarVotosPage() {
       setDniError("Ingresa tu número de DNI.");
       return;
     }
-    if (candidatos.length === 0) {
-      setDniError(candidatosError ?? "Aún se está cargando la lista de candidatos, intenta en unos segundos.");
+    if (partidos.length === 0) {
+      setDniError(partidosError ?? "Aún se está cargando la lista de partidos, intenta en unos segundos.");
       return;
     }
 
@@ -136,26 +164,30 @@ export default function ReportarVotosPage() {
 
       const { data: acta } = await supabase
         .from("actas_mesa")
-        .select("id, foto_acta_url, votos_blancos, votos_nulos, votos_impugnados, confianza_ia, advertencia_ia, created_at")
+        .select("id, foto_acta_url, votos_blancos_sjl, votos_nulos_sjl, votos_impugnados_sjl, confianza_ia_sjl, advertencia_ia_sjl, votos_blancos_lima, votos_nulos_lima, votos_impugnados_lima, confianza_ia_lima, advertencia_ia_lima, created_at")
         .eq("numero_mesa", personeroData.numero_mesa)
         .maybeSingle();
 
       if (acta) {
         const a = acta as ActaExistenteRow;
         const { data: votosRows } = await supabase
-          .from("votos_candidato")
-          .select("votos, votos_ia, candidatos_alcaldia(numero_lista)")
+          .from("votos_partido")
+          .select("votos, votos_ia, partidos_eleccion(ambito, numero_lista)")
           .eq("acta_id", a.id);
 
-        const votosExistentes = votosVacios(candidatos);
+        const sjlVotos = votosVacios(porAmbito.sjl);
+        const limaVotos = votosVacios(porAmbito.lima);
+        const sjlIA: Record<string, number> = {};
+        const limaIA: Record<string, number> = {};
         let huboLecturaIA = false;
-        const candidatosIA: Record<string, number> = {};
-        for (const row of (votosRows ?? []) as unknown as VotoCandidatoRow[]) {
-          const numeroLista = row.candidatos_alcaldia?.numero_lista;
-          if (numeroLista == null) continue;
-          votosExistentes[String(numeroLista)] = row.votos ?? 0;
+
+        for (const row of (votosRows ?? []) as unknown as VotoPartidoRow[]) {
+          const info = row.partidos_eleccion;
+          if (!info) continue;
+          const destino = info.ambito === "sjl" ? sjlVotos : limaVotos;
+          destino[String(info.numero_lista)] = row.votos ?? 0;
           if (row.votos_ia != null) {
-            candidatosIA[String(numeroLista)] = row.votos_ia;
+            (info.ambito === "sjl" ? sjlIA : limaIA)[String(info.numero_lista)] = row.votos_ia;
             huboLecturaIA = true;
           }
         }
@@ -164,26 +196,32 @@ export default function ReportarVotosPage() {
         setActaId(a.id);
         setFechaReporte(a.created_at);
         setFotoActaUrlExistente(a.foto_acta_url);
-        setVotos(votosExistentes);
-        setVotosBlancos(a.votos_blancos ?? 0);
-        setVotosNulos(a.votos_nulos ?? 0);
-        setVotosImpugnados(a.votos_impugnados ?? 0);
+        setSjl({ votos: sjlVotos, votosBlancos: a.votos_blancos_sjl ?? 0, votosNulos: a.votos_nulos_sjl ?? 0, votosImpugnados: a.votos_impugnados_sjl ?? 0 });
+        setLima({ votos: limaVotos, votosBlancos: a.votos_blancos_lima ?? 0, votosNulos: a.votos_nulos_lima ?? 0, votosImpugnados: a.votos_impugnados_lima ?? 0 });
         setLecturaIA(huboLecturaIA ? {
-          candidatos: candidatosIA,
-          votos_blancos: a.votos_blancos ?? 0,
-          votos_nulos: a.votos_nulos ?? 0,
-          votos_impugnados: a.votos_impugnados ?? 0,
-          confianza: (a.confianza_ia as Confianza) ?? "alta",
-          advertencia: a.advertencia_ia,
+          sjl: {
+            partidos: sjlIA,
+            votos_blancos: a.votos_blancos_sjl ?? 0,
+            votos_nulos: a.votos_nulos_sjl ?? 0,
+            votos_impugnados: a.votos_impugnados_sjl ?? 0,
+            confianza: (a.confianza_ia_sjl as Confianza) ?? "alta",
+            advertencia: a.advertencia_ia_sjl,
+          },
+          lima: {
+            partidos: limaIA,
+            votos_blancos: a.votos_blancos_lima ?? 0,
+            votos_nulos: a.votos_nulos_lima ?? 0,
+            votos_impugnados: a.votos_impugnados_lima ?? 0,
+            confianza: (a.confianza_ia_lima as Confianza) ?? "alta",
+            advertencia: a.advertencia_ia_lima,
+          },
         } : null);
         setStep("revisar");
       } else {
         setModoEdicion(false);
         setActaId(null);
-        setVotos(votosVacios(candidatos));
-        setVotosBlancos(0);
-        setVotosNulos(0);
-        setVotosImpugnados(0);
+        setSjl(seccionVacia(porAmbito.sjl));
+        setLima(seccionVacia(porAmbito.lima));
         setLecturaIA(null);
         setStep("foto");
       }
@@ -237,10 +275,18 @@ export default function ReportarVotosPage() {
       const lectura = data as LecturaIA;
       setFotoComprimida(comprimida);
       setLecturaIA(lectura);
-      setVotos({ ...votosVacios(candidatos), ...lectura.candidatos });
-      setVotosBlancos(lectura.votos_blancos ?? 0);
-      setVotosNulos(lectura.votos_nulos ?? 0);
-      setVotosImpugnados(lectura.votos_impugnados ?? 0);
+      setSjl({
+        votos: { ...votosVacios(porAmbito.sjl), ...lectura.sjl.partidos },
+        votosBlancos: lectura.sjl.votos_blancos ?? 0,
+        votosNulos: lectura.sjl.votos_nulos ?? 0,
+        votosImpugnados: lectura.sjl.votos_impugnados ?? 0,
+      });
+      setLima({
+        votos: { ...votosVacios(porAmbito.lima), ...lectura.lima.partidos },
+        votosBlancos: lectura.lima.votos_blancos ?? 0,
+        votosNulos: lectura.lima.votos_nulos ?? 0,
+        votosImpugnados: lectura.lima.votos_impugnados ?? 0,
+      });
       setStep("revisar");
     } catch {
       setOcrError("No se pudo leer el acta. Verifica tu conexión e intenta de nuevo.");
@@ -257,9 +303,7 @@ export default function ReportarVotosPage() {
     setStep("foto");
   };
 
-  const totalVotos =
-    Object.values(votos).reduce((sum, v) => sum + (Number(v) || 0), 0) +
-    (Number(votosBlancos) || 0) + (Number(votosNulos) || 0) + (Number(votosImpugnados) || 0);
+  const totalGeneral = totalSeccion(sjl) + totalSeccion(lima);
 
   const handleConfirmar = async () => {
     if (!personero) return;
@@ -293,11 +337,16 @@ export default function ReportarVotosPage() {
         colegio: personero.colegio,
         numero_mesa: personero.numero_mesa,
         foto_acta_url: fotoActaUrl,
-        votos_blancos: votosBlancos,
-        votos_nulos: votosNulos,
-        votos_impugnados: votosImpugnados,
-        confianza_ia: lecturaIA?.confianza ?? null,
-        advertencia_ia: lecturaIA?.advertencia ?? null,
+        votos_blancos_sjl: sjl.votosBlancos,
+        votos_nulos_sjl: sjl.votosNulos,
+        votos_impugnados_sjl: sjl.votosImpugnados,
+        confianza_ia_sjl: lecturaIA?.sjl.confianza ?? null,
+        advertencia_ia_sjl: lecturaIA?.sjl.advertencia ?? null,
+        votos_blancos_lima: lima.votosBlancos,
+        votos_nulos_lima: lima.votosNulos,
+        votos_impugnados_lima: lima.votosImpugnados,
+        confianza_ia_lima: lecturaIA?.lima.confianza ?? null,
+        advertencia_ia_lima: lecturaIA?.lima.advertencia ?? null,
         updated_at: new Date().toISOString(),
       };
 
@@ -326,19 +375,27 @@ export default function ReportarVotosPage() {
         setModoEdicion(true);
       }
 
-      const filasVotos = candidatos.map((c) => ({
-        acta_id: idActa,
-        candidato_id: c.id,
-        votos: votos[String(c.numero_lista)] ?? 0,
-        votos_ia: lecturaIA?.candidatos[String(c.numero_lista)] ?? null,
-      }));
+      const filasVotos = [
+        ...porAmbito.sjl.map((p) => ({
+          acta_id: idActa,
+          partido_id: p.id,
+          votos: sjl.votos[String(p.numero_lista)] ?? 0,
+          votos_ia: lecturaIA?.sjl.partidos[String(p.numero_lista)] ?? null,
+        })),
+        ...porAmbito.lima.map((p) => ({
+          acta_id: idActa,
+          partido_id: p.id,
+          votos: lima.votos[String(p.numero_lista)] ?? 0,
+          votos_ia: lecturaIA?.lima.partidos[String(p.numero_lista)] ?? null,
+        })),
+      ];
 
       const { error: votosError } = await supabase
-        .from("votos_candidato")
-        .upsert(filasVotos, { onConflict: "acta_id,candidato_id" });
+        .from("votos_partido")
+        .upsert(filasVotos, { onConflict: "acta_id,partido_id" });
 
       if (votosError) {
-        setSubmitError(`Se guardó la mesa pero no los votos por candidato: ${votosError.message}`);
+        setSubmitError(`Se guardó la mesa pero no los votos por partido: ${votosError.message}`);
         return;
       }
 
@@ -347,6 +404,75 @@ export default function ReportarVotosPage() {
       setSubmitting(false);
     }
   };
+
+  function SeccionVotos({
+    ambito, titulo, subtitulo, icon, color, lista, estado, setEstado, lectura,
+  }: {
+    ambito: Ambito; titulo: string; subtitulo: string; icon: React.ReactNode; color: string;
+    lista: PartidoEleccion[]; estado: SeccionEstado; setEstado: (fn: (prev: SeccionEstado) => SeccionEstado) => void;
+    lectura: SeccionLectura | null;
+  }) {
+    return (
+      <Box sx={{ border: `1px solid ${color}33`, borderRadius: "14px", overflow: "hidden" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, px: 2, py: 1.5, background: `${color}14` }}>
+          {icon}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant="subtitle2" fontWeight={800} sx={{ color }}>{titulo}</Typography>
+            <Typography variant="caption" color="text.secondary">{subtitulo}</Typography>
+          </Box>
+          {ambito === "sjl" && (
+            <Chip label="Prioridad" size="small" sx={{ background: color, color: "#fff", fontWeight: 700, fontSize: "0.65rem" }} />
+          )}
+        </Box>
+
+        {lectura && (lectura.confianza !== "alta" || lectura.advertencia) && (
+          <Alert severity="warning" sx={{ borderRadius: 0 }}>
+            La IA no está totalmente segura de esta sección ({lectura.confianza}).{lectura.advertencia ? ` ${lectura.advertencia}` : ""} Revisa los números con cuidado.
+          </Alert>
+        )}
+
+        <Box sx={{ maxHeight: 280, overflowY: "auto" }}>
+          {lista.map((p) => (
+            <Box key={p.id} sx={{ display: "flex", alignItems: "center", gap: 1.5, px: 2, py: 1, borderBottom: "1px solid rgba(148,163,184,0.14)" }}>
+              <Typography variant="body2" fontWeight={600} color="#eef2ff" sx={{ flex: 1, minWidth: 0 }} noWrap>
+                {p.numero_lista}. {p.nombre}
+              </Typography>
+              <TextField
+                size="small"
+                type="number"
+                value={estado.votos[String(p.numero_lista)] ?? 0}
+                onChange={(e) => {
+                  const v = Math.max(0, parseInt(e.target.value, 10) || 0);
+                  setEstado((prev) => ({ ...prev, votos: { ...prev.votos, [String(p.numero_lista)]: v } }));
+                }}
+                slotProps={{ htmlInput: { min: 0, style: { textAlign: "right" } } }}
+                sx={{ width: 90, "& .MuiOutlinedInput-root": { borderRadius: "8px" } }}
+              />
+            </Box>
+          ))}
+        </Box>
+
+        <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1.5, p: 2 }}>
+          <TextField size="small" type="number" label="En blanco" value={estado.votosBlancos}
+            onChange={(e) => setEstado((prev) => ({ ...prev, votosBlancos: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
+            slotProps={{ htmlInput: { min: 0 } }}
+            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px" } }} />
+          <TextField size="small" type="number" label="Nulos" value={estado.votosNulos}
+            onChange={(e) => setEstado((prev) => ({ ...prev, votosNulos: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
+            slotProps={{ htmlInput: { min: 0 } }}
+            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px" } }} />
+          <TextField size="small" type="number" label="Impugnados" value={estado.votosImpugnados}
+            onChange={(e) => setEstado((prev) => ({ ...prev, votosImpugnados: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
+            slotProps={{ htmlInput: { min: 0 } }}
+            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px" } }} />
+        </Box>
+
+        <Typography variant="body2" fontWeight={700} textAlign="right" sx={{ color, px: 2, pb: 1.5 }}>
+          Total {titulo}: {totalSeccion(estado)} votos
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -428,7 +554,7 @@ export default function ReportarVotosPage() {
               </Box>
 
               <Typography variant="body2" color="text.secondary">
-                Sube una foto clara y completa del acta de tu mesa. La IA leerá los votos de todos los candidatos automáticamente — luego podrás corregir cualquier número antes de confirmar.
+                Sube una foto clara y completa del acta de tu mesa. La IA leerá los votos de <strong>ambas elecciones</strong> (SJL y Lima) automáticamente — luego podrás corregir cualquier número antes de confirmar.
               </Typography>
 
               <Box>
@@ -498,12 +624,6 @@ export default function ReportarVotosPage() {
                 </Alert>
               )}
 
-              {lecturaIA && (lecturaIA.confianza !== "alta" || lecturaIA.advertencia) && (
-                <Alert severity="warning" sx={{ borderRadius: "12px" }}>
-                  La IA no está totalmente segura de esta lectura ({lecturaIA.confianza}).{lecturaIA.advertencia ? ` ${lecturaIA.advertencia}` : ""} Revisa los números con cuidado.
-                </Alert>
-              )}
-
               {fotoPreview && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -514,49 +634,33 @@ export default function ReportarVotosPage() {
                 />
               )}
 
-              <Typography variant="subtitle2" fontWeight={700} color="#eef2ff">
-                Votos por candidato
-              </Typography>
-              <Box sx={{ maxHeight: 340, overflowY: "auto", border: "1px solid rgba(148,163,184,0.22)", borderRadius: "12px" }}>
-                {candidatos.map((c) => (
-                  <Box key={c.id} sx={{ display: "flex", alignItems: "center", gap: 1.5, px: 2, py: 1, borderBottom: "1px solid rgba(148,163,184,0.14)" }}>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography variant="body2" fontWeight={600} color="#eef2ff" noWrap>
-                        {c.numero_lista}. {c.nombre}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" noWrap sx={{ display: "block" }}>
-                        {c.partido}
-                      </Typography>
-                    </Box>
-                    <TextField
-                      size="small"
-                      type="number"
-                      value={votos[String(c.numero_lista)] ?? 0}
-                      onChange={(e) => setVotos((prev) => ({ ...prev, [String(c.numero_lista)]: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
-                      slotProps={{ htmlInput: { min: 0, style: { textAlign: "right" } } }}
-                      sx={{ width: 90, "& .MuiOutlinedInput-root": { borderRadius: "8px" } }}
-                    />
-                  </Box>
-                ))}
-              </Box>
+              {/* SJL siempre primero y con estilo destacado — es el conteo prioritario. */}
+              <SeccionVotos
+                ambito="sjl"
+                titulo="San Juan de Lurigancho"
+                subtitulo="Elección distrital — conteo prioritario"
+                icon={<ApartmentIcon sx={{ color: "#1565c0" }} />}
+                color="#1565c0"
+                lista={porAmbito.sjl}
+                estado={sjl}
+                setEstado={setSjl}
+                lectura={lecturaIA?.sjl ?? null}
+              />
 
-              <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1.5 }}>
-                <TextField size="small" type="number" label="En blanco" value={votosBlancos}
-                  onChange={(e) => setVotosBlancos(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                  slotProps={{ htmlInput: { min: 0 } }}
-                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px" } }} />
-                <TextField size="small" type="number" label="Nulos" value={votosNulos}
-                  onChange={(e) => setVotosNulos(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                  slotProps={{ htmlInput: { min: 0 } }}
-                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px" } }} />
-                <TextField size="small" type="number" label="Impugnados" value={votosImpugnados}
-                  onChange={(e) => setVotosImpugnados(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                  slotProps={{ htmlInput: { min: 0 } }}
-                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px" } }} />
-              </Box>
+              <SeccionVotos
+                ambito="lima"
+                titulo="Lima Metropolitana"
+                subtitulo="Elección provincial — secundaria"
+                icon={<LocationCityIcon sx={{ color: "#7c3aed" }} />}
+                color="#7c3aed"
+                lista={porAmbito.lima}
+                estado={lima}
+                setEstado={setLima}
+                lectura={lecturaIA?.lima ?? null}
+              />
 
               <Typography variant="body2" fontWeight={700} color="#1565c0" textAlign="right">
-                Total: {totalVotos} votos
+                Total general: {totalGeneral} votos
               </Typography>
 
               <Collapse in={!!submitError}>
@@ -601,7 +705,7 @@ export default function ReportarVotosPage() {
                 ¡Mesa reportada!
               </Typography>
               <Typography variant="body2" color="text.secondary" mb={3}>
-                Se registraron {totalVotos} votos de la mesa {personero?.numero_mesa}.
+                Se registraron {totalGeneral} votos de la mesa {personero?.numero_mesa} (SJL + Lima).
               </Typography>
               <Button
                 fullWidth

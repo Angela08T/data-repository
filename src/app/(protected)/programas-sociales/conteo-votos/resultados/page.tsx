@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { IconButton, Tooltip, CircularProgress } from "@mui/material";
 import { supabase } from "@/lib/supabase";
 import { exportMultiSheetExcel } from "@/lib/utils/exportExcel";
-import { fetchCandidatosActivos, CandidatoAlcaldia } from "@/lib/candidatos-alcaldia";
+import { fetchPartidosActivos, agruparPorAmbito, PartidoEleccion, Ambito } from "@/lib/partidos-eleccion";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import HowToVoteIcon from "@mui/icons-material/HowToVote";
 import LocationCityIcon from "@mui/icons-material/LocationCity";
+import ApartmentIcon from "@mui/icons-material/Apartment";
 import BoltIcon from "@mui/icons-material/Bolt";
 import SensorsIcon from "@mui/icons-material/Sensors";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
@@ -26,29 +27,36 @@ const HORA_INICIO_VOTACION = 8; // apertura de mesas
 // techo del eje Y (con pocos votos de prueba el gráfico se vería plano).
 const ELECTORES_ESTIMADOS_SJL = 794417;
 
-const COLORES_CANDIDATOS = ["#1565c0", "#7c3aed", "#16a34a", "#d97706", "#db2777", "#0891b2", "#dc2626", "#4f46e5"];
+const COLORES_PARTIDOS = ["#1565c0", "#7c3aed", "#16a34a", "#d97706", "#db2777", "#0891b2", "#dc2626", "#4f46e5"];
 const COLORES_MEDALLA = ["#eab308", "#94a3b8", "#b45309"]; // oro, plata, bronce
+
+// Colores de acento por ámbito: SJL en azul (prioritario), Lima en morado
+// (secundario) — se usan de forma consistente en toda la página para que sea
+// obvio de un vistazo cuál sección es cuál.
+const COLOR_SJL = "#1565c0";
+const COLOR_LIMA = "#7c3aed";
 
 interface ActaMesa {
   id: string;
-  numero_mesa: string;
   created_at: string;
-  votos_blancos: number | null;
-  votos_nulos: number | null;
-  votos_impugnados: number | null;
+  votos_blancos_sjl: number | null;
+  votos_nulos_sjl: number | null;
+  votos_impugnados_sjl: number | null;
+  votos_blancos_lima: number | null;
+  votos_nulos_lima: number | null;
+  votos_impugnados_lima: number | null;
   personeros: { comuna: string | null } | null;
 }
 
-interface VotoCandidatoRow {
+interface VotoPartidoRow {
   acta_id: string;
-  candidato_id: string;
+  partido_id: string;
   votos: number | null;
 }
 
-interface ResultadoCandidato {
+interface ResultadoPartido {
   numero: number;
   nombre: string;
-  partido: string;
   votos: number;
   pct: number;
 }
@@ -75,21 +83,22 @@ function claveDiaLima(d: Date): string {
   return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
 }
 
-// El total de votos válidos de una mesa vive en votos_candidato (tabla normalizada,
-// no una columna en actas_mesa), así que se pasa el mapa acta_id -> suma de votos
-// por candidato, precalculado una vez por fetch en vez de recorrer votos_candidato
-// por cada mesa.
-function totalVotosActa(a: ActaMesa, votosPorActa: Record<string, number>): number {
-  return (votosPorActa[a.id] ?? 0) + (a.votos_blancos ?? 0) + (a.votos_nulos ?? 0) + (a.votos_impugnados ?? 0);
+// El total de votos válidos de una mesa (por ámbito) vive en votos_partido
+// (tabla normalizada, no una columna en actas_mesa), así que se pasa el mapa
+// acta_id -> suma de votos de ese ámbito, precalculado una vez por fetch.
+function totalVotosActa(a: ActaMesa, ambito: Ambito, votosPorActa: Record<Ambito, Record<string, number>>): number {
+  const base = votosPorActa[ambito][a.id] ?? 0;
+  if (ambito === "sjl") return base + (a.votos_blancos_sjl ?? 0) + (a.votos_nulos_sjl ?? 0) + (a.votos_impugnados_sjl ?? 0);
+  return base + (a.votos_blancos_lima ?? 0) + (a.votos_nulos_lima ?? 0) + (a.votos_impugnados_lima ?? 0);
 }
 
-function buildEvolucionHoy(actas: ActaMesa[], votosPorActa: Record<string, number>): PuntoEvolucion[] {
+function buildEvolucionHoy(actas: ActaMesa[], ambito: Ambito, votosPorActa: Record<Ambito, Record<string, number>>): PuntoEvolucion[] {
   const ahoraLima = aHoraLima(new Date());
   const horaFin = Math.max(ahoraLima.getUTCHours(), HORA_INICIO_VOTACION);
   const hoyKey = claveDiaLima(ahoraLima);
 
   const actasHoyLima = actas
-    .map((a) => ({ fechaLima: aHoraLima(new Date(a.created_at)), total: totalVotosActa(a, votosPorActa) }))
+    .map((a) => ({ fechaLima: aHoraLima(new Date(a.created_at)), total: totalVotosActa(a, ambito, votosPorActa) }))
     .filter((a) => claveDiaLima(a.fechaLima) === hoyKey);
 
   const puntos: PuntoEvolucion[] = [];
@@ -250,8 +259,8 @@ function SimpleStatCard({ label, value, subtitle, icon, color }: {
   );
 }
 
-function ComunaBar({ comuna, votos, mesas, pct, delay }: {
-  comuna: string; votos: number; mesas: number; pct: number; delay: number;
+function ComunaBar({ comuna, votos, mesas, pct, delay, color }: {
+  comuna: string; votos: number; mesas: number; pct: number; delay: number; color: string;
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -265,15 +274,15 @@ function ComunaBar({ comuna, votos, mesas, pct, delay }: {
         <span className="text-sm font-semibold text-[#cbd5e1]">{comuna}</span>
         <div className="flex items-center gap-3">
           <span className="text-xs text-gray-400">{mesas} mesa{mesas !== 1 ? "s" : ""}</span>
-          <span className="text-sm font-bold tabular-nums" style={{ color: "#1565c0" }}>{votos}</span>
+          <span className="text-sm font-bold tabular-nums" style={{ color }}>{votos}</span>
         </div>
       </div>
-      <div className="h-2.5 rounded-full overflow-hidden" style={{ background: "rgba(59,130,246,0.16)" }}>
+      <div className="h-2.5 rounded-full overflow-hidden" style={{ background: `${color}22` }}>
         <div
           className="h-full rounded-full transition-all duration-700 ease-out"
           style={{
             width: mounted ? `${pct}%` : "0%",
-            background: "linear-gradient(90deg, #1565c0, #1976d2)",
+            background: `linear-gradient(90deg, ${color}, ${color}cc)`,
           }}
         />
       </div>
@@ -281,7 +290,7 @@ function ComunaBar({ comuna, votos, mesas, pct, delay }: {
   );
 }
 
-function CandidatoBar({ resultado, color, delay, rank }: { resultado: ResultadoCandidato; color: string; delay: number; rank?: number }) {
+function PartidoBar({ resultado, color, delay, rank }: { resultado: ResultadoPartido; color: string; delay: number; rank?: number }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), delay);
@@ -296,10 +305,7 @@ function CandidatoBar({ resultado, color, delay, rank }: { resultado: ResultadoC
       <div className="flex justify-between items-center gap-3 mb-1.5">
         <div className="flex items-center gap-2 min-w-0">
           {esPodio && <MilitaryTechIcon sx={{ fontSize: 18, color: colorMedalla, flexShrink: 0 }} />}
-          <div className="min-w-0">
-            <span className="text-sm font-semibold text-[#cbd5e1] truncate block">{resultado.numero}. {resultado.nombre}</span>
-            <span className="text-xs text-gray-400 truncate block">{resultado.partido}</span>
-          </div>
+          <span className="text-sm font-semibold text-[#cbd5e1] truncate block">{resultado.numero}. {resultado.nombre}</span>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
           <span className="text-xs text-gray-400 tabular-nums">{resultado.pct.toFixed(1)}%</span>
@@ -317,7 +323,7 @@ function CandidatoBar({ resultado, color, delay, rank }: { resultado: ResultadoC
 }
 
 // ── Podio (top 3) ────────────────────────────────────────────────────────────
-function PodiumCard({ resultado, rank, color }: { resultado: ResultadoCandidato; rank: 1 | 2 | 3; color: string }) {
+function PodiumCard({ resultado, rank, color }: { resultado: ResultadoPartido; rank: 1 | 2 | 3; color: string }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 150 + rank * 120);
@@ -340,7 +346,6 @@ function PodiumCard({ resultado, rank, color }: { resultado: ResultadoCandidato;
       <p className="text-xs md:text-sm font-bold text-center truncate max-w-full px-1" style={{ color: "#eef2ff" }}>
         {resultado.nombre}
       </p>
-      <p className="text-[11px] text-gray-400 text-center truncate max-w-full px-1">{resultado.partido}</p>
       <p className="text-base md:text-xl font-black tabular-nums mt-1" style={{ color }}>
         {numberFmt.format(resultado.votos)}
       </p>
@@ -362,7 +367,7 @@ function PodiumCard({ resultado, rank, color }: { resultado: ResultadoCandidato;
   );
 }
 
-function Podio({ resultados }: { resultados: ResultadoCandidato[] }) {
+function Podio({ resultados }: { resultados: ResultadoPartido[] }) {
   const top3 = resultados.filter((r) => r.votos > 0).slice(0, 3);
   if (top3.length === 0) return null;
 
@@ -381,7 +386,7 @@ function Podio({ resultados }: { resultados: ResultadoCandidato[] }) {
   );
 }
 
-function EvolucionChart({ puntos }: { puntos: PuntoEvolucion[] }) {
+function EvolucionChart({ puntos, color, titulo, subtitulo }: { puntos: PuntoEvolucion[]; color: string; titulo: string; subtitulo: string }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const raf = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(raf); }, []);
 
@@ -405,26 +410,24 @@ function EvolucionChart({ puntos }: { puntos: PuntoEvolucion[] }) {
   const ultimoX = xFor(puntos.length - 1);
   const ultimoY = yFor(ultimo?.votos ?? 0);
   const labelStep = Math.max(1, Math.ceil(puntos.length / 8));
-  const pctPadron = ((ultimo?.votos ?? 0) / ELECTORES_ESTIMADOS_SJL) * 100;
+  const gradientId = `evolucionFill-${titulo.replace(/\s+/g, "")}`;
 
   return (
     <div className="glow-card rounded-2xl overflow-hidden">
       <div className="px-6 py-4 border-b border-[rgba(148,163,184,0.14)] flex items-center justify-between gap-3">
         <div>
-          <h3 className="font-bold text-base" style={{ color: "#eef2ff" }}>Evolución de votos en tiempo real</h3>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {numberFmt.format(ultimo?.votos ?? 0)} de ~{numberFmt.format(ELECTORES_ESTIMADOS_SJL)} electores estimados en SJL ({pctPadron < 0.01 && pctPadron > 0 ? "<0.01" : pctPadron.toFixed(2)}%)
-          </p>
+          <h3 className="font-bold text-base" style={{ color: "#eef2ff" }}>{titulo}</h3>
+          <p className="text-xs text-gray-400 mt-0.5">{subtitulo}</p>
         </div>
-        <span className="text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0" style={{ background: "rgba(59,130,246,0.16)", color: "#1565c0" }}>Hoy</span>
+        <span className="text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0" style={{ background: `${color}22`, color }}>Hoy</span>
       </div>
 
       <div className="px-4 py-4 relative">
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto block">
           <defs>
-            <linearGradient id="evolucionFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#1565c0" stopOpacity="0.22" />
-              <stop offset="100%" stopColor="#1565c0" stopOpacity="0" />
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity="0.22" />
+              <stop offset="100%" stopColor={color} stopOpacity="0" />
             </linearGradient>
           </defs>
 
@@ -443,11 +446,11 @@ function EvolucionChart({ puntos }: { puntos: PuntoEvolucion[] }) {
             )
           ))}
 
-          <path d={areaPath} fill="url(#evolucionFill)" style={{ opacity: mounted ? 1 : 0, transition: "opacity 0.7s ease 0.3s" }} />
+          <path d={areaPath} fill={`url(#${gradientId})`} style={{ opacity: mounted ? 1 : 0, transition: "opacity 0.7s ease 0.3s" }} />
           <path
             d={linePath}
             fill="none"
-            stroke="#1565c0"
+            stroke={color}
             strokeWidth={2.5}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -458,7 +461,7 @@ function EvolucionChart({ puntos }: { puntos: PuntoEvolucion[] }) {
               transition: "stroke-dashoffset 1.1s ease-out",
             }}
           />
-          {ultimo && <circle cx={ultimoX} cy={ultimoY} r={5} fill="#1565c0" stroke="#fff" strokeWidth={2} />}
+          {ultimo && <circle cx={ultimoX} cy={ultimoY} r={5} fill={color} stroke="#fff" strokeWidth={2} />}
         </svg>
 
         {ultimo && (
@@ -468,7 +471,7 @@ function EvolucionChart({ puntos }: { puntos: PuntoEvolucion[] }) {
               left: `${(ultimoX / width) * 100}%`,
               top: `${(ultimoY / height) * 100}%`,
               transform: "translate(-50%, -170%)",
-              background: "#1565c0",
+              background: color,
               opacity: mounted ? 1 : 0,
               transition: "opacity 0.4s ease 1s",
             }}
@@ -481,20 +484,71 @@ function EvolucionChart({ puntos }: { puntos: PuntoEvolucion[] }) {
   );
 }
 
+// ── Sección secundaria compacta (Lima) ───────────────────────────────────────
+function SeccionSecundaria({ titulo, resultados, totalVotos, mesasReportadas, color }: {
+  titulo: string; resultados: ResultadoPartido[]; totalVotos: number; mesasReportadas: number; color: string;
+}) {
+  const [mostrarTodos, setMostrarTodos] = useState(false);
+  const lider = resultados[0];
+
+  return (
+    <div className="glow-card rounded-2xl overflow-hidden" style={{ border: `1px solid ${color}33` }}>
+      <div className="px-6 py-4 flex items-center justify-between gap-3" style={{ background: `${color}14` }}>
+        <div className="flex items-center gap-2">
+          <LocationCityIcon sx={{ fontSize: 20, color }} />
+          <div>
+            <h3 className="font-bold text-base" style={{ color: "#eef2ff" }}>{titulo}</h3>
+            <p className="text-xs text-gray-400">Secundario · {mesasReportadas} mesa{mesasReportadas !== 1 ? "s" : ""} reportada{mesasReportadas !== 1 ? "s" : ""}</p>
+          </div>
+        </div>
+        {lider && lider.votos > 0 && (
+          <div className="text-right flex-shrink-0">
+            <p className="text-xs text-gray-400">Va ganando</p>
+            <p className="text-sm font-bold truncate max-w-[160px]" style={{ color }}>{lider.nombre}</p>
+          </div>
+        )}
+      </div>
+
+      {resultados.length === 0 || totalVotos === 0 ? (
+        <div className="px-6 py-8 text-center text-gray-400 text-sm">Aún no hay votos reportados para Lima.</div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between px-6 pt-3">
+            <span className="text-xs text-gray-400">{numberFmt.format(totalVotos)} votos válidos</span>
+            {resultados.length > 5 && (
+              <button
+                onClick={() => setMostrarTodos((v) => !v)}
+                className="text-xs font-semibold px-3 py-1 rounded-full transition-all"
+                style={{ background: `${color}22`, color }}>
+                {mostrarTodos ? "Ver menos" : `Ver los ${resultados.length}`}
+              </button>
+            )}
+          </div>
+          <div className="divide-y divide-[rgba(148,163,184,0.10)] py-2">
+            {(mostrarTodos ? resultados : resultados.slice(0, 5)).map((r, i) => (
+              <PartidoBar key={r.numero} resultado={r} color={color} delay={40 + i * 40} rank={i + 1} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function ResultadosVotosPage() {
   const [actas, setActas] = useState<ActaMesa[]>([]);
-  const [votosCandidato, setVotosCandidato] = useState<VotoCandidatoRow[]>([]);
-  const [candidatos, setCandidatos] = useState<CandidatoAlcaldia[]>([]);
+  const [votosPartido, setVotosPartido] = useState<VotoPartidoRow[]>([]);
+  const [partidos, setPartidos] = useState<PartidoEleccion[]>([]);
   const [mesasAsignadas, setMesasAsignadas] = useState(0);
   const [historial, setHistorial] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
   const [ultimaActualizacion, setUltimaActualizacion] = useState<Date | null>(null);
-  const [mostrarTodos, setMostrarTodos] = useState(false);
+  const [mostrarTodosSjl, setMostrarTodosSjl] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    fetchCandidatosActivos().then(setCandidatos).catch((e) => setError(e instanceof Error ? e.message : "No se pudo cargar la lista de candidatos."));
+    fetchPartidosActivos().then(setPartidos).catch((e) => setError(e instanceof Error ? e.message : "No se pudo cargar la lista de partidos."));
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -503,8 +557,8 @@ export default function ResultadosVotosPage() {
     const [resActas, resVotos, resPersoneros] = await Promise.all([
       supabase
         .from("actas_mesa")
-        .select("id, numero_mesa, created_at, votos_blancos, votos_nulos, votos_impugnados, personeros(comuna)"),
-      supabase.from("votos_candidato").select("acta_id, candidato_id, votos"),
+        .select("id, created_at, votos_blancos_sjl, votos_nulos_sjl, votos_impugnados_sjl, votos_blancos_lima, votos_nulos_lima, votos_impugnados_lima, personeros(comuna)"),
+      supabase.from("votos_partido").select("acta_id, partido_id, votos"),
       supabase.from("personeros").select("numero_mesa").not("numero_mesa", "is", null),
     ]);
 
@@ -513,7 +567,7 @@ export default function ResultadosVotosPage() {
 
     const rows = (resActas.data as unknown as ActaMesa[]) ?? [];
     setActas(rows);
-    setVotosCandidato((resVotos.data as VotoCandidatoRow[]) ?? []);
+    setVotosPartido((resVotos.data as VotoPartidoRow[]) ?? []);
     setHistorial((prev) => {
       const next = [...prev, rows.length];
       return next.length > HISTORIAL_MAX ? next.slice(next.length - HISTORIAL_MAX) : next;
@@ -532,41 +586,56 @@ export default function ResultadosVotosPage() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [fetchData]);
 
-  // Total de votos por candidato de todas las mesas, y total por mesa (para
-  // evolución, cobertura y comuna) — precalculados una vez por fetch.
-  const votosPorCandidatoId: Record<string, number> = {};
-  const votosPorActa: Record<string, number> = {};
-  for (const v of votosCandidato) {
+  const porAmbito = agruparPorAmbito(partidos);
+  const partidosPorId = new Map(partidos.map((p) => [p.id, p]));
+
+  // Total de votos por partido de todas las mesas, y total por mesa (para
+  // evolución, cobertura y comuna) — separado por ámbito (SJL / Lima) y
+  // precalculado una vez por fetch.
+  const votosPorPartidoId: Record<string, number> = {};
+  const votosPorActa: Record<Ambito, Record<string, number>> = { sjl: {}, lima: {} };
+  for (const v of votosPartido) {
     const cantidad = Number(v.votos) || 0;
-    votosPorCandidatoId[v.candidato_id] = (votosPorCandidatoId[v.candidato_id] ?? 0) + cantidad;
-    votosPorActa[v.acta_id] = (votosPorActa[v.acta_id] ?? 0) + cantidad;
+    const partido = partidosPorId.get(v.partido_id);
+    votosPorPartidoId[v.partido_id] = (votosPorPartidoId[v.partido_id] ?? 0) + cantidad;
+    if (partido) {
+      votosPorActa[partido.ambito][v.acta_id] = (votosPorActa[partido.ambito][v.acta_id] ?? 0) + cantidad;
+    }
   }
 
-  // 1 fila de actas_mesa = 1 mesa reportada (ya no 1 fila = 1 voto).
+  // 1 fila de actas_mesa = 1 mesa reportada.
   const mesasReportadas = actas.length;
   const coberturaPct = mesasAsignadas > 0 ? Math.round((mesasReportadas / mesasAsignadas) * 100) : 0;
-  const totalVotosValidos = actas.reduce((sum, a) => sum + totalVotosActa(a, votosPorActa), 0);
-  const promedioPorMesa = mesasReportadas > 0 ? Math.round((totalVotosValidos / mesasReportadas) * 10) / 10 : 0;
+  const totalVotosValidosSjl = actas.reduce((sum, a) => sum + totalVotosActa(a, "sjl", votosPorActa), 0);
+  const totalVotosValidosLima = actas.reduce((sum, a) => sum + totalVotosActa(a, "lima", votosPorActa), 0);
+  const promedioPorMesaSjl = mesasReportadas > 0 ? Math.round((totalVotosValidosSjl / mesasReportadas) * 10) / 10 : 0;
 
   const ahora = ultimaActualizacion?.getTime() ?? 0;
   const ritmoReciente = ahora
     ? actas.filter((a) => ahora - new Date(a.created_at).getTime() <= RITMO_VENTANA_MS).length
     : 0;
 
-  const resultados: ResultadoCandidato[] = candidatos.map((c) => {
-    const votos = votosPorCandidatoId[c.id] ?? 0;
-    return { numero: c.numero_lista, nombre: c.nombre, partido: c.partido, votos, pct: 0 };
-  });
-  const totalVotosCandidatos = resultados.reduce((sum, r) => sum + r.votos, 0);
-  resultados.forEach((r) => { r.pct = totalVotosCandidatos > 0 ? (r.votos / totalVotosCandidatos) * 100 : 0; });
-  resultados.sort((a, b) => b.votos - a.votos);
-  const lider = resultados[0];
+  function calcularResultados(ambito: Ambito): ResultadoPartido[] {
+    const resultados: ResultadoPartido[] = porAmbito[ambito].map((p) => {
+      const votos = votosPorPartidoId[p.id] ?? 0;
+      return { numero: p.numero_lista, nombre: p.nombre, votos, pct: 0 };
+    });
+    const total = resultados.reduce((sum, r) => sum + r.votos, 0);
+    resultados.forEach((r) => { r.pct = total > 0 ? (r.votos / total) * 100 : 0; });
+    resultados.sort((a, b) => b.votos - a.votos);
+    return resultados;
+  }
+
+  const resultadosSjl = calcularResultados("sjl");
+  const resultadosLima = calcularResultados("lima");
+  const totalVotosSjlPartidos = resultadosSjl.reduce((sum, r) => sum + r.votos, 0);
+  const liderSjl = resultadosSjl[0];
 
   const porComunaMap = actas.reduce<Record<string, { mesas: number; votos: number }>>((acc, a) => {
     const comuna = a.personeros?.comuna?.trim() || "Sin comuna";
     if (!acc[comuna]) acc[comuna] = { mesas: 0, votos: 0 };
     acc[comuna].mesas += 1;
-    acc[comuna].votos += totalVotosActa(a, votosPorActa);
+    acc[comuna].votos += totalVotosActa(a, "sjl", votosPorActa);
     return acc;
   }, {});
 
@@ -575,37 +644,46 @@ export default function ResultadosVotosPage() {
     .sort((a, b) => b.votos - a.votos);
   const maxComunaVotos = Math.max(...porComuna.map((c) => c.votos), 1);
 
-  const puntosEvolucion = buildEvolucionHoy(actas, votosPorActa);
+  const puntosEvolucionSjl = buildEvolucionHoy(actas, "sjl", votosPorActa);
+  const puntosEvolucionLima = buildEvolucionHoy(actas, "lima", votosPorActa);
+  const ultimoSjl = puntosEvolucionSjl[puntosEvolucionSjl.length - 1];
+  const pctPadronSjl = ((ultimoSjl?.votos ?? 0) / ELECTORES_ESTIMADOS_SJL) * 100;
 
   const handleExport = () => {
     const sheets = [
       {
         name: "Resumen",
         rows: [{
-          "Candidato líder": lider ? `${lider.nombre} (${lider.partido})` : "",
-          "Votos del líder": lider?.votos ?? 0,
-          "Total de votos válidos": totalVotosValidos,
+          "Partido líder SJL": liderSjl ? liderSjl.nombre : "",
+          "Votos del líder SJL": liderSjl?.votos ?? 0,
+          "Total de votos válidos SJL": totalVotosValidosSjl,
+          "Total de votos válidos Lima": totalVotosValidosLima,
           "Mesas reportadas": mesasReportadas,
           "Mesas asignadas": mesasAsignadas,
           "% cobertura": `${coberturaPct}%`,
-          "Promedio por mesa": promedioPorMesa,
+          "Promedio por mesa (SJL)": promedioPorMesaSjl,
           "Mesas reportadas últimos 5 min": ritmoReciente,
         }],
       },
       {
-        name: "Por Candidato",
-        rows: resultados.map((r) => ({
-          "N°": r.numero, "Candidato": r.nombre, "Partido": r.partido,
-          "Votos": r.votos, "%": `${r.pct.toFixed(2)}%`,
+        name: "Por Partido - SJL",
+        rows: resultadosSjl.map((r) => ({
+          "N°": r.numero, "Partido": r.nombre, "Votos": r.votos, "%": `${r.pct.toFixed(2)}%`,
         })),
       },
       {
-        name: "Por Comuna",
+        name: "Por Partido - Lima",
+        rows: resultadosLima.map((r) => ({
+          "N°": r.numero, "Partido": r.nombre, "Votos": r.votos, "%": `${r.pct.toFixed(2)}%`,
+        })),
+      },
+      {
+        name: "Por Comuna (SJL)",
         rows: porComuna.map((c) => ({ "Comuna": c.comuna, "Mesas reportadas": c.mesas, "Votos": c.votos })),
       },
       {
-        name: "Evolución Hoy",
-        rows: puntosEvolucion.map((p) => ({ "Hora": p.label, "Votos acumulados": p.votos })),
+        name: "Evolución Hoy - SJL",
+        rows: puntosEvolucionSjl.map((p) => ({ "Hora": p.label, "Votos acumulados": p.votos })),
       },
     ];
     exportMultiSheetExcel(sheets, `Resultados_Votacion_${new Date().toISOString().slice(0, 10)}`);
@@ -618,7 +696,7 @@ export default function ResultadosVotosPage() {
         <div>
           <h1 className="text-2xl font-black" style={{ color: "#eef2ff" }}>Resultados en Vivo</h1>
           <p className="text-sm text-gray-400 mt-1">
-            Conteo paralelo en base a los votos reportados por los personeros
+            Conteo paralelo — San Juan de Lurigancho (distrital) primero, Lima Metropolitana (provincial) como referencia
             {ultimaActualizacion && ` · Actualizado ${ultimaActualizacion.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`}
           </p>
         </div>
@@ -647,7 +725,16 @@ export default function ResultadosVotosPage() {
         </div>
       ) : (
         <>
-          {/* Hero: candidato líder */}
+          {/* ── SJL: siempre primero, siempre el bloque principal ── */}
+          <div className="flex items-center gap-2 pt-1">
+            <ApartmentIcon sx={{ fontSize: 20, color: COLOR_SJL }} />
+            <h2 className="text-lg font-black" style={{ color: "#eef2ff" }}>San Juan de Lurigancho</h2>
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: `${COLOR_SJL}22`, color: COLOR_SJL }}>
+              Distrital · Prioritario
+            </span>
+          </div>
+
+          {/* Hero: partido líder SJL */}
           <div className="hero-card rounded-3xl shadow-xl p-8 md:p-10 text-center"
             style={{ background: "linear-gradient(135deg, #0d47a1, #1565c0 55%, #1976d2)" }}>
 
@@ -660,26 +747,25 @@ export default function ResultadosVotosPage() {
             <div className="flex items-center justify-center gap-1.5">
               <WorkspacePremiumIcon sx={{ fontSize: 18, color: "#fbbf24" }} />
               <p className="text-xs md:text-sm font-bold uppercase tracking-[0.15em]" style={{ color: "#bfdbfe" }}>
-                Va ganando
+                Va ganando en SJL
               </p>
             </div>
-            {lider && lider.votos > 0 ? (
+            {liderSjl && liderSjl.votos > 0 ? (
               <>
                 <p className="text-3xl md:text-5xl font-black text-white mt-3 tracking-tight" style={{ textShadow: "0 4px 24px rgba(0,0,0,0.15)" }}>
-                  {lider.nombre}
+                  {liderSjl.nombre}
                 </p>
-                <p className="text-sm md:text-base mt-1" style={{ color: "#bfdbfe" }}>{lider.partido}</p>
                 <div className="relative flex justify-center mt-4">
                   <div
                     className="absolute inset-0 m-auto rounded-full pointer-events-none"
                     style={{ width: 220, height: 220, background: "radial-gradient(circle, rgba(251,191,36,0.35), transparent 70%)", filter: "blur(6px)" }}
                   />
                   <p className="relative text-6xl md:text-7xl lg:text-8xl font-black text-white tracking-tight" style={{ textShadow: "0 4px 24px rgba(0,0,0,0.2)" }}>
-                    <AnimatedNumber value={lider.votos} />
+                    <AnimatedNumber value={liderSjl.votos} />
                   </p>
                 </div>
                 <p className="text-sm mt-2" style={{ color: "#dbeafe" }}>
-                  {lider.pct.toFixed(1)}% de {numberFmt.format(totalVotosCandidatos)} votos válidos
+                  {liderSjl.pct.toFixed(1)}% de {numberFmt.format(totalVotosSjlPartidos)} votos válidos
                 </p>
               </>
             ) : (
@@ -694,7 +780,7 @@ export default function ResultadosVotosPage() {
             </div>
           </div>
 
-          <Podio resultados={resultados} />
+          <Podio resultados={resultadosSjl} />
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <TrendCard
@@ -713,8 +799,8 @@ export default function ResultadosVotosPage() {
               color="#16a34a"
             />
             <SimpleStatCard
-              label="Promedio por mesa"
-              value={promedioPorMesa}
+              label="Promedio por mesa (SJL)"
+              value={promedioPorMesaSjl}
               subtitle="Votos válidos por mesa reportada"
               icon={<BarChartIcon sx={{ fontSize: 18 }} />}
               color="#7c3aed"
@@ -730,23 +816,23 @@ export default function ResultadosVotosPage() {
               <div className="px-6 py-4 border-b border-[rgba(148,163,184,0.14)] flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <EmojiEventsIcon sx={{ fontSize: 18, color: "#94a3b8" }} />
-                  <h3 className="font-bold text-base" style={{ color: "#eef2ff" }}>Resultados por candidato</h3>
+                  <h3 className="font-bold text-base" style={{ color: "#eef2ff" }}>Resultados por partido — SJL</h3>
                 </div>
-                {resultados.length > 8 && (
+                {resultadosSjl.length > 8 && (
                   <button
-                    onClick={() => setMostrarTodos((v) => !v)}
+                    onClick={() => setMostrarTodosSjl((v) => !v)}
                     className="text-xs font-semibold px-3 py-1 rounded-full transition-all"
                     style={{ background: "rgba(59,130,246,0.16)", color: "#1565c0" }}>
-                    {mostrarTodos ? "Ver menos" : `Ver los ${resultados.length}`}
+                    {mostrarTodosSjl ? "Ver menos" : `Ver los ${resultadosSjl.length}`}
                   </button>
                 )}
               </div>
               <div className="divide-y divide-[rgba(148,163,184,0.10)] py-2">
-                {(mostrarTodos ? resultados : resultados.slice(0, 8)).map((r, i) => (
-                  <CandidatoBar
+                {(mostrarTodosSjl ? resultadosSjl : resultadosSjl.slice(0, 8)).map((r, i) => (
+                  <PartidoBar
                     key={r.numero}
                     resultado={r}
-                    color={COLORES_CANDIDATOS[i % COLORES_CANDIDATOS.length]}
+                    color={COLORES_PARTIDOS[i % COLORES_PARTIDOS.length]}
                     delay={60 + i * 60}
                     rank={i + 1}
                   />
@@ -755,13 +841,18 @@ export default function ResultadosVotosPage() {
             </div>
           )}
 
-          <EvolucionChart puntos={puntosEvolucion} />
+          <EvolucionChart
+            puntos={puntosEvolucionSjl}
+            color={COLOR_SJL}
+            titulo="Evolución de votos en tiempo real — SJL"
+            subtitulo={`${numberFmt.format(ultimoSjl?.votos ?? 0)} de ~${numberFmt.format(ELECTORES_ESTIMADOS_SJL)} electores estimados (${pctPadronSjl < 0.01 && pctPadronSjl > 0 ? "<0.01" : pctPadronSjl.toFixed(2)}%)`}
+          />
 
           {porComuna.length > 0 && (
             <div className="glow-card rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-[rgba(148,163,184,0.14)] flex items-center gap-2">
                 <LocationCityIcon sx={{ fontSize: 18, color: "#94a3b8" }} />
-                <h3 className="font-bold text-base" style={{ color: "#eef2ff" }}>Votos por comuna</h3>
+                <h3 className="font-bold text-base" style={{ color: "#eef2ff" }}>Votos SJL por comuna</h3>
               </div>
               <div className="divide-y divide-[rgba(148,163,184,0.10)] py-2">
                 {porComuna.map((c, i) => (
@@ -772,10 +863,37 @@ export default function ResultadosVotosPage() {
                     mesas={c.mesas}
                     pct={Math.round((c.votos / maxComunaVotos) * 100)}
                     delay={80 + i * 80}
+                    color={COLOR_SJL}
                   />
                 ))}
               </div>
             </div>
+          )}
+
+          {/* ── Lima: siempre después de SJL, como sección secundaria ── */}
+          <div className="flex items-center gap-2 pt-4">
+            <LocationCityIcon sx={{ fontSize: 20, color: COLOR_LIMA }} />
+            <h2 className="text-lg font-black" style={{ color: "#eef2ff" }}>Lima Metropolitana</h2>
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: `${COLOR_LIMA}22`, color: COLOR_LIMA }}>
+              Provincial · Secundario
+            </span>
+          </div>
+
+          <SeccionSecundaria
+            titulo="Resultados por partido — Lima"
+            resultados={resultadosLima}
+            totalVotos={totalVotosValidosLima}
+            mesasReportadas={mesasReportadas}
+            color={COLOR_LIMA}
+          />
+
+          {totalVotosValidosLima > 0 && (
+            <EvolucionChart
+              puntos={puntosEvolucionLima}
+              color={COLOR_LIMA}
+              titulo="Evolución de votos en tiempo real — Lima"
+              subtitulo={`${numberFmt.format(puntosEvolucionLima[puntosEvolucionLima.length - 1]?.votos ?? 0)} votos válidos acumulados hoy`}
+            />
           )}
         </>
       )}

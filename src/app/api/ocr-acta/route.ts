@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
-import { fetchCandidatosActivos } from "@/lib/candidatos-alcaldia";
+import { fetchPartidosActivos, agruparPorAmbito, Ambito } from "@/lib/partidos-eleccion";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -14,6 +14,37 @@ const anthropic = new Anthropic();
 // Bajar a "claude-haiku-4-5" si el costo se vuelve un problema con muchas mesas.
 const MODEL = "claude-sonnet-5";
 const TOOL_NAME = "registrar_lectura_acta";
+
+// El acta de esta elección trae DOS secciones de resultados en la misma hoja:
+// la del DISTRITO de San Juan de Lurigancho (la que más nos importa) y la de
+// la PROVINCIA de Lima Metropolitana. Cada una lista solo nombres de partidos
+// (no de candidatos), numerados según su propia cédula.
+function seccionSchema(partidosProperties: Record<string, { type: "integer"; minimum: number }>) {
+  return {
+    type: "object" as const,
+    properties: {
+      partidos: {
+        type: "object" as const,
+        description: "Votos leídos por partido político. Clave = número de lista del partido en esta sección, valor = cantidad de votos.",
+        properties: partidosProperties,
+        required: Object.keys(partidosProperties),
+      },
+      votos_blancos: { type: "integer" as const, minimum: 0, description: "Votos en blanco de esta sección" },
+      votos_nulos: { type: "integer" as const, minimum: 0, description: "Votos nulos de esta sección" },
+      votos_impugnados: { type: "integer" as const, minimum: 0, description: "Votos impugnados de esta sección" },
+      confianza: {
+        type: "string" as const,
+        enum: ["alta", "media", "baja"],
+        description: "Qué tan seguro estás de la lectura completa de esta sección",
+      },
+      advertencia: {
+        type: ["string", "null"] as const,
+        description: "Explica brevemente si algo de esta sección no se pudo leer con claridad, la foto está incompleta/borrosa, o los números no cuadran con el total. null si no hay ninguna advertencia.",
+      },
+    },
+    required: ["partidos", "votos_blancos", "votos_nulos", "votos_impugnados", "confianza", "advertencia"],
+  };
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,63 +72,55 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No se pudo verificar el personero para esta mesa." }, { status: 403 });
     }
 
-    const candidatos = await fetchCandidatosActivos();
-    if (candidatos.length === 0) {
-      return NextResponse.json({ error: "No hay candidatos configurados todavía." }, { status: 500 });
+    const partidos = await fetchPartidosActivos();
+    const porAmbito = agruparPorAmbito(partidos);
+    if (porAmbito.sjl.length === 0 || porAmbito.lima.length === 0) {
+      return NextResponse.json({ error: "No hay partidos configurados todavía para ambas listas." }, { status: 500 });
     }
 
-    const candidatosProperties: Record<string, { type: "integer"; minimum: number }> = {};
-    for (const c of candidatos) {
-      candidatosProperties[String(c.numero_lista)] = { type: "integer", minimum: 0 };
+    function propsDe(ambito: Ambito) {
+      const props: Record<string, { type: "integer"; minimum: number }> = {};
+      for (const p of porAmbito[ambito]) props[String(p.numero_lista)] = { type: "integer", minimum: 0 };
+      return props;
     }
 
     const tool: Anthropic.Tool = {
       name: TOOL_NAME,
-      description: "Registra la lectura de los votos del acta de una mesa de votación municipal.",
+      description: "Registra la lectura de los votos por partido político de un acta de mesa, para las dos elecciones simultáneas (distrito SJL y provincia Lima).",
       input_schema: {
         type: "object",
         properties: {
-          candidatos: {
-            type: "object",
-            description: "Votos leídos por candidato. Clave = número de lista del candidato, valor = cantidad de votos.",
-            properties: candidatosProperties,
-            required: Object.keys(candidatosProperties),
-          },
-          votos_blancos: { type: "integer", minimum: 0, description: "Votos en blanco" },
-          votos_nulos: { type: "integer", minimum: 0, description: "Votos nulos" },
-          votos_impugnados: { type: "integer", minimum: 0, description: "Votos impugnados" },
-          confianza: {
-            type: "string",
-            enum: ["alta", "media", "baja"],
-            description: "Qué tan seguro estás de la lectura completa del acta",
-          },
-          advertencia: {
-            type: ["string", "null"],
-            description: "Explica brevemente si algo no se pudo leer con claridad, la foto está incompleta/borrosa, o los números no cuadran con el total. null si no hay ninguna advertencia.",
-          },
+          sjl: seccionSchema(propsDe("sjl")),
+          lima: seccionSchema(propsDe("lima")),
         },
-        required: ["candidatos", "votos_blancos", "votos_nulos", "votos_impugnados", "confianza", "advertencia"],
+        required: ["sjl", "lima"],
       },
     };
 
-    const listaCandidatos = candidatos
-      .map((c) => `${c.numero_lista}. ${c.nombre} (${c.partido})`)
-      .join("\n");
+    const listaPartidos = (ambito: Ambito) =>
+      porAmbito[ambito].map((p) => `${p.numero_lista}. ${p.nombre}`).join("\n");
 
-    const prompt = `Eres un asistente de conteo paralelo de una elección municipal en Perú. Te voy a mostrar la foto de un acta de mesa (formato oficial ONPE) con los resultados de la elección de alcalde de San Juan de Lurigancho.
+    const prompt = `Eres un asistente de conteo paralelo de las elecciones municipales del Perú (04 de octubre de 2026). Te voy a mostrar la foto de un acta de mesa (formato oficial ONPE).
 
-El acta lista los votos de cada organización política, numeradas según esta lista de candidatos (número de lista → nombre → partido):
-${listaCandidatos}
+IMPORTANTE: esta acta trae DOS elecciones simultáneas, cada una con su propia lista de partidos numerada:
+1) La elección de alcalde DISTRITAL de SAN JUAN DE LURIGANCHO (SJL) — esta es la que MÁS nos importa y debes ubicar y leer PRIMERO. Búscala por palabras clave como "SAN JUAN DE LURIGANCHO (SJL)", "DISTRITO" o "SJL" en los encabezados o títulos de sección del acta.
+2) La elección de alcalde PROVINCIAL de LIMA METROPOLITANA — es secundaria, pero también debes leerla completa.
 
-También incluye, generalmente al final, los votos en blanco, votos nulos y votos impugnados.
+No confundas las dos secciones: cada una tiene su propia numeración de partidos y sus propios votos en blanco/nulos/impugnados. Si el acta solo trae una sola sección de votos y no distingue distrito/provincia, usa tu mejor criterio para ubicar cuál corresponde a cada lista de partidos según los nombres que reconozcas, y baja la confianza de la sección que te genere duda.
 
-Lee la foto con cuidado, dígito por dígito. Si el acta muestra un total de votos emitidos, verifica que la suma de todos los candidatos más blancos, nulos e impugnados sea consistente con ese total — si no cuadra, o si algún número no se distingue con claridad (foto borrosa, cortada, con tachones), usa confianza "baja" o "media" y describe el problema en "advertencia". Si todo se lee con claridad y sin ambigüedad, usa confianza "alta" y advertencia null.
+Lista de partidos de SAN JUAN DE LURIGANCHO (SJL) — distrital (número de lista → nombre del partido):
+${listaPartidos("sjl")}
 
-Reporta los votos de todos los candidatos de la lista aunque algunos tengan 0 votos. Usa la tool "${TOOL_NAME}" para reportar tu lectura.`;
+Lista de partidos de LIMA METROPOLITANA — provincial (número de lista → nombre del partido):
+${listaPartidos("lima")}
+
+Lee la foto con cuidado, dígito por dígito, para cada una de las dos secciones. Si el acta muestra un total de votos emitidos por sección, verifica que la suma de todos los partidos de esa sección más blancos, nulos e impugnados sea consistente con ese total — si no cuadra, o si algún número no se distingue con claridad (foto borrosa, cortada, con tachones), usa confianza "baja" o "media" para esa sección y describe el problema en su "advertencia". Si una sección se lee con claridad y sin ambigüedad, usa confianza "alta" y advertencia null para esa sección.
+
+Reporta los votos de todos los partidos de cada lista aunque algunos tengan 0 votos. Usa la tool "${TOOL_NAME}" para reportar tu lectura, con un objeto "sjl" y un objeto "lima" completos e independientes.`;
 
     const response = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: 2048,
+      max_tokens: 3072,
       tools: [tool],
       tool_choice: { type: "tool", name: TOOL_NAME },
       messages: [
