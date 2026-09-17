@@ -9,6 +9,11 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 const anthropic = new Anthropic();
 
+// Leer las dos secciones (SJL + Lima) en una sola llamada tarda más que la
+// lectura de una sola lista — se sube el límite por defecto de la función
+// (10s) para que no se corte a mitad de la respuesta de Claude.
+export const maxDuration = 60;
+
 // Precisión leyendo cifras oficiales importa más que el costo aquí — el gasto por
 // acta con Sonnet 5 es de todas formas bajo (imagen comprimida + salida corta).
 // Bajar a "claude-haiku-4-5" si el costo se vuelve un problema con muchas mesas.
