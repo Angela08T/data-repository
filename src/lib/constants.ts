@@ -199,6 +199,23 @@ export const MODULOS_PROGRAMAS_SOCIALES: MenuItem[] = [
     ],
   },
   {
+    id: "organizacion-personeros",
+    nombre: "Organización de Personeros",
+    icono: "AccountTree",
+    descripcion: "Distribución y control de personeros por comuna y coordinador",
+    permisos: ["all_programas_sociales", "all"],
+    children: [
+      {
+        id: "organizacion-personeros-control",
+        nombre: "Control de Personeros",
+        ruta: "/programas-sociales/organizacion-personeros/control",
+        icono: "TableChart",
+        descripcion: "Mesas, personeros registrados y faltantes por comuna y coordinador",
+        permisos: ["all_programas_sociales", "all"],
+      },
+    ],
+  },
+  {
     id: "dirigentes",
     nombre: "Dirigentes",
     ruta: "/programas-sociales/dirigentes",

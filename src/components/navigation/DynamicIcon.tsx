@@ -62,6 +62,8 @@ import {
   HowToVote,
   FactCheck,
   BarChart,
+  AccountTree,
+  TableChart,
 } from "@mui/icons-material";
 
 interface DynamicIconProps {
@@ -135,6 +137,8 @@ const iconMap: Record<string, React.ReactNode> = {
   HowToVote: <HowToVote />,
   FactCheck: <FactCheck />,
   BarChart: <BarChart />,
+  AccountTree: <AccountTree />,
+  TableChart: <TableChart />,
 };
 
 export default function DynamicIcon({ iconName, className }: DynamicIconProps) {
