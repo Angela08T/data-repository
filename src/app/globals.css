@@ -197,9 +197,10 @@ body {
 /* ─── SweetAlert2 ────────────────────────────────────────────────────────────── */
 .swal2-container { z-index: 2000 !important; }
 
-.swal2-popup {
-  animation: scaleIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) both !important;
-}
+/* No se debe forzar `animation` sobre .swal2-popup: SweetAlert espera el evento
+   animationend de su propia animación de salida (.swal2-hide) para quitar el
+   cuadro del DOM, y un `animation !important` la reemplaza — la animación de
+   salida nunca corre y el cuadro se queda pegado al pulsar Cancelar/Aceptar. */
 
 /* ─── Leaflet ────────────────────────────────────────────────────────────────── */
 .sector-tooltip {
