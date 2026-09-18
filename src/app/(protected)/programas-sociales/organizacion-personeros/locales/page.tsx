@@ -310,7 +310,7 @@ export default function LocalesVotacionPage() {
   };
 
   const sinLocales = !loading && !error && locales.length === 0;
-  const COLS = 9;
+  const COLS = 10;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -406,7 +406,7 @@ export default function LocalesVotacionPage() {
                 <thead>
                   <tr style={{ background: "#0f1730" }}>
                     {[
-                      ["Nombre del local", "text-left"], ["Dirección", "text-left"], ["Mesas", "text-right"], ["P. Req.", "text-right"],
+                      ["Nombre del local", "text-left"], ["Dirección", "text-left"], ["Comuna", "text-center"], ["Mesas", "text-right"], ["P. Req.", "text-right"],
                       ["Registrados", "text-right"], ["Faltan", "text-right"], ["Electores", "text-right"], ["Mapa", "text-center"], ["", "text-center"],
                     ].map(([h, align], i) => (
                       <th key={i} className={`px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap ${align}`} style={{ color: "#94a3b8" }}>{h}</th>
@@ -436,6 +436,15 @@ export default function LocalesVotacionPage() {
                             </td>
                             <td className="px-4 py-2.5 min-w-[220px] max-w-[300px]">
                               <EditableCell value={l.direccion ?? ""} editable onSave={(v) => guardarTexto(l.id, "direccion", v)} />
+                            </td>
+                            <td className="px-4 py-2.5 min-w-[100px] text-center">
+                              <EditableCell value={String(l.comuna)} editable type="select" align="center"
+                                options={COMUNAS.map((c) => ({ value: String(c), label: `Comuna ${c}` }))}
+                                displayValue={
+                                  <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold"
+                                    style={{ background: `${color}22`, color }}>{l.comuna}</span>
+                                }
+                                onSave={(v) => guardarCampo(l.id, { comuna: parseInt(v, 10) })} />
                             </td>
                             <td className="px-4 py-2.5 min-w-[80px]">
                               <EditableCell value={String(l.mesas)} editable align="right" sanitize={(r) => r.replace(/\D/g, "").slice(0, 4)}
@@ -478,7 +487,7 @@ export default function LocalesVotacionPage() {
                           </tr>
                         ))}
                         <tr className="border-t border-[rgba(148,163,184,0.18)]" style={{ background: "#0f1730" }}>
-                          <td className="px-4 py-2.5 font-black text-[#eef2ff] uppercase text-xs tracking-wide" colSpan={2}>Subtotal comuna {comuna}</td>
+                          <td className="px-4 py-2.5 font-black text-[#eef2ff] uppercase text-xs tracking-wide" colSpan={3}>Subtotal comuna {comuna}</td>
                           <td className="px-4 py-2.5 text-right tabular-nums font-black text-[#eef2ff]">{numberFmt.format(t.mesas)}</td>
                           <td className="px-4 py-2.5 text-right tabular-nums font-black text-[#eef2ff]">{numberFmt.format(t.requeridos)}</td>
                           <td className="px-4 py-2.5 text-right tabular-nums font-black text-[#eef2ff]">{numberFmt.format(t.registrados)}</td>
