@@ -213,6 +213,14 @@ export const MODULOS_PROGRAMAS_SOCIALES: MenuItem[] = [
         descripcion: "Mesas, personeros registrados y faltantes por comuna y coordinador",
         permisos: ["all_programas_sociales", "all"],
       },
+      {
+        id: "organizacion-personeros-locales",
+        nombre: "Locales de Votación",
+        ruta: "/programas-sociales/organizacion-personeros/locales",
+        icono: "School",
+        descripcion: "Locales de votación por comuna con sus mesas, electores y personeros requeridos",
+        permisos: ["all_programas_sociales", "all"],
+      },
     ],
   },
   {
