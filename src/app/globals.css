@@ -202,6 +202,110 @@ body {
    cuadro del DOM, y un `animation !important` la reemplaza — la animación de
    salida nunca corre y el cuadro se queda pegado al pulsar Cancelar/Aceptar. */
 
+/* Tema oscuro para todos los avisos de SweetAlert (mismo lenguaje que las
+   tarjetas .glow-card). Solo colores/bordes/sombras: nada de `animation`. */
+.swal2-container.swal2-backdrop-show,
+.swal2-container.swal2-noanimation {
+  background: rgba(2, 6, 23, 0.72) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.swal2-popup {
+  background: var(--surface) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid rgba(59, 130, 246, 0.28);
+  border-radius: 20px !important;
+  box-shadow:
+    0 0 0 1px rgba(59, 130, 246, 0.08),
+    0 24px 70px rgba(2, 6, 23, 0.7),
+    0 0 50px rgba(37, 99, 235, 0.16) !important;
+  padding: 1.75rem 1.5rem 1.5rem !important;
+}
+
+.swal2-title {
+  color: var(--text-primary) !important;
+  font-weight: 800 !important;
+  font-size: 1.35rem !important;
+}
+
+.swal2-html-container {
+  color: var(--text-secondary) !important;
+  font-size: 0.925rem !important;
+  line-height: 1.55;
+}
+
+.swal2-input,
+.swal2-textarea,
+.swal2-select {
+  background: #0d1526 !important;
+  color: var(--text-primary) !important;
+  border: 1px solid rgba(148, 163, 184, 0.28) !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+.swal2-input::placeholder,
+.swal2-textarea::placeholder { color: #64748b !important; }
+.swal2-input:focus,
+.swal2-textarea:focus,
+.swal2-select:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22) !important;
+}
+
+.swal2-styled {
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  padding: 0.6rem 1.5rem !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+.swal2-styled:hover { transform: translateY(-1px); filter: brightness(1.08); }
+.swal2-styled:focus { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35) !important; }
+
+.swal2-styled.swal2-confirm {
+  background-color: transparent !important;
+  background-image: linear-gradient(135deg, #2563eb, #3b82f6) !important;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4) !important;
+}
+.swal2-styled.swal2-deny {
+  background-color: transparent !important;
+  background-image: linear-gradient(135deg, #dc2626, #ef4444) !important;
+  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.35) !important;
+}
+.swal2-styled.swal2-cancel {
+  background: transparent !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.35) !important;
+}
+.swal2-styled.swal2-cancel:hover { background: rgba(148, 163, 184, 0.12) !important; }
+
+.swal2-footer {
+  border-top: 1px solid var(--border-soft) !important;
+  color: var(--text-secondary) !important;
+  font-size: 0.8rem;
+}
+
+.swal2-validation-message {
+  background: rgba(220, 38, 38, 0.14) !important;
+  color: #fca5a5 !important;
+}
+
+.swal2-close { color: var(--text-secondary) !important; }
+.swal2-close:hover { color: var(--text-primary) !important; background: rgba(148, 163, 184, 0.12) !important; }
+
+.swal2-image { border-radius: 14px; }
+
+/* Los íconos traen fondo blanco fijo en las piezas internas: se igualan al panel. */
+.swal2-icon.swal2-success [class^="swal2-success-circular-line"],
+.swal2-icon.swal2-success .swal2-success-fix { background: transparent !important; }
+.swal2-icon.swal2-success .swal2-success-ring { border-color: rgba(74, 222, 128, 0.3) !important; }
+.swal2-icon.swal2-success [class^="swal2-success-line"] { background-color: #4ade80 !important; }
+.swal2-icon.swal2-error { border-color: #f87171 !important; color: #f87171 !important; }
+.swal2-icon.swal2-error [class^="swal2-x-mark-line"] { background-color: #f87171 !important; }
+.swal2-icon.swal2-warning { border-color: #fbbf24 !important; color: #fbbf24 !important; }
+.swal2-icon.swal2-question { border-color: #60a5fa !important; color: #60a5fa !important; }
+.swal2-icon.swal2-info { border-color: #38bdf8 !important; color: #38bdf8 !important; }
+
 /* ─── Leaflet ────────────────────────────────────────────────────────────────── */
 .sector-tooltip {
   background-color: #1E293B !important;
