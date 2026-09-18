@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { CircularProgress, IconButton, Tooltip } from "@mui/material";
+import { CircularProgress, IconButton, Tooltip, Button } from "@mui/material";
 import { supabase } from "@/lib/supabase";
 import { exportToExcel } from "@/lib/utils/exportExcel";
+import EditableCell from "@/components/personeros/EditableCell";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import HowToVoteIcon from "@mui/icons-material/HowToVote";
@@ -11,18 +12,17 @@ import BadgeIcon from "@mui/icons-material/Badge";
 import PersonSearchIcon from "@mui/icons-material/PersonSearch";
 import DonutLargeIcon from "@mui/icons-material/DonutLarge";
 
-// Distribución de comunas por coordinador y cantidad de mesas de cada una. Es
-// información de organización interna (no está en la base de datos), así que
-// vive aquí: para cambiar un coordinador o el número de mesas basta editar esta
-// lista. Los personeros registrados, en cambio, se cuentan en vivo desde la
-// tabla de personeros.
+// La distribución (coordinador y mesas por comuna) vive en la tabla
+// control_comunas y se edita haciendo clic sobre el valor. Los personeros
+// registrados se cuentan en vivo desde la tabla de personeros. Esta lista solo
+// sirve para cargar la distribución inicial cuando la tabla está vacía.
 interface ComunaControl {
   comuna: number;
   coordinador: string;
   mesas: number | null; // null = sin mesas asignadas todavía
 }
 
-const CONTROL_COMUNAS: ComunaControl[] = [
+const DISTRIBUCION_INICIAL: ComunaControl[] = [
   { comuna: 1, coordinador: "Luis", mesas: 164 },
   { comuna: 2, coordinador: "Luis", mesas: 63 },
   { comuna: 3, coordinador: "Luis", mesas: 132 },
@@ -43,16 +43,21 @@ const CONTROL_COMUNAS: ComunaControl[] = [
   { comuna: 18, coordinador: "Chaners", mesas: null },
 ];
 
-const COLOR_COORDINADOR: Record<string, string> = {
-  Luis: "#d4a84b",
-  Lennin: "#a78bfa",
-  Ines: "#f472b6",
-  Fatima: "#86b84a",
-  Jhon: "#2dd4bf",
-  Chaners: "#fb923c",
+// Colores de los coordinadores conocidos; si se escribe un nombre nuevo, toma
+// el siguiente color libre de la paleta.
+const COLOR_COORDINADOR_CONOCIDO: Record<string, string> = {
+  luis: "#d4a84b",
+  lennin: "#a78bfa",
+  ines: "#f472b6",
+  fatima: "#86b84a",
+  jhon: "#2dd4bf",
+  chaners: "#fb923c",
 };
+const PALETA_EXTRA = ["#38bdf8", "#f87171", "#c084fc", "#facc15", "#34d399", "#fb7185"];
 
-const ORDEN_COORDINADORES = ["Luis", "Lennin", "Ines", "Fatima", "Jhon", "Chaners"];
+function claveCoordinador(nombre: string): string {
+  return nombre.trim().toLowerCase();
+}
 
 // Mismo criterio que el dashboard y el listado de Personeros: el texto libre de
 // comuna viene con inconsistencias ("Comuna 5", "5", "COMUNA 05"...), así que
@@ -81,7 +86,7 @@ function formatPct(pct: number): string {
 }
 
 interface FilaControl {
-  comuna: number | null;
+  comuna: number;
   coordinador: string;
   mesas: number | null;
   personeros: number;
@@ -89,13 +94,12 @@ interface FilaControl {
   pct: number | null;
 }
 
-function CoordinadorChip({ nombre }: { nombre: string }) {
-  const color = COLOR_COORDINADOR[nombre] ?? "#94a3b8";
+function CoordinadorChip({ nombre, color }: { nombre: string; color: string }) {
   return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap"
       style={{ background: `${color}22`, color }}>
       <span className="w-2 h-2 rounded-full" style={{ background: color }} />
-      {nombre}
+      {nombre || "Sin coordinador"}
     </span>
   );
 }
@@ -132,13 +136,26 @@ function StatCard({ label, value, subtitle, icon, color }: {
 }
 
 export default function ControlPersonerosPage() {
+  const [config, setConfig] = useState<ComunaControl[]>([]);
   const [comunasRegistradas, setComunasRegistradas] = useState<(string | null)[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cargandoInicial, setCargandoInicial] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
+
+    const { data: cfg, error: cfgError } = await supabase
+      .from("control_comunas")
+      .select("comuna, coordinador, mesas")
+      .order("comuna", { ascending: true });
+
+    if (cfgError) {
+      setError(`No se pudo leer la distribución (${cfgError.message}). Verifica que la tabla control_comunas exista en Supabase.`);
+      setLoading(false);
+      return;
+    }
 
     // Supabase/PostgREST limita cada consulta a 1000 filas; se pagina con
     // .range() hasta traer todo, igual que en el listado y el dashboard.
@@ -161,12 +178,59 @@ export default function ControlPersonerosPage() {
       from += lote.length;
     }
 
-    if (hayError) setError(hayError);
-    else setComunasRegistradas(todas);
+    if (hayError) {
+      setError(hayError);
+    } else {
+      setConfig((cfg as ComunaControl[]) ?? []);
+      setComunasRegistradas(todas);
+    }
     setLoading(false);
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Un UPDATE bloqueado por RLS no da error: simplemente no toca ninguna fila.
+  // Por eso se pide la fila de vuelta con .select() y se verifica que exista.
+  const guardarCampo = async (comuna: number, cambios: { coordinador?: string; mesas?: number | null }): Promise<string | null> => {
+    const { data, error: err } = await supabase
+      .from("control_comunas")
+      .update({ ...cambios, updated_at: new Date().toISOString() })
+      .eq("comuna", comuna)
+      .select("comuna");
+
+    if (err) return err.message;
+    if (!data || data.length === 0) return "No se pudo guardar (sin permiso o la comuna no existe).";
+
+    setConfig((prev) => prev.map((c) => (c.comuna === comuna ? { ...c, ...cambios } : c)));
+    return null;
+  };
+
+  const guardarCoordinador = (comuna: number, valor: string) => {
+    const nombre = valor.trim();
+    if (!nombre) return Promise.resolve("El coordinador no puede quedar vacío.");
+    return guardarCampo(comuna, { coordinador: nombre });
+  };
+
+  const guardarMesas = (comuna: number, valor: string) => {
+    const limpio = valor.trim();
+    return guardarCampo(comuna, { mesas: limpio === "" ? null : parseInt(limpio, 10) });
+  };
+
+  const cargarDistribucionInicial = async () => {
+    setCargandoInicial(true);
+    const { data, error: err } = await supabase
+      .from("control_comunas")
+      .upsert(DISTRIBUCION_INICIAL, { onConflict: "comuna" })
+      .select("comuna");
+    setCargandoInicial(false);
+
+    if (err) { setError(err.message); return; }
+    if (!data || data.length === 0) {
+      setError("No se pudo cargar la distribución inicial (sin permiso de escritura en control_comunas).");
+      return;
+    }
+    fetchData();
+  };
 
   const personerosPorComuna = new Map<number, number>();
   let sinComuna = 0;
@@ -176,7 +240,7 @@ export default function ControlPersonerosPage() {
     else sinComuna++;
   }
 
-  const filas: FilaControl[] = CONTROL_COMUNAS.map((c) => {
+  const filas: FilaControl[] = config.map((c) => {
     const personeros = personerosPorComuna.get(c.comuna) ?? 0;
     return {
       comuna: c.comuna,
@@ -188,15 +252,28 @@ export default function ControlPersonerosPage() {
     };
   });
 
+  // Coordinadores en orden de aparición (por comuna); cada uno conserva su color.
+  const coordinadores: string[] = [];
+  for (const f of filas) {
+    if (!coordinadores.some((n) => claveCoordinador(n) === claveCoordinador(f.coordinador))) coordinadores.push(f.coordinador);
+  }
+  const colorDe = (nombre: string): string => {
+    const clave = claveCoordinador(nombre);
+    if (COLOR_COORDINADOR_CONOCIDO[clave]) return COLOR_COORDINADOR_CONOCIDO[clave];
+    const desconocidos = coordinadores.filter((n) => !COLOR_COORDINADOR_CONOCIDO[claveCoordinador(n)]);
+    const idx = desconocidos.findIndex((n) => claveCoordinador(n) === clave);
+    return PALETA_EXTRA[Math.max(idx, 0) % PALETA_EXTRA.length];
+  };
+
   const totalMesas = filas.reduce((sum, f) => sum + (f.mesas ?? 0), 0);
   const totalPersoneros = comunasRegistradas.length;
   // Igual que en la planilla original: "faltan" suma solo las comunas que tienen
-  // mesas asignadas (los personeros de la comuna 18 o sin comuna no descuentan).
+  // mesas asignadas (los personeros de una comuna sin mesas o sin comuna no descuentan).
   const totalFaltan = filas.reduce((sum, f) => sum + (f.faltan ?? 0), 0);
   const pctTotal = totalMesas > 0 ? (totalPersoneros / totalMesas) * 100 : 0;
 
-  const resumenCoordinadores = ORDEN_COORDINADORES.map((nombre) => {
-    const suyas = filas.filter((f) => f.coordinador === nombre);
+  const resumenCoordinadores = coordinadores.map((nombre) => {
+    const suyas = filas.filter((f) => claveCoordinador(f.coordinador) === claveCoordinador(nombre));
     const mesas = suyas.reduce((sum, f) => sum + (f.mesas ?? 0), 0);
     const personeros = suyas.reduce((sum, f) => sum + f.personeros, 0);
     const faltan = suyas.reduce((sum, f) => sum + (f.faltan ?? 0), 0);
@@ -233,6 +310,8 @@ export default function ControlPersonerosPage() {
     exportToExcel(rows, `Control_Personeros_${new Date().toISOString().slice(0, 10)}`, "Control");
   };
 
+  const sinConfig = !loading && !error && config.length === 0;
+
   return (
     <div className="p-4 md:p-6 space-y-6">
 
@@ -240,14 +319,14 @@ export default function ControlPersonerosPage() {
         <div>
           <h1 className="text-2xl font-black" style={{ color: "#eef2ff" }}>Control de Personeros</h1>
           <p className="text-sm text-gray-400 mt-1">
-            Mesas por comuna y coordinador frente a los personeros registrados en la base de datos
+            Mesas por comuna y coordinador frente a los personeros registrados. Haz clic en un coordinador o en las mesas para editarlos.
           </p>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           <Tooltip title="Exportar Excel">
             <span>
-              <IconButton onClick={handleExport} disabled={loading || !!error}>
-                <FileDownloadIcon sx={{ color: loading || error ? "#475569" : "#60a5fa" }} />
+              <IconButton onClick={handleExport} disabled={loading || !!error || sinConfig}>
+                <FileDownloadIcon sx={{ color: loading || error || sinConfig ? "#475569" : "#60a5fa" }} />
               </IconButton>
             </span>
           </Tooltip>
@@ -268,12 +347,22 @@ export default function ControlPersonerosPage() {
         </div>
       ) : error ? (
         <div className="glow-card rounded-2xl p-10 text-center text-red-400 text-sm">
-          Error al cargar datos: {error}
+          {error}
+        </div>
+      ) : sinConfig ? (
+        <div className="glow-card rounded-2xl p-10 text-center space-y-4">
+          <p className="text-[#cbd5e1] text-sm">
+            Todavía no hay una distribución guardada. Puedes cargar la inicial (18 comunas con sus coordinadores y mesas) y luego editarla.
+          </p>
+          <Button variant="contained" onClick={cargarDistribucionInicial} disabled={cargandoInicial}
+            sx={{ textTransform: "none", fontWeight: 700, borderRadius: "12px" }}>
+            {cargandoInicial ? <CircularProgress size={20} color="inherit" /> : "Cargar distribución inicial"}
+          </Button>
         </div>
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <StatCard label="Total de mesas" value={numberFmt.format(totalMesas)} subtitle="Comunas 1 a 17"
+            <StatCard label="Total de mesas" value={numberFmt.format(totalMesas)} subtitle="Comunas con mesas asignadas"
               icon={<HowToVoteIcon />} color="#60a5fa" />
             <StatCard label="Personeros en base de datos" value={numberFmt.format(totalPersoneros)} subtitle="Todas las comunas"
               icon={<BadgeIcon />} color="#4ade80" />
@@ -289,14 +378,14 @@ export default function ControlPersonerosPage() {
                 <thead>
                   <tr style={{ background: "#0f1730" }}>
                     {[
-                      { h: "Comuna", align: "left" },
-                      { h: "Coordinador", align: "left" },
-                      { h: "Cantidad / Mesas", align: "right" },
-                      { h: "Personeros / B. datos", align: "right" },
-                      { h: "Personeros faltan", align: "right" },
-                      { h: "Porcentaje", align: "left" },
+                      { h: "Comuna", align: "text-left" },
+                      { h: "Coordinador", align: "text-left" },
+                      { h: "Cantidad / Mesas", align: "text-right" },
+                      { h: "Personeros / B. datos", align: "text-right" },
+                      { h: "Personeros faltan", align: "text-right" },
+                      { h: "Porcentaje", align: "text-left" },
                     ].map(({ h, align }) => (
-                      <th key={h} className={`px-5 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap text-${align}`}
+                      <th key={h} className={`px-5 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap ${align}`}
                         style={{ color: "#94a3b8" }}>
                         {h}
                       </th>
@@ -305,15 +394,33 @@ export default function ControlPersonerosPage() {
                 </thead>
                 <tbody>
                   {filas.map((f, i) => {
-                    const color = COLOR_COORDINADOR[f.coordinador] ?? "#94a3b8";
+                    const color = colorDe(f.coordinador);
                     return (
                       <tr key={f.comuna}
                         className="border-t border-[rgba(148,163,184,0.10)] hover:bg-[rgba(59,130,246,0.10)] transition-colors"
                         style={{ background: i % 2 === 0 ? "#121a30" : "#0d1526", boxShadow: `inset 3px 0 0 ${color}` }}>
                         <td className="px-5 py-3 font-semibold text-[#e7ecfb] whitespace-nowrap">Comuna {f.comuna}</td>
-                        <td className="px-5 py-3"><CoordinadorChip nombre={f.coordinador} /></td>
-                        <td className="px-5 py-3 text-right tabular-nums text-[#cbd5e1]">
-                          {f.mesas !== null ? numberFmt.format(f.mesas) : <span className="text-gray-500">—</span>}
+                        <td className="px-5 py-3 min-w-[150px]">
+                          <EditableCell
+                            value={f.coordinador}
+                            editable
+                            displayValue={<CoordinadorChip nombre={f.coordinador} color={color} />}
+                            onSave={(v) => guardarCoordinador(f.comuna, v)}
+                          />
+                        </td>
+                        <td className="px-5 py-3 min-w-[110px]">
+                          <EditableCell
+                            value={f.mesas !== null ? String(f.mesas) : ""}
+                            editable
+                            align="right"
+                            sanitize={(raw) => raw.replace(/\D/g, "").slice(0, 5)}
+                            displayValue={
+                              <span className="tabular-nums text-[#cbd5e1]">
+                                {f.mesas !== null ? numberFmt.format(f.mesas) : <span className="text-gray-500">—</span>}
+                              </span>
+                            }
+                            onSave={(v) => guardarMesas(f.comuna, v)}
+                          />
                         </td>
                         <td className="px-5 py-3 text-right tabular-nums font-bold text-[#e7ecfb]">
                           {numberFmt.format(f.personeros)}
@@ -356,11 +463,11 @@ export default function ControlPersonerosPage() {
             <h2 className="text-lg font-black mb-3" style={{ color: "#eef2ff" }}>Resumen por coordinador</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
               {resumenCoordinadores.map((c) => {
-                const color = COLOR_COORDINADOR[c.nombre] ?? "#94a3b8";
+                const color = colorDe(c.nombre);
                 return (
-                  <div key={c.nombre} className="glow-card rounded-2xl p-5" style={{ borderColor: `${color}55` }}>
+                  <div key={claveCoordinador(c.nombre)} className="glow-card rounded-2xl p-5" style={{ borderColor: `${color}55` }}>
                     <div className="flex items-center justify-between gap-2 mb-3">
-                      <CoordinadorChip nombre={c.nombre} />
+                      <CoordinadorChip nombre={c.nombre} color={color} />
                       <span className="text-xs text-gray-400 text-right">
                         {c.comunas.length === 1 ? `Comuna ${c.comunas[0]}` : `Comunas ${c.comunas.join(", ")}`}
                       </span>
