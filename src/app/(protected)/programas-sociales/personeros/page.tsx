@@ -9,6 +9,8 @@ import dayjs, { Dayjs } from "dayjs";
 import "dayjs/locale/es";
 import { supabase } from "@/lib/supabase";
 import { exportToExcel } from "@/lib/utils/exportExcel";
+import { exportToJson } from "@/lib/utils/exportJson";
+import DataObjectIcon from "@mui/icons-material/DataObject";
 import { showError } from "@/lib/utils/swalConfig";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import SearchIcon from "@mui/icons-material/Search";
@@ -443,6 +445,14 @@ export default function PersonerosPage() {
     setSuccessMsg(`${rows.length} contacto${rows.length !== 1 ? "s" : ""} descargado${rows.length !== 1 ? "s" : ""} (no se marcaron como llamados).`);
   };
 
+  // Igual que la descarga completa pero en JSON (para análisis): respeta los
+  // filtros activos y no marca a nadie como llamado.
+  const exportarCompletoJson = () => {
+    const rows = filtrados.map(personeroToRow);
+    exportToJson(rows, `Personeros_Completo_${new Date().toISOString().slice(0, 10)}`);
+    setSuccessMsg(`${rows.length} contacto${rows.length !== 1 ? "s" : ""} descargado${rows.length !== 1 ? "s" : ""} en JSON (no se marcaron como llamados).`);
+  };
+
   const handlePersoneroCreado = (nuevo: PersoneroCreado) => {
     setData((prev) => [nuevo as Personero, ...prev]);
     setAgregarOpen(false);
@@ -567,6 +577,13 @@ export default function PersonerosPage() {
               <Tooltip title="Descargar Excel completo (no marca como llamado)">
                 <IconButton size="small" onClick={exportarCompleto} disabled={loading || filtrados.length === 0}>
                   <CloudDownloadIcon sx={{ fontSize: 18, color: filtrados.length > 0 ? "#7c3aed" : "#94a3b8" }} />
+                </IconButton>
+              </Tooltip>
+            )}
+            {isAdmin() && (
+              <Tooltip title="Descargar JSON completo (no marca como llamado)">
+                <IconButton size="small" onClick={exportarCompletoJson} disabled={loading || filtrados.length === 0}>
+                  <DataObjectIcon sx={{ fontSize: 18, color: filtrados.length > 0 ? "#2dd4bf" : "#94a3b8" }} />
                 </IconButton>
               </Tooltip>
             )}
