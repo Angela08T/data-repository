@@ -136,7 +136,7 @@ IMPORTANTE: esta acta trae DOS elecciones simultáneas, cada una con su propia l
 1) La elección de alcalde DISTRITAL de SAN JUAN DE LURIGANCHO (SJL) — esta es la que MÁS nos importa y debes ubicar y leer PRIMERO. Búscala por palabras clave como "SAN JUAN DE LURIGANCHO (SJL)", "DISTRITO" o "SJL" en los encabezados o títulos de sección del acta.
 2) La elección de alcalde PROVINCIAL de LIMA METROPOLITANA — es secundaria, pero también debes leerla completa.
 
-No confundas las dos secciones: cada una tiene su propia numeración de partidos y sus propios votos en blanco/nulos/impugnados. Si el acta solo trae una sola sección de votos y no distingue distrito/provincia, usa tu mejor criterio para ubicar cuál corresponde a cada lista de partidos según los nombres que reconozcas, y baja la confianza de la sección que te genere duda.
+No confundas las dos secciones: cada una tiene su propia numeración de partidos y sus propios votos en blanco/nulos/impugnados. Es posible que la foto muestre el acta de UNA sola de las dos elecciones (por ejemplo, solo la del distrito de SJL). Identifica de cuál se trata por el título o encabezado del acta. La sección que NO aparezca en la foto repórtala con todos los partidos en 0, confianza "baja" y una advertencia que diga que esa sección no aparece en la foto — nunca inventes ni copies números de la otra sección. Si el acta no distingue distrito/provincia, usa tu mejor criterio según los nombres de partidos que reconozcas y baja la confianza de la sección que te genere duda.
 
 Lista de partidos de SAN JUAN DE LURIGANCHO (SJL) — distrital (número de lista → nombre del partido):
 ${listaPartidos("sjl")}
@@ -150,7 +150,7 @@ Reporta los votos de todos los partidos de cada lista aunque algunos tengan 0 vo
 
     const response = await crearLecturaConReintentos({
       model: MODEL,
-      max_tokens: 3072,
+      max_tokens: 4096,
       tools: [tool],
       tool_choice: { type: "tool", name: TOOL_NAME },
       messages: [
@@ -175,7 +175,13 @@ Reporta los votos de todos los partidos de cada lista aunque algunos tengan 0 vo
       (block): block is Anthropic.ToolUseBlock => block.type === "tool_use" && block.name === TOOL_NAME
     );
 
+    if (response.stop_reason === "max_tokens") {
+      console.error("ocr-acta: respuesta cortada por max_tokens");
+      return NextResponse.json({ error: "La lectura se cortó antes de terminar. Intenta de nuevo con una foto más nítida." }, { status: 502 });
+    }
+
     if (!toolUse) {
+      console.error("ocr-acta: la IA no devolvió la tool", response.stop_reason);
       return NextResponse.json({ error: "La IA no pudo leer el acta. Intenta con otra foto." }, { status: 502 });
     }
 

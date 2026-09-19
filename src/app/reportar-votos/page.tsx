@@ -73,6 +73,41 @@ const MAX_FOTO_BYTES = 15 * 1024 * 1024;
 
 type Step = "dni" | "foto" | "revisar" | "success";
 
+// La IA a veces omite una de las dos secciones (p. ej. si la foto trae el acta
+// de una sola elección) o devuelve un campo suelto: se completa con ceros y una
+// advertencia en vez de romper la pantalla con un TypeError.
+function normalizarSeccion(raw: unknown, nombre: string): SeccionLectura {
+  const s = (raw && typeof raw === "object" ? raw : null) as Partial<SeccionLectura> | null;
+  if (!s || typeof s.partidos !== "object" || s.partidos === null) {
+    return {
+      partidos: {},
+      votos_blancos: 0,
+      votos_nulos: 0,
+      votos_impugnados: 0,
+      confianza: "baja",
+      advertencia: `La IA no pudo leer la sección de ${nombre}. Ingresa los votos a mano o vuelve a tomar la foto.`,
+    };
+  }
+  const partidos: Record<string, number> = {};
+  for (const [k, v] of Object.entries(s.partidos)) partidos[k] = Math.max(0, Math.trunc(Number(v)) || 0);
+  const confianza: Confianza = s.confianza === "alta" || s.confianza === "media" ? s.confianza : "baja";
+  return {
+    partidos,
+    votos_blancos: Math.max(0, Math.trunc(Number(s.votos_blancos)) || 0),
+    votos_nulos: Math.max(0, Math.trunc(Number(s.votos_nulos)) || 0),
+    votos_impugnados: Math.max(0, Math.trunc(Number(s.votos_impugnados)) || 0),
+    confianza,
+    advertencia: typeof s.advertencia === "string" ? s.advertencia : null,
+  };
+}
+
+function normalizarLectura(raw: unknown): LecturaIA | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as { sjl?: unknown; lima?: unknown };
+  if (!r.sjl && !r.lima) return null;
+  return { sjl: normalizarSeccion(r.sjl, "San Juan de Lurigancho"), lima: normalizarSeccion(r.lima, "Lima Metropolitana") };
+}
+
 function votosVacios(partidos: PartidoEleccion[]): Record<string, number> {
   return Object.fromEntries(partidos.map((p) => [String(p.numero_lista), 0]));
 }
@@ -248,11 +283,17 @@ export default function ReportarVotosPage() {
     setOcrError(null);
     setOcrLoading(true);
 
+    // Cada paso se nombra para que, si algo falla, el mensaje diga QUÉ falló en
+    // vez de un genérico "verifica tu conexión" que esconde la causa real.
+    let paso = "preparar la foto";
     try {
       const comprimida = await compressImage(foto);
       const base64 = await blobToBase64(comprimida);
 
-      const res = await fetch("/api/ocr-acta", {
+      paso = "enviar la foto al lector";
+      // Con barra final: la app usa trailingSlash y sin ella el servidor
+      // responde con una redirección extra antes de procesar.
+      const res = await fetch("/api/ocr-acta/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -263,13 +304,31 @@ export default function ReportarVotosPage() {
         }),
       });
 
-      const data = await res.json();
+      paso = "leer la respuesta del servidor";
+      // Un corte del servidor (timeout, foto muy pesada) devuelve HTML, no JSON:
+      // se lee como texto para poder mostrar el código en vez de romper.
+      const texto = await res.text();
+      let data: unknown = null;
+      try { data = JSON.parse(texto); } catch { /* respuesta no-JSON */ }
+
       if (!res.ok) {
-        setOcrError(data?.error ?? "No se pudo leer el acta.");
+        const mensaje = (data as { error?: string } | null)?.error;
+        setOcrError(
+          mensaje ??
+          (res.status === 504 || res.status === 408
+            ? "La lectura tardó demasiado. Intenta de nuevo con una foto más nítida."
+            : res.status === 413
+              ? "La foto es demasiado pesada. Intenta con otra."
+              : `El servidor respondió con un error (${res.status}). Intenta de nuevo.`)
+        );
         return;
       }
 
-      const lectura = data as LecturaIA;
+      const lectura = normalizarLectura(data);
+      if (!lectura) {
+        setOcrError("La IA devolvió una respuesta incompleta. Intenta con otra foto.");
+        return;
+      }
       setFotoComprimida(comprimida);
       setLecturaIA(lectura);
       setSjl({
@@ -285,8 +344,10 @@ export default function ReportarVotosPage() {
         votosImpugnados: lectura.lima.votos_impugnados ?? 0,
       });
       setStep("revisar");
-    } catch {
-      setOcrError("No se pudo leer el acta. Verifica tu conexión e intenta de nuevo.");
+    } catch (e) {
+      console.error(`Error al ${paso}:`, e);
+      const detalle = e instanceof Error ? e.message : "error desconocido";
+      setOcrError(`No se pudo ${paso} (${detalle}). Verifica tu conexión e intenta de nuevo.`);
     } finally {
       setOcrLoading(false);
     }
