@@ -214,10 +214,6 @@ export default function LoginForm({ subgerencia }: LoginFormProps) {
           </Button>
         </form>
       </div>
-
-      <p className="text-center text-xs mt-6" style={{ color: "#94a3b8" }}>
-        San Juan de Lurigancho · Gerencia de Desarrollo Humano
-      </p>
     </div>
   );
 }
