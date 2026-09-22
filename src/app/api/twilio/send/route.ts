@@ -26,7 +26,7 @@ async function sendSMS(to: string, body: string): Promise<void> {
 export async function POST(req: NextRequest) {
   try {
     const { contactos, mensaje, canal } = await req.json() as {
-      contactos: { nombre: string; telefono: string }[];
+      contactos: { id?: string; nombre: string; telefono: string }[];
       mensaje: string;
       canal: "sms" | "whatsapp";
     };
@@ -35,26 +35,31 @@ export async function POST(req: NextRequest) {
     if (!contactos?.length) return NextResponse.json({ error: "Sin contactos" }, { status: 400 });
 
     const resultados = await Promise.allSettled(
-      contactos.map(async ({ nombre, telefono }) => {
+      contactos.map(async ({ telefono }) => {
         const numero = normalizePhone(telefono);
         if (canal === "whatsapp") {
           await sendWhatsApp(numero, mensaje);
         } else {
           await sendSMS(numero, mensaje);
         }
-        return { nombre, telefono: numero };
       })
     );
 
-    const enviados = resultados.filter((r) => r.status === "fulfilled").length;
-    const fallidos = resultados
-      .filter((r) => r.status === "rejected")
-      .map((r, i) => ({
-        nombre: contactos[i]?.nombre,
-        error:  (r as PromiseRejectedResult).reason?.message ?? "Error desconocido",
-      }));
+    // Se recorre con el índice original del arreglo de contactos (no el del
+    // resultado ya filtrado) para que cada fallo quede emparejado con el
+    // contacto correcto en vez de desfasarse cuando hay más de un fallido.
+    const detalle = resultados.map((r, i) => ({
+      id: contactos[i]?.id,
+      nombre: contactos[i]?.nombre,
+      telefono: contactos[i]?.telefono,
+      ok: r.status === "fulfilled",
+      error: r.status === "rejected" ? ((r as PromiseRejectedResult).reason?.message ?? "Error desconocido") : null,
+    }));
 
-    return NextResponse.json({ enviados, fallidos, total: contactos.length });
+    const enviados = detalle.filter((d) => d.ok).length;
+    const fallidos = detalle.filter((d) => !d.ok).map((d) => ({ nombre: d.nombre, error: d.error as string }));
+
+    return NextResponse.json({ enviados, fallidos, total: contactos.length, detalle });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Error interno";
     return NextResponse.json({ error: msg }, { status: 500 });

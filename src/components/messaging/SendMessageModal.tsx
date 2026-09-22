@@ -15,6 +15,8 @@ import PeopleIcon     from "@mui/icons-material/People";
 export interface Contacto {
   nombre: string;
   telefono: string;
+  /** Id del registro de origen (ej. personero) — opcional, solo lo usa quien necesite marcar a quién se le envió. */
+  id?: string;
 }
 
 interface Props {
@@ -23,18 +25,31 @@ interface Props {
   contactos: Contacto[];
   /** Texto con el que arranca el mensaje al abrir el modal (opcional). */
   mensajePredeterminado?: string;
+  /** Se llama con los ids (de los `contactos` que sí traían `id`) a los que el
+   * envío tuvo éxito, y el canal usado — para que la pantalla de origen pueda
+   * marcarlos como "ya se les escribió" sin tener que adivinar por nombre. */
+  onEnviados?: (ids: string[], canal: Canal) => void;
 }
 
 type Canal = "sms" | "whatsapp";
 type Estado = "idle" | "sending" | "done";
 
+interface DetalleEnvio {
+  id?: string;
+  nombre: string;
+  telefono: string;
+  ok: boolean;
+  error: string | null;
+}
+
 interface Resultado {
   enviados: number;
   fallidos: { nombre: string; error: string }[];
   total: number;
+  detalle?: DetalleEnvio[];
 }
 
-export default function SendMessageModal({ open, onClose, contactos, mensajePredeterminado = "" }: Props) {
+export default function SendMessageModal({ open, onClose, contactos, mensajePredeterminado = "", onEnviados }: Props) {
   const [canal, setCanal]     = useState<Canal>("sms");
   const [mensaje, setMensaje] = useState(mensajePredeterminado);
   const [estado, setEstado]   = useState<Estado>("idle");
@@ -59,9 +74,12 @@ export default function SendMessageModal({ open, onClose, contactos, mensajePred
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contactos, mensaje, canal }),
       });
-      const data = await res.json();
+      const data = await res.json() as Resultado;
       setResultado(data);
       setEstado("done");
+
+      const idsExitosos = (data.detalle ?? []).filter((d) => d.ok && d.id).map((d) => d.id as string);
+      if (idsExitosos.length > 0) onEnviados?.(idsExitosos, canal);
     } catch {
       setResultado({ enviados: 0, fallidos: [{ nombre: "—", error: "Error de red" }], total: contactos.length });
       setEstado("done");

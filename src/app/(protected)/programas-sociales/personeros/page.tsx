@@ -37,6 +37,7 @@ import EditableCell from "@/components/personeros/EditableCell";
 import ResultadoLlamadaSelect from "@/components/shared/ResultadoLlamadaSelect";
 import { MOTIVOS_ELIMINACION } from "@/lib/motivosEliminacion";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 
 dayjs.locale("es");
 
@@ -168,6 +169,8 @@ interface Personero {
   llamado?: boolean | null;
   fecha_llamada?: string | null;
   resultado_llamada?: string | null;
+  wsp_enviado?: boolean | null;
+  wsp_enviado_en?: string | null;
 }
 
 function personeroToRow(p: Personero) {
@@ -195,6 +198,8 @@ function personeroToRow(p: Personero) {
     "Zona":                  p.zona ?? "",
     "Llamado":               p.llamado ? "Sí" : "No",
     "Resultado de Llamada":  p.resultado_llamada ?? "",
+    "WhatsApp Enviado":      p.wsp_enviado ? "Sí" : "No",
+    "Fecha Envío WhatsApp":  p.wsp_enviado_en ? dayjs(p.wsp_enviado_en).format("DD/MM/YYYY HH:mm") : "",
   };
 }
 
@@ -238,6 +243,18 @@ function LlamadoBadge({ llamado }: { llamado?: boolean | null }) {
         : { background: "rgba(148,163,184,0.14)", color: "#94a3b8" }}>
       {llamado ? <PhoneInTalkIcon sx={{ fontSize: 12 }} /> : <PendingActionsIcon sx={{ fontSize: 12 }} />}
       {llamado ? "Llamado" : "Pendiente"}
+    </span>
+  );
+}
+
+function WspEnviadoBadge({ enviado }: { enviado?: boolean | null }) {
+  return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+      style={enviado
+        ? { background: "#f0fdf4", color: "#166534" }
+        : { background: "rgba(148,163,184,0.14)", color: "#94a3b8" }}>
+      <WhatsAppIcon sx={{ fontSize: 12 }} />
+      {enviado ? "Enviado" : "No enviado"}
     </span>
   );
 }
@@ -393,24 +410,35 @@ export default function PersonerosPage() {
 
   const openSendOne = (p: Personero) => {
     if (!hasPhone(p)) return;
-    setModalContactos([{ nombre: `${p.nombres} ${p.apellido_paterno} ${p.apellido_materno}`, telefono: p.telefono }]);
+    setModalContactos([{ id: p.id, nombre: `${p.nombres} ${p.apellido_paterno} ${p.apellido_materno}`, telefono: p.telefono }]);
     setModalOpen(true);
   };
 
   const openSendBulk = () => {
     const contactos = filtrados
       .filter((p) => selectedIds.has(p.id) && hasPhone(p))
-      .map((p) => ({ nombre: `${p.nombres} ${p.apellido_paterno} ${p.apellido_materno}`, telefono: p.telefono }));
+      .map((p) => ({ id: p.id, nombre: `${p.nombres} ${p.apellido_paterno} ${p.apellido_materno}`, telefono: p.telefono }));
     if (!contactos.length) return;
     setModalContactos(contactos);
     setModalOpen(true);
+  };
+
+  // Marca como "WhatsApp enviado" a quienes SendMessageModal confirma que sí
+  // recibieron el mensaje (por canal WhatsApp) — no a todo el envío en bloque,
+  // por si alguno falló.
+  const handleWspEnviados = async (ids: string[], canal: "sms" | "whatsapp") => {
+    if (canal !== "whatsapp" || ids.length === 0) return;
+    const ahora = new Date().toISOString();
+    const { error } = await supabase.from("personeros").update({ wsp_enviado: true, wsp_enviado_en: ahora }).in("id", ids);
+    if (error) { showError("No se pudo marcar el envío de WhatsApp", error.message); return; }
+    setData((prev) => prev.map((p) => (ids.includes(p.id) ? { ...p, wsp_enviado: true, wsp_enviado_en: ahora } : p)));
   };
 
   const totalMujeres      = data.filter((p) => normalizarSexo(p.sexo) === "F").length;
   const totalHombres      = data.filter((p) => normalizarSexo(p.sexo) === "M").length;
   const porRegistrador    = data.filter(esPorRegistrador).length;
   const selCount          = filtrados.filter((p) => selectedIds.has(p.id)).length;
-  const COLS              = 18; // checkbox + cols + tipo + registrador + colegio + mesa + zona + llamado + resultado + acciones
+  const COLS              = 19; // checkbox + cols + tipo + registrador + colegio + mesa + zona + llamado + resultado + wsp + acciones
 
   // Solo se puede descargar/marcar en lote a quienes aún están pendientes
   // (respetando los demás filtros activos: búsqueda, sexo, comuna, colegio, tipo, cumpleaños, edad, llamado).
@@ -1042,7 +1070,7 @@ export default function PersonerosPage() {
                     onChange={toggleSelectAll} disabled={loading || conTelefono.length === 0}
                     sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" }, "&.MuiCheckbox-indeterminate": { color: "#1565c0" } }} />
                 </th>
-                {["Apellidos y Nombres", "DNI", "Nacimiento", "Edad", "Sexo", "Distrito", "Dirección", "Teléfono", "Comuna", "Tipo", "Registrador", "Colegio de Votación", "N° Mesa", "Zona", "Llamado", "Resultado", ""].map((h) => (
+                {["Apellidos y Nombres", "DNI", "Nacimiento", "Edad", "Sexo", "Distrito", "Dirección", "Teléfono", "Comuna", "Tipo", "Registrador", "Colegio de Votación", "N° Mesa", "Zona", "Llamado", "Resultado", "WSP", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap" style={{ color: "#94a3b8" }}>
                     {h}
                   </th>
@@ -1233,6 +1261,13 @@ export default function PersonerosPage() {
                         />
                       </td>
 
+                      {/* WhatsApp enviado */}
+                      <td className="px-4 py-3">
+                        <Tooltip title={p.wsp_enviado_en ? `Enviado el ${dayjs(p.wsp_enviado_en).format("DD/MM/YYYY HH:mm")}` : "Aún no se le ha enviado un mensaje de WhatsApp"}>
+                          <span><WspEnviadoBadge enviado={p.wsp_enviado} /></span>
+                        </Tooltip>
+                      </td>
+
                       {/* Acciones */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <Tooltip title={tienePhone ? "Enviar mensaje" : "Sin teléfono"}>
@@ -1287,6 +1322,7 @@ export default function PersonerosPage() {
         onClose={() => setModalOpen(false)}
         contactos={modalContactos}
         mensajePredeterminado={MENSAJE_COMUNICADO_PERSONEROS}
+        onEnviados={handleWspEnviados}
       />
       <AgregarPersoneroModal
         open={puedeAgregar && agregarOpen}
