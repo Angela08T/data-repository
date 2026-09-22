@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { TextField, InputAdornment, IconButton, Tooltip, CircularProgress, Checkbox, Button, Popover, Slider, Typography, Box, TablePagination } from "@mui/material";
+import {
+  TextField, InputAdornment, IconButton, Tooltip, CircularProgress, Checkbox, Button, Popover, Slider, Typography, Box, TablePagination,
+  Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, Alert,
+} from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -32,6 +35,8 @@ import SuccessToast from "@/components/feedback/SuccessToast";
 import AgregarPersoneroModal, { PersoneroCreado } from "@/components/personeros/AgregarPersoneroModal";
 import EditableCell from "@/components/personeros/EditableCell";
 import ResultadoLlamadaSelect from "@/components/shared/ResultadoLlamadaSelect";
+import { MOTIVOS_ELIMINACION } from "@/lib/motivosEliminacion";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 
 dayjs.locale("es");
 
@@ -280,6 +285,11 @@ export default function PersonerosPage() {
   const [successMsg, setSuccessMsg]               = useState<string | null>(null);
   const [page, setPage]                           = useState(0);
   const [rowsPerPage, setRowsPerPage]             = useState(25);
+  const [eliminarTarget, setEliminarTarget]       = useState<Personero | null>(null);
+  const [motivoEliminar, setMotivoEliminar]       = useState("");
+  const [motivoOtro, setMotivoOtro]               = useState("");
+  const [eliminando, setEliminando]               = useState(false);
+  const [errorEliminar, setErrorEliminar]         = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -484,6 +494,75 @@ export default function PersonerosPage() {
   }
 
   const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos" || filtroZona !== "todos" || filtroLlamado !== "todos" || !!filtroFechaCumple || isEdadFiltered;
+
+  const cerrarDialogoEliminar = () => {
+    if (eliminando) return;
+    setEliminarTarget(null);
+    setMotivoEliminar("");
+    setMotivoOtro("");
+    setErrorEliminar(null);
+  };
+
+  // Antes de borrar de "personeros", se guarda una copia completa en
+  // personeros_eliminados (con motivo, quién y cuándo) para que el registro no
+  // se pierda — solo el archivo queda en pantalla, no un "deshacer".
+  const confirmarEliminar = async () => {
+    if (!eliminarTarget) return;
+    const motivo = motivoEliminar === "otro" ? motivoOtro.trim() : motivoEliminar;
+    if (!motivoEliminar) { setErrorEliminar("Selecciona un motivo."); return; }
+    if (motivoEliminar === "otro" && !motivo) { setErrorEliminar("Escribe el motivo."); return; }
+
+    setEliminando(true);
+    setErrorEliminar(null);
+    const p = eliminarTarget;
+
+    const { error: archivoError } = await supabase.from("personeros_eliminados").insert({
+      personero_id: p.id,
+      apellido_paterno: p.apellido_paterno,
+      apellido_materno: p.apellido_materno,
+      nombres: p.nombres,
+      dni: p.dni,
+      fecha_nacimiento: p.fecha_nacimiento,
+      sexo: p.sexo,
+      lugar_nacimiento: p.lugar_nacimiento,
+      region: p.region,
+      provincia: p.provincia,
+      distrito: p.distrito,
+      direccion: p.direccion,
+      telefono: p.telefono,
+      comuna: p.comuna,
+      email: p.email,
+      tipo_registro: p.tipo_registro,
+      registrador_nombres: p.registrador_nombres,
+      registrador_apellidos: p.registrador_apellidos,
+      colegio_votacion: p.colegio_votacion,
+      numero_mesa: p.numero_mesa,
+      zona: p.zona,
+      llamado: p.llamado,
+      fecha_llamada: p.fecha_llamada,
+      resultado_llamada: p.resultado_llamada,
+      motivo_eliminacion: motivo,
+      eliminado_por: user?.fullName || user?.username || "Desconocido",
+    });
+
+    if (archivoError) {
+      setErrorEliminar(`No se pudo archivar el registro: ${archivoError.message}`);
+      setEliminando(false);
+      return;
+    }
+
+    const { data: borrado, error: borrarError } = await supabase.from("personeros").delete().eq("id", p.id).select("id");
+    setEliminando(false);
+
+    if (borrarError || !borrado || borrado.length === 0) {
+      setErrorEliminar(borrarError?.message ?? "El registro se archivó, pero no se pudo quitar de la lista (sin permiso). Bórralo de nuevo.");
+      return;
+    }
+
+    setData((prev) => prev.filter((x) => x.id !== p.id));
+    setSuccessMsg(`${p.nombres} ${p.apellido_paterno} fue eliminado y guardado en "Eliminados".`);
+    cerrarDialogoEliminar();
+  };
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -1155,7 +1234,7 @@ export default function PersonerosPage() {
                       </td>
 
                       {/* Acciones */}
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 whitespace-nowrap">
                         <Tooltip title={tienePhone ? "Enviar mensaje" : "Sin teléfono"}>
                           <span>
                             <IconButton size="small" onClick={() => openSendOne(p)} disabled={!tienePhone}
@@ -1165,6 +1244,14 @@ export default function PersonerosPage() {
                             </IconButton>
                           </span>
                         </Tooltip>
+                        {puedeAgregar && (
+                          <Tooltip title="Eliminar">
+                            <IconButton size="small" onClick={() => setEliminarTarget(p)}
+                              sx={{ background: "rgba(220,38,38,0.08)", ml: 0.5, "&:hover": { background: "rgba(220,38,38,0.18)" } }}>
+                              <DeleteOutlineIcon sx={{ fontSize: 16, color: "#dc2626" }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                       </td>
                     </tr>
                   );
@@ -1209,6 +1296,43 @@ export default function PersonerosPage() {
         registradorApellidos={user?.lastName ?? ""}
       />
       <SuccessToast open={!!successMsg} message={successMsg ?? ""} onClose={() => setSuccessMsg(null)} />
+
+      <Dialog open={!!eliminarTarget} onClose={cerrarDialogoEliminar} maxWidth="xs" fullWidth
+        slotProps={{ paper: { sx: { borderRadius: "16px" } } }}>
+        <DialogTitle sx={{ fontWeight: 800, fontFamily: "'Poppins', sans-serif" }}>Eliminar personero</DialogTitle>
+        <DialogContent>
+          {eliminarTarget && (
+            <Typography variant="body2" color="text.secondary" mb={2}>
+              {eliminarTarget.nombres} {eliminarTarget.apellido_paterno} {eliminarTarget.apellido_materno} · DNI {eliminarTarget.dni}
+              <br />
+              Se guardará una copia en <strong>Eliminados</strong> antes de quitarlo de la lista.
+            </Typography>
+          )}
+          <TextField
+            select fullWidth size="small" label="Motivo de eliminación"
+            value={motivoEliminar}
+            onChange={(e) => setMotivoEliminar(e.target.value)}
+            disabled={eliminando}
+            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
+          >
+            {MOTIVOS_ELIMINACION.map((m) => <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>)}
+          </TextField>
+          {motivoEliminar === "otro" && (
+            <TextField
+              fullWidth size="small" label="Especifica el motivo" sx={{ mt: 2, "& .MuiOutlinedInput-root": { borderRadius: "10px" } }}
+              value={motivoOtro} onChange={(e) => setMotivoOtro(e.target.value)} disabled={eliminando}
+            />
+          )}
+          {errorEliminar && <Alert severity="error" sx={{ mt: 2, borderRadius: "10px" }}>{errorEliminar}</Alert>}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={cerrarDialogoEliminar} disabled={eliminando} sx={{ textTransform: "none" }}>Cancelar</Button>
+          <Button variant="contained" color="error" onClick={confirmarEliminar} disabled={eliminando || !motivoEliminar}
+            sx={{ textTransform: "none", fontWeight: 700, borderRadius: "10px" }}>
+            {eliminando ? <CircularProgress size={20} color="inherit" /> : "Eliminar"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }

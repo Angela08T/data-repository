@@ -64,6 +64,7 @@ import {
   BarChart,
   AccountTree,
   TableChart,
+  DeleteOutline,
 } from "@mui/icons-material";
 
 interface DynamicIconProps {
@@ -139,6 +140,7 @@ const iconMap: Record<string, React.ReactNode> = {
   BarChart: <BarChart />,
   AccountTree: <AccountTree />,
   TableChart: <TableChart />,
+  DeleteOutline: <DeleteOutline />,
 };
 
 export default function DynamicIcon({ iconName, className }: DynamicIconProps) {

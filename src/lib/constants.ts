@@ -196,6 +196,14 @@ export const MODULOS_PROGRAMAS_SOCIALES: MenuItem[] = [
         descripcion: "Resumen de personeros por comuna, zona y sexo",
         permisos: ["all_programas_sociales", "all", "campo", "personeros"],
       },
+      {
+        id: "personeros-eliminados",
+        nombre: "Eliminados",
+        ruta: "/programas-sociales/personeros/eliminados",
+        icono: "DeleteOutline",
+        descripcion: "Personeros quitados de la lista general, con motivo, quién y cuándo",
+        permisos: ["all_programas_sociales", "all", "campo", "personeros"],
+      },
     ],
   },
   {
