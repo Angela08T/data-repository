@@ -507,6 +507,18 @@ export default function PersonerosPage() {
     return null;
   };
 
+  // Marca/desmarca "WhatsApp enviado" a mano desde la tabla (además de lo que
+  // ya marca solo el envío masivo/individual) — para corregir un caso puntual
+  // o registrar un envío hecho fuera del sistema.
+  const handleActualizarWsp = async (id: string, valor: string): Promise<string | null> => {
+    const enviado = valor === "true";
+    const cambios = { wsp_enviado: enviado, wsp_enviado_en: enviado ? new Date().toISOString() : null };
+    const { error } = await supabase.from("personeros").update(cambios).eq("id", id);
+    if (error) return error.message;
+    setData((prev) => prev.map((p) => (p.id === id ? { ...p, ...cambios } : p)));
+    return null;
+  };
+
   // Convierte el texto libre de "comuna" al valor del <select> (número 1-18 o "no_se").
   function comunaAOpcion(comuna?: string | null): string {
     if (!comuna) return "";
@@ -1263,9 +1275,18 @@ export default function PersonerosPage() {
 
                       {/* WhatsApp enviado */}
                       <td className="px-4 py-3">
-                        <Tooltip title={p.wsp_enviado_en ? `Enviado el ${dayjs(p.wsp_enviado_en).format("DD/MM/YYYY HH:mm")}` : "Aún no se le ha enviado un mensaje de WhatsApp"}>
-                          <span><WspEnviadoBadge enviado={p.wsp_enviado} /></span>
-                        </Tooltip>
+                        <EditableCell
+                          value={p.wsp_enviado ? "true" : "false"}
+                          editable={puedeAgregar}
+                          type="select"
+                          options={[{ value: "false", label: "No enviado" }, { value: "true", label: "Enviado" }]}
+                          displayValue={
+                            <Tooltip title={p.wsp_enviado_en ? `Enviado el ${dayjs(p.wsp_enviado_en).format("DD/MM/YYYY HH:mm")}` : "Aún no se le ha enviado un mensaje de WhatsApp — clic para marcar"}>
+                              <span><WspEnviadoBadge enviado={p.wsp_enviado} /></span>
+                            </Tooltip>
+                          }
+                          onSave={(v) => handleActualizarWsp(p.id, v)}
+                        />
                       </td>
 
                       {/* Acciones */}
