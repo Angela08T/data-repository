@@ -1303,7 +1303,8 @@ export default function PersonerosPage() {
         <DialogContent>
           {eliminarTarget && (
             <Typography variant="body2" color="text.secondary" mb={2}>
-              {eliminarTarget.nombres} {eliminarTarget.apellido_paterno} {eliminarTarget.apellido_materno} · DNI {eliminarTarget.dni}
+              {[eliminarTarget.nombres, eliminarTarget.apellido_paterno, eliminarTarget.apellido_materno].filter(Boolean).join(" ") || "Sin nombre"}
+              {eliminarTarget.dni ? ` · DNI ${eliminarTarget.dni}` : ""}
               <br />
               Se guardará una copia en <strong>Eliminados</strong> antes de quitarlo de la lista.
             </Typography>
