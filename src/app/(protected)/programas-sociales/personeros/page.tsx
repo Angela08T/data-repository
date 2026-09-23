@@ -35,7 +35,8 @@ import SuccessToast from "@/components/feedback/SuccessToast";
 import AgregarPersoneroModal, { PersoneroCreado } from "@/components/personeros/AgregarPersoneroModal";
 import EditableCell from "@/components/personeros/EditableCell";
 import ResultadoLlamadaSelect from "@/components/shared/ResultadoLlamadaSelect";
-import { MOTIVOS_ELIMINACION } from "@/lib/motivosEliminacion";
+import { MOTIVOS_ELIMINACION, motivoInfo } from "@/lib/motivosEliminacion";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 
@@ -141,6 +142,18 @@ function normalizarSexo(sexo?: string | null): "M" | "F" | null {
   if (v.startsWith("F")) return "F";
   if (v.startsWith("M")) return "M";
   return null;
+}
+
+// Para detectar duplicados por DNI o por nombre completo pese a diferencias de
+// mayúsculas, tildes o espacios extra que trae la carga manual/masiva.
+function normalizarTextoDuplicado(s?: string | null): string {
+  return (s ?? "").trim().toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ");
+}
+
+interface InfoDuplicado {
+  cantidad: number;
+  porDni: boolean;
+  porNombre: boolean;
 }
 
 interface Personero {
@@ -259,6 +272,26 @@ function WspEnviadoBadge({ enviado }: { enviado?: boolean | null }) {
   );
 }
 
+function nivelDuplicado(cantidad: number): "duplicado" | "triplicado" | "cuadriplicado" {
+  if (cantidad >= 4) return "cuadriplicado";
+  if (cantidad === 3) return "triplicado";
+  return "duplicado";
+}
+
+function DuplicadoBadge({ info }: { info: InfoDuplicado }) {
+  const m = motivoInfo(nivelDuplicado(info.cantidad));
+  const criterio = [info.porDni && "mismo DNI", info.porNombre && "mismo nombre y apellidos"].filter(Boolean).join(" y ");
+  return (
+    <Tooltip title={`Hay ${info.cantidad} registros con ${criterio}`}>
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold w-fit"
+        style={{ background: `${m.color}22`, color: m.color }}>
+        <WarningAmberIcon sx={{ fontSize: 11 }} />
+        {m.label} ×{info.cantidad}
+      </span>
+    </Tooltip>
+  );
+}
+
 function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: React.ReactNode; color: string }) {
   return (
     <div className="stat-card glow-card rounded-2xl p-5 flex items-center gap-4">
@@ -290,6 +323,7 @@ export default function PersonerosPage() {
   const [filtroZona, setFiltroZona]               = useState<string>("todos");
   const [filtroFechaCumple, setFiltroFechaCumple] = useState<Dayjs | null>(null);
   const [filtroLlamado, setFiltroLlamado]         = useState<"todos" | "llamados" | "pendientes">("todos");
+  const [soloDuplicados, setSoloDuplicados]       = useState(false);
   const [edadRange, setEdadRange]                 = useState<number[]>([0, EDAD_MAX]);
   const [edadRangeDraft, setEdadRangeDraft]       = useState<number[]>([0, EDAD_MAX]);
   const [edadAnchor, setEdadAnchor]               = useState<HTMLElement | null>(null);
@@ -350,6 +384,39 @@ export default function PersonerosPage() {
 
   const isEdadFiltered = edadRange[0] > 0 || edadRange[1] < EDAD_MAX;
 
+  // Duplicados/triplicados/etc. por DNI o por nombre completo, calculados sobre
+  // TODA la base (no solo lo filtrado) — así una copia sigue marcada aunque el
+  // filtro actual solo muestre una de las varias filas repetidas.
+  const gruposPorDni = new Map<string, Personero[]>();
+  const gruposPorNombre = new Map<string, Personero[]>();
+  for (const p of data) {
+    const dniKey = normalizarTextoDuplicado(p.dni);
+    if (dniKey) {
+      const grupo = gruposPorDni.get(dniKey);
+      if (grupo) grupo.push(p); else gruposPorDni.set(dniKey, [p]);
+    }
+    if (p.apellido_paterno?.trim() && p.nombres?.trim()) {
+      const nombreKey = normalizarTextoDuplicado(`${p.apellido_paterno} ${p.apellido_materno} ${p.nombres}`);
+      const grupo = gruposPorNombre.get(nombreKey);
+      if (grupo) grupo.push(p); else gruposPorNombre.set(nombreKey, [p]);
+    }
+  }
+
+  function infoDuplicado(p: Personero): InfoDuplicado | null {
+    const dniKey = normalizarTextoDuplicado(p.dni);
+    const grupoDni = dniKey ? gruposPorDni.get(dniKey) : undefined;
+    const nombreKey = p.apellido_paterno?.trim() && p.nombres?.trim()
+      ? normalizarTextoDuplicado(`${p.apellido_paterno} ${p.apellido_materno} ${p.nombres}`)
+      : "";
+    const grupoNombre = nombreKey ? gruposPorNombre.get(nombreKey) : undefined;
+    const porDni = (grupoDni?.length ?? 0) > 1;
+    const porNombre = (grupoNombre?.length ?? 0) > 1;
+    if (!porDni && !porNombre) return null;
+    return { cantidad: Math.max(grupoDni?.length ?? 0, grupoNombre?.length ?? 0), porDni, porNombre };
+  }
+
+  const totalDuplicados = data.filter((p) => infoDuplicado(p) !== null).length;
+
   const filtrados = data.filter((p) => {
     const nombreCompleto = `${p.nombres} ${p.apellido_paterno} ${p.apellido_materno}`.toLowerCase();
     const matchSearch =
@@ -379,7 +446,8 @@ export default function PersonerosPage() {
       : filtroLlamado === "llamados"
         ? !!p.llamado
         : !p.llamado;
-    return matchSearch && matchSexo && matchComuna && matchColegio && matchZona && matchTipo && matchCumple && matchEdad && matchLlamado;
+    const matchDuplicado = !soloDuplicados || infoDuplicado(p) !== null;
+    return matchSearch && matchSexo && matchComuna && matchColegio && matchZona && matchTipo && matchCumple && matchEdad && matchLlamado && matchDuplicado;
   });
 
   // Si un filtro o la búsqueda reduce los resultados y la página actual queda
@@ -537,7 +605,7 @@ export default function PersonerosPage() {
     return opcion ? `Comuna ${opcion}` : "";
   }
 
-  const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos" || filtroZona !== "todos" || filtroLlamado !== "todos" || !!filtroFechaCumple || isEdadFiltered;
+  const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos" || filtroZona !== "todos" || filtroLlamado !== "todos" || !!filtroFechaCumple || isEdadFiltered || soloDuplicados;
 
   const cerrarDialogoEliminar = () => {
     if (eliminando) return;
@@ -633,11 +701,12 @@ export default function PersonerosPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         <StatCard label="Total personeros"  value={data.length}      icon={<PeopleIcon />}    color="#1565c0" />
         <StatCard label="Mujeres"           value={totalMujeres}     icon={<FemaleIcon />}    color="#9d174d" />
         <StatCard label="Hombres"           value={totalHombres}     icon={<MaleIcon />}      color="#1e40af" />
         <StatCard label="Por registrador"   value={porRegistrador}   icon={<HowToRegIcon />}  color="#d97706" />
+        <StatCard label="Posibles duplicados" value={totalDuplicados} icon={<WarningAmberIcon />} color="#f59e0b" />
       </div>
 
       <div className="glow-card rounded-2xl overflow-hidden">
@@ -710,6 +779,14 @@ export default function PersonerosPage() {
                 {f.label}
               </button>
             ))}
+            <button onClick={() => setSoloDuplicados((v) => !v)}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all"
+              style={soloDuplicados
+                ? { background: "#f59e0b", color: "#fff", borderColor: "#f59e0b" }
+                : { background: "transparent", color: "#94a3b8", borderColor: "rgba(148,163,184,0.22)" }}>
+              <WarningAmberIcon sx={{ fontSize: 14 }} />
+              Duplicados{totalDuplicados > 0 ? ` (${totalDuplicados})` : ""}
+            </button>
             <Tooltip title="Actualizar">
               <IconButton size="small" onClick={fetchData} disabled={loading}>
                 <RefreshIcon sx={{ fontSize: 18, color: "#94a3b8" }} />
@@ -1082,7 +1159,7 @@ export default function PersonerosPage() {
           {/* Limpiar */}
           {hayFiltrosActivos && (
             <button
-              onClick={() => { setFiltroComuna("todos"); setFiltroTipoRegistro("todos"); setFiltroColegio("todos"); setFiltroZona("todos"); setFiltroFechaCumple(null); setFiltroLlamado("todos"); setEdadRange([0, EDAD_MAX]); setEdadRangeDraft([0, EDAD_MAX]); }}
+              onClick={() => { setFiltroComuna("todos"); setFiltroTipoRegistro("todos"); setFiltroColegio("todos"); setFiltroZona("todos"); setFiltroFechaCumple(null); setFiltroLlamado("todos"); setEdadRange([0, EDAD_MAX]); setEdadRangeDraft([0, EDAD_MAX]); setSoloDuplicados(false); }}
               className="text-xs font-semibold px-3 py-1 rounded-full transition-all"
               style={{ background: "rgba(220,38,38,0.16)", color: "#f87171", border: "1px solid rgba(220,38,38,0.4)" }}>
               Limpiar filtros
@@ -1135,10 +1212,14 @@ export default function PersonerosPage() {
                 paginados.map((p, i) => {
                   const checked     = selectedIds.has(p.id);
                   const tienePhone  = hasPhone(p);
+                  const dup         = infoDuplicado(p);
                   return (
                     <tr key={p.id}
                       className="table-row-animate border-t border-[rgba(148,163,184,0.10)] hover:bg-[rgba(59,130,246,0.10)] transition-colors"
-                      style={{ background: checked ? "rgba(59,130,246,0.16)" : i % 2 === 0 ? "#121a30" : "#0d1526" }}>
+                      style={{
+                        background: checked ? "rgba(59,130,246,0.16)" : dup ? "rgba(245,158,11,0.08)" : i % 2 === 0 ? "#121a30" : "#0d1526",
+                        boxShadow: dup && !checked ? `inset 3px 0 0 ${motivoInfo(nivelDuplicado(dup.cantidad)).color}` : undefined,
+                      }}>
 
                       {/* Checkbox */}
                       <td className="px-4 py-3 w-10">
@@ -1163,6 +1244,7 @@ export default function PersonerosPage() {
                             <EditableCell value={p.nombres ?? ""} editable={puedeAgregar}
                               displayValue={<span className="text-xs text-gray-400">{p.nombres || "—"}</span>}
                               onSave={(v) => handleActualizarCampo(p.id, "nombres", v)} />
+                            {dup && <DuplicadoBadge info={dup} />}
                           </div>
                         </div>
                       </td>
