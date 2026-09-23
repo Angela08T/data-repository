@@ -302,7 +302,7 @@ export default function PersonerosPage() {
   const [successMsg, setSuccessMsg]               = useState<string | null>(null);
   const [page, setPage]                           = useState(0);
   const [rowsPerPage, setRowsPerPage]             = useState(25);
-  const [eliminarTarget, setEliminarTarget]       = useState<Personero | null>(null);
+  const [eliminarTargets, setEliminarTargets]     = useState<Personero[]>([]);
   const [motivoEliminar, setMotivoEliminar]       = useState("");
   const [motivoOtro, setMotivoOtro]               = useState("");
   const [eliminando, setEliminando]               = useState(false);
@@ -389,14 +389,15 @@ export default function PersonerosPage() {
   const paginaActual   = Math.min(page, totalPaginas - 1);
   const paginados      = filtrados.slice(paginaActual * rowsPerPage, paginaActual * rowsPerPage + rowsPerPage);
 
-  // Selección
-  const conTelefono = filtrados.filter(hasPhone);
-  const allChecked  = conTelefono.length > 0 && conTelefono.every((p) => selectedIds.has(p.id));
+  // Selección — cualquier fila se puede marcar, tenga o no teléfono (por
+  // ejemplo para eliminarla en lote); el envío de mensajes ya filtra aparte a
+  // quienes sí tienen teléfono al armar los destinatarios.
+  const allChecked  = filtrados.length > 0 && filtrados.every((p) => selectedIds.has(p.id));
   const someChecked = filtrados.some((p) => selectedIds.has(p.id));
 
   const toggleSelectAll = () => {
     if (allChecked) setSelectedIds(new Set());
-    else setSelectedIds(new Set(conTelefono.map((p) => p.id)));
+    else setSelectedIds(new Set(filtrados.map((p) => p.id)));
   };
 
   const toggleOne = (id: string) => {
@@ -418,7 +419,10 @@ export default function PersonerosPage() {
     const contactos = filtrados
       .filter((p) => selectedIds.has(p.id) && hasPhone(p))
       .map((p) => ({ id: p.id, nombre: `${p.nombres} ${p.apellido_paterno} ${p.apellido_materno}`, telefono: p.telefono }));
-    if (!contactos.length) return;
+    if (!contactos.length) {
+      showError("Ninguno de los seleccionados tiene teléfono", "No se puede enviar el mensaje a esta selección.");
+      return;
+    }
     setModalContactos(contactos);
     setModalOpen(true);
   };
@@ -537,53 +541,57 @@ export default function PersonerosPage() {
 
   const cerrarDialogoEliminar = () => {
     if (eliminando) return;
-    setEliminarTarget(null);
+    setEliminarTargets([]);
     setMotivoEliminar("");
     setMotivoOtro("");
     setErrorEliminar(null);
   };
 
-  // Antes de borrar de "personeros", se guarda una copia completa en
+  // Antes de borrar de "personeros", se guarda una copia completa de cada uno en
   // personeros_eliminados (con motivo, quién y cuándo) para que el registro no
-  // se pierda — solo el archivo queda en pantalla, no un "deshacer".
+  // se pierda — solo el archivo queda en pantalla, no un "deshacer". Sirve tanto
+  // para eliminar uno solo (arreglo de 1) como para un lote seleccionado.
   const confirmarEliminar = async () => {
-    if (!eliminarTarget) return;
+    if (eliminarTargets.length === 0) return;
     const motivo = motivoEliminar === "otro" ? motivoOtro.trim() : motivoEliminar;
     if (!motivoEliminar) { setErrorEliminar("Selecciona un motivo."); return; }
     if (motivoEliminar === "otro" && !motivo) { setErrorEliminar("Escribe el motivo."); return; }
 
     setEliminando(true);
     setErrorEliminar(null);
-    const p = eliminarTarget;
+    const objetivos = eliminarTargets;
+    const eliminadoPor = user?.fullName || user?.username || "Desconocido";
 
-    const { error: archivoError } = await supabase.from("personeros_eliminados").insert({
-      personero_id: p.id,
-      apellido_paterno: p.apellido_paterno,
-      apellido_materno: p.apellido_materno,
-      nombres: p.nombres,
-      dni: p.dni,
-      fecha_nacimiento: p.fecha_nacimiento,
-      sexo: p.sexo,
-      lugar_nacimiento: p.lugar_nacimiento,
-      region: p.region,
-      provincia: p.provincia,
-      distrito: p.distrito,
-      direccion: p.direccion,
-      telefono: p.telefono,
-      comuna: p.comuna,
-      email: p.email,
-      tipo_registro: p.tipo_registro,
-      registrador_nombres: p.registrador_nombres,
-      registrador_apellidos: p.registrador_apellidos,
-      colegio_votacion: p.colegio_votacion,
-      numero_mesa: p.numero_mesa,
-      zona: p.zona,
-      llamado: p.llamado,
-      fecha_llamada: p.fecha_llamada,
-      resultado_llamada: p.resultado_llamada,
-      motivo_eliminacion: motivo,
-      eliminado_por: user?.fullName || user?.username || "Desconocido",
-    });
+    const { error: archivoError } = await supabase.from("personeros_eliminados").insert(
+      objetivos.map((p) => ({
+        personero_id: p.id,
+        apellido_paterno: p.apellido_paterno,
+        apellido_materno: p.apellido_materno,
+        nombres: p.nombres,
+        dni: p.dni,
+        fecha_nacimiento: p.fecha_nacimiento,
+        sexo: p.sexo,
+        lugar_nacimiento: p.lugar_nacimiento,
+        region: p.region,
+        provincia: p.provincia,
+        distrito: p.distrito,
+        direccion: p.direccion,
+        telefono: p.telefono,
+        comuna: p.comuna,
+        email: p.email,
+        tipo_registro: p.tipo_registro,
+        registrador_nombres: p.registrador_nombres,
+        registrador_apellidos: p.registrador_apellidos,
+        colegio_votacion: p.colegio_votacion,
+        numero_mesa: p.numero_mesa,
+        zona: p.zona,
+        llamado: p.llamado,
+        fecha_llamada: p.fecha_llamada,
+        resultado_llamada: p.resultado_llamada,
+        motivo_eliminacion: motivo,
+        eliminado_por: eliminadoPor,
+      }))
+    );
 
     if (archivoError) {
       setErrorEliminar(`No se pudo archivar el registro: ${archivoError.message}`);
@@ -591,16 +599,28 @@ export default function PersonerosPage() {
       return;
     }
 
-    const { data: borrado, error: borrarError } = await supabase.from("personeros").delete().eq("id", p.id).select("id");
+    const ids = objetivos.map((p) => p.id);
+    const { data: borrados, error: borrarError } = await supabase.from("personeros").delete().in("id", ids).select("id");
     setEliminando(false);
 
-    if (borrarError || !borrado || borrado.length === 0) {
+    if (borrarError || !borrados || borrados.length === 0) {
       setErrorEliminar(borrarError?.message ?? "El registro se archivó, pero no se pudo quitar de la lista (sin permiso). Bórralo de nuevo.");
       return;
     }
 
-    setData((prev) => prev.filter((x) => x.id !== p.id));
-    setSuccessMsg(`${p.nombres} ${p.apellido_paterno} fue eliminado y guardado en "Eliminados".`);
+    const idsBorrados = new Set(borrados.map((b) => b.id));
+    setData((prev) => prev.filter((x) => !idsBorrados.has(x.id)));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      idsBorrados.forEach((id) => next.delete(id));
+      return next;
+    });
+
+    setSuccessMsg(
+      objetivos.length === 1
+        ? `${objetivos[0].nombres} ${objetivos[0].apellido_paterno} fue eliminado y guardado en "Eliminados".`
+        : `${idsBorrados.size} personeros fueron eliminados y guardados en "Eliminados".`
+    );
     cerrarDialogoEliminar();
   };
 
@@ -667,6 +687,14 @@ export default function PersonerosPage() {
                   "&:hover": { background: "linear-gradient(135deg, #0d47a1, #1565c0)" },
                 }}>
                 Enviar a {selCount} seleccionado{selCount !== 1 ? "s" : ""}
+              </Button>
+            )}
+            {selCount > 0 && puedeAgregar && (
+              <Button variant="contained" size="small" color="error"
+                startIcon={<DeleteOutlineIcon sx={{ fontSize: 16 }} />}
+                onClick={() => setEliminarTargets(filtrados.filter((p) => selectedIds.has(p.id)))}
+                sx={{ borderRadius: "10px", textTransform: "none", fontWeight: 700, fontFamily: "'Poppins', sans-serif", fontSize: "0.75rem" }}>
+                Eliminar {selCount} seleccionado{selCount !== 1 ? "s" : ""}
               </Button>
             )}
             {([
@@ -1079,7 +1107,7 @@ export default function PersonerosPage() {
               <tr style={{ background: "#0f1730" }}>
                 <th className="px-4 py-3 w-10">
                   <Checkbox size="small" checked={allChecked} indeterminate={someChecked && !allChecked}
-                    onChange={toggleSelectAll} disabled={loading || conTelefono.length === 0}
+                    onChange={toggleSelectAll} disabled={loading || filtrados.length === 0}
                     sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" }, "&.MuiCheckbox-indeterminate": { color: "#1565c0" } }} />
                 </th>
                 {["Apellidos y Nombres", "DNI", "Nacimiento", "Edad", "Sexo", "Distrito", "Dirección", "Teléfono", "Comuna", "Tipo", "Registrador", "Colegio de Votación", "N° Mesa", "Zona", "Llamado", "Resultado", "WSP", ""].map((h) => (
@@ -1115,7 +1143,6 @@ export default function PersonerosPage() {
                       {/* Checkbox */}
                       <td className="px-4 py-3 w-10">
                         <Checkbox size="small" checked={checked} onChange={() => toggleOne(p.id)}
-                          disabled={!tienePhone}
                           sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" } }} />
                       </td>
 
@@ -1302,7 +1329,7 @@ export default function PersonerosPage() {
                         </Tooltip>
                         {puedeAgregar && (
                           <Tooltip title="Eliminar">
-                            <IconButton size="small" onClick={() => setEliminarTarget(p)}
+                            <IconButton size="small" onClick={() => setEliminarTargets([p])}
                               sx={{ background: "rgba(220,38,38,0.08)", ml: 0.5, "&:hover": { background: "rgba(220,38,38,0.18)" } }}>
                               <DeleteOutlineIcon sx={{ fontSize: 16, color: "#dc2626" }} />
                             </IconButton>
@@ -1354,16 +1381,23 @@ export default function PersonerosPage() {
       />
       <SuccessToast open={!!successMsg} message={successMsg ?? ""} onClose={() => setSuccessMsg(null)} />
 
-      <Dialog open={!!eliminarTarget} onClose={cerrarDialogoEliminar} maxWidth="xs" fullWidth
+      <Dialog open={eliminarTargets.length > 0} onClose={cerrarDialogoEliminar} maxWidth="xs" fullWidth
         slotProps={{ paper: { sx: { borderRadius: "16px" } } }}>
-        <DialogTitle sx={{ fontWeight: 800, fontFamily: "'Poppins', sans-serif" }}>Eliminar personero</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 800, fontFamily: "'Poppins', sans-serif" }}>
+          {eliminarTargets.length === 1 ? "Eliminar personero" : `Eliminar ${eliminarTargets.length} personeros`}
+        </DialogTitle>
         <DialogContent>
-          {eliminarTarget && (
+          {eliminarTargets.length === 1 && (
             <Typography variant="body2" color="text.secondary" mb={2}>
-              {[eliminarTarget.nombres, eliminarTarget.apellido_paterno, eliminarTarget.apellido_materno].filter(Boolean).join(" ") || "Sin nombre"}
-              {eliminarTarget.dni ? ` · DNI ${eliminarTarget.dni}` : ""}
+              {[eliminarTargets[0].nombres, eliminarTargets[0].apellido_paterno, eliminarTargets[0].apellido_materno].filter(Boolean).join(" ") || "Sin nombre"}
+              {eliminarTargets[0].dni ? ` · DNI ${eliminarTargets[0].dni}` : ""}
               <br />
               Se guardará una copia en <strong>Eliminados</strong> antes de quitarlo de la lista.
+            </Typography>
+          )}
+          {eliminarTargets.length > 1 && (
+            <Typography variant="body2" color="text.secondary" mb={2}>
+              Se guardará una copia de los {eliminarTargets.length} seleccionados en <strong>Eliminados</strong> antes de quitarlos de la lista.
             </Typography>
           )}
           <TextField
