@@ -204,6 +204,14 @@ export const MODULOS_PROGRAMAS_SOCIALES: MenuItem[] = [
         descripcion: "Personeros quitados de la lista general, con motivo, quién y cuándo",
         permisos: ["all_programas_sociales", "all", "campo", "personeros"],
       },
+      {
+        id: "personeros-crecimiento",
+        nombre: "Crecimiento",
+        ruta: "/programas-sociales/personeros/crecimiento",
+        icono: "TrendingUp",
+        descripcion: "Registros diarios de personeros y proyección hacia el día de la elección",
+        permisos: ["all_programas_sociales", "all", "campo", "personeros"],
+      },
     ],
   },
   {
