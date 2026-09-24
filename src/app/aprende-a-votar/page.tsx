@@ -168,7 +168,7 @@ interface SeccionProps {
 }
 function SeccionCedula({ titulo, subtitulo, colorFondo, colorHeader, partidos, marcaActual, resets, onValidar, onInvalido, onLimpiar }: SeccionProps) {
   return (
-    <div className="rounded-lg overflow-hidden border border-black/20 flex-1 min-w-0">
+    <div className="rounded-2xl overflow-hidden border border-black/20 flex-1 min-w-0 shadow-lg">
       <div className="text-center py-1.5 sm:py-2 px-1" style={{ background: colorHeader }}>
         <p className="text-white font-black text-[10px] sm:text-sm leading-tight">{titulo}</p>
         <p className="text-white/80 text-[8px] sm:text-[11px] leading-tight">{subtitulo}</p>
@@ -303,9 +303,9 @@ export default function AprendeAVotarPage() {
             <p className="text-sm mt-3" style={{ color: "#94a3b8" }}>Cargando la cédula...</p>
           </div>
         ) : error ? (
-          <div className="rounded-xl p-8 text-center text-sm text-red-400" style={{ background: "rgba(220,38,38,0.1)" }}>{error}</div>
+          <div className="rounded-3xl p-8 text-center text-sm text-red-400" style={{ background: "rgba(220,38,38,0.1)" }}>{error}</div>
         ) : listo ? (
-          <div className="rounded-2xl p-6 sm:p-8 text-center" style={{ background: "#121a30", border: "1px solid rgba(34,197,94,0.35)" }}>
+          <div className="rounded-3xl p-6 sm:p-8 text-center shadow-2xl" style={{ background: "#121a30", border: "1px solid rgba(34,197,94,0.35)" }}>
             <CelebrationIcon sx={{ fontSize: 48, color: "#4ade80" }} />
             <h2 className="text-xl font-black mt-3" style={{ color: "#eef2ff" }}>¡Aprendiste a marcar tu voto correctamente!</h2>
             <p className="text-sm mt-2" style={{ color: "#94a3b8" }}>
@@ -319,7 +319,7 @@ export default function AprendeAVotarPage() {
             )}
 
             <button onClick={reiniciar}
-              className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all"
+              className="mt-5 inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold transition-all active:scale-95"
               style={{ background: "rgba(59,130,246,0.16)", color: "#60a5fa" }}>
               <ReplayIcon sx={{ fontSize: 18 }} /> Practicar de nuevo
             </button>
@@ -327,7 +327,7 @@ export default function AprendeAVotarPage() {
             <div className="mt-6 pt-6 border-t" style={{ borderColor: "rgba(148,163,184,0.16)" }}>
               <p className="text-sm mb-3" style={{ color: "#cbd5e1" }}>¿Quieres ayudar a que más gente defienda su voto el 4 de octubre?</p>
               <a href={FICHA_INSCRIPCION_URL} target="_blank" rel="noopener noreferrer" onClick={registrarClicPersonero}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-black text-white transition-all"
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl font-black text-white transition-all active:scale-95"
                 style={{ background: "linear-gradient(135deg, #16a34a, #15803d)", boxShadow: "0 6px 18px rgba(22,163,74,0.4)" }}>
                 <HowToVoteIcon /> Únete como personero
               </a>
@@ -336,7 +336,7 @@ export default function AprendeAVotarPage() {
         ) : (
           <>
             {avisoInvalido && (
-              <div className="mb-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-center" style={{ background: "rgba(220,38,38,0.16)", color: "#fca5a5" }}>
+              <div className="mb-3 px-4 py-2.5 rounded-2xl text-sm font-semibold text-center" style={{ background: "rgba(220,38,38,0.16)", color: "#fca5a5" }}>
                 Esa marca no vale: debe ser una X o un + que se crucen, dentro del recuadro. No se permite un círculo ni otra figura.
               </div>
             )}
@@ -356,21 +356,29 @@ export default function AprendeAVotarPage() {
               />
             </div>
 
-            <div className="sticky bottom-3 mt-5">
-              <button onClick={confirmar} disabled={!puedeConfirmar || confirmando}
-                className="w-full py-3.5 rounded-full font-black text-white transition-all flex items-center justify-center gap-2"
-                style={{
-                  background: puedeConfirmar ? "linear-gradient(135deg, #1565c0, #1976d2)" : "#334155",
-                  boxShadow: puedeConfirmar ? "0 8px 24px rgba(21,101,192,0.45)" : "none",
-                  opacity: confirmando ? 0.7 : 1,
-                }}>
-                {confirmando ? <CircularProgress size={20} color="inherit" /> : (
-                  <>
-                    <HowToVoteIcon sx={{ fontSize: 20 }} />
-                    {puedeConfirmar ? "Confirmar mi voto de práctica" : "Marca un partido en cada sección"}
-                  </>
-                )}
-              </button>
+            {/* Espacio para que la barra fija de abajo no tape la última fila */}
+            <div className="h-24" />
+
+            {/* Barra inferior fija tipo app, con el botón de confirmar siempre a mano */}
+            <div className="fixed inset-x-0 bottom-0 z-50 pointer-events-none">
+              <div className="max-w-3xl mx-auto px-3 pointer-events-none"
+                style={{ background: "linear-gradient(to top, #0b1120 55%, transparent)", paddingTop: 28 }}>
+                <button onClick={confirmar} disabled={!puedeConfirmar || confirmando}
+                  className="pointer-events-auto w-full py-4 rounded-2xl font-black text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                  style={{
+                    background: puedeConfirmar ? "linear-gradient(135deg, #1565c0, #1976d2)" : "#334155",
+                    boxShadow: puedeConfirmar ? "0 10px 28px rgba(21,101,192,0.5)" : "none",
+                    opacity: confirmando ? 0.7 : 1,
+                    marginBottom: "max(env(safe-area-inset-bottom), 16px)",
+                  }}>
+                  {confirmando ? <CircularProgress size={20} color="inherit" /> : (
+                    <>
+                      <HowToVoteIcon sx={{ fontSize: 20 }} />
+                      {puedeConfirmar ? "Confirmar mi voto de práctica" : "Marca un partido en cada sección"}
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </>
         )}

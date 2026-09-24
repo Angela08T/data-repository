@@ -132,6 +132,12 @@ export default function SimulacroVotacionPage() {
   const pctSinErrores = total > 0 ? Math.round((sinErrores / total) * 100) : 0;
   const pctClics = total > 0 ? Math.round((clics / total) * 100) : 0;
 
+  // Con pocos intentos un "%" da una falsa sensación de precisión (3 de 3 = un
+  // categórico "100%"). Por debajo de este umbral se muestra la cuenta cruda
+  // en vez del porcentaje, hasta que haya una muestra mínimamente razonable.
+  const MUESTRA_MINIMA = 20;
+  const muestraChica = total < MUESTRA_MINIMA;
+
   const porDia = new Map<string, PuntoDiario>();
   for (const i of intentos) {
     const dia = soloFechaUTC(aHoraLima(new Date(i.creado_en)));
@@ -190,9 +196,17 @@ export default function SimulacroVotacionPage() {
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
             <StatCard label="Practicaron en total" value={numberFmt.format(total)} subtitle="Simulacros completados" icon={<QuizIcon />} color="#3b82f6" />
-            <StatCard label="Ya sabían votar" value={`${pctSinErrores}%`} subtitle={`${numberFmt.format(sinErrores)} sin ningún error`} icon={<CheckCircleIcon />} color="#4ade80" />
-            <StatCard label="Aprendieron practicando" value={`${100 - pctSinErrores}%`} subtitle={`${numberFmt.format(conErrores)} con al menos 1 error`} icon={<ReplayIcon />} color="#f59e0b" />
-            <StatCard label="Clic en Únete como personero" value={numberFmt.format(clics)} subtitle={`${pctClics}% de quienes practicaron`} icon={<HowToVoteIcon />} color="#a78bfa" />
+            <StatCard label="Ya sabían votar"
+              value={muestraChica ? `${sinErrores} de ${total}` : `${pctSinErrores}%`}
+              subtitle={muestraChica ? "Aún poca muestra para un %" : `${numberFmt.format(sinErrores)} sin ningún error`}
+              icon={<CheckCircleIcon />} color="#4ade80" />
+            <StatCard label="Aprendieron practicando"
+              value={muestraChica ? `${conErrores} de ${total}` : `${100 - pctSinErrores}%`}
+              subtitle={muestraChica ? "Aún poca muestra para un %" : `${numberFmt.format(conErrores)} con al menos 1 error`}
+              icon={<ReplayIcon />} color="#f59e0b" />
+            <StatCard label="Clic en Únete como personero" value={numberFmt.format(clics)}
+              subtitle={muestraChica ? "Aún poca muestra para un %" : `${pctClics}% de quienes practicaron`}
+              icon={<HowToVoteIcon />} color="#a78bfa" />
             <StatCard label="Total de errores corregidos" value={numberFmt.format(intentos.reduce((s, i) => s + i.intentos_invalidos, 0))} subtitle="Marcas inválidas en total" icon={<InfoOutlinedIcon />} color="#f87171" />
           </div>
 
