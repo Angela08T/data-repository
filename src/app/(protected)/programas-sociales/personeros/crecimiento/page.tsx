@@ -107,7 +107,7 @@ function BarrasApiladas({ puntos }: { puntos: PuntoDiario[] }) {
 
   return (
     <div className="overflow-x-auto">
-      <svg viewBox={`0 0 ${anchoSvg} ${alturaSvg}`} width={anchoSvg} height={alturaSvg} style={{ display: "block" }}>
+      <svg viewBox={`0 0 ${anchoSvg} ${alturaSvg}`} style={{ display: "block", width: "100%", minWidth: anchoSvg, height: "auto" }}>
         <line x1={0} x2={anchoSvg} y1={alturaSvg - padB} y2={alturaSvg - padB} stroke="rgba(148,163,184,0.22)" strokeWidth={1} />
         {puntos.map((p, i) => {
           const hDirecto = mounted ? (p.directo / max) * plotH : 0;
@@ -191,7 +191,7 @@ function MapaCalor({ puntos }: { puntos: PuntoDiario[] }) {
 
   return (
     <div className="overflow-x-auto px-4 py-4">
-      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} style={{ display: "block" }}>
+      <svg viewBox={`0 0 ${width} ${height}`} style={{ display: "block", width: "100%", minWidth: width, height: "auto" }}>
         {etiquetasMes.map(({ semana, texto }) => (
           <text key={semana} x={24 + semana * (celda + gap)} y={10} fontSize={9} fill="#94a3b8" fontWeight={600}>{texto}</text>
         ))}
