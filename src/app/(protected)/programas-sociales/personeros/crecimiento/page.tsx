@@ -325,7 +325,7 @@ function LineaAcumulada({ historico, proyeccion, fechaEleccion }: {
         {dentroDelRango && (
           <>
             <line x1={xEleccion} x2={xEleccion} y1={padT} y2={padT + plotH} stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="4 4" />
-            <text x={xEleccion} y={padT - 8} textAnchor="middle" fontSize={10} fontWeight={700} fill="#f59e0b">Elección</text>
+            <text x={Math.min(xEleccion, width - padR)} y={padT - 8} textAnchor="end" fontSize={10} fontWeight={700} fill="#f59e0b">Elección</text>
           </>
         )}
 
