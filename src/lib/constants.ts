@@ -313,6 +313,14 @@ export const MODULOS_PROGRAMAS_SOCIALES: MenuItem[] = [
     ],
   },
   {
+    id: "simulacro-votacion",
+    nombre: "Simulacro de Votación",
+    ruta: "/programas-sociales/simulacro-votacion",
+    icono: "Quiz",
+    descripcion: "Resultados del simulacro público de cómo marcar el voto (/aprende-a-votar)",
+    permisos: ["all_programas_sociales", "all"],
+  },
+  {
     id: "contactos-chat",
     nombre: "Contactos del Chat",
     ruta: "/programas-sociales/contactos-chat",

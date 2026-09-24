@@ -208,6 +208,7 @@ export default function AprendeAVotarPage() {
   const [avisoInvalido, setAvisoInvalido] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
   const [listo, setListo] = useState(false);
+  const [registroId, setRegistroId] = useState<string | null>(null);
 
   const cargarStats = useCallback(async () => {
     const [{ count: total }, { count: sinErrores }] = await Promise.all([
@@ -253,16 +254,26 @@ export default function AprendeAVotarPage() {
   const confirmar = async () => {
     if (!puedeConfirmar) return;
     setConfirmando(true);
-    await supabase.from("simulacro_voto").insert({ intentos_invalidos: intentosInvalidos });
+    const { data } = await supabase.from("simulacro_voto").insert({ intentos_invalidos: intentosInvalidos }).select("id").single();
+    setRegistroId(data?.id ?? null);
     setConfirmando(false);
     setListo(true);
     cargarStats();
+  };
+
+  // Registra que la persona hizo clic para inscribirse — no hay forma de saber
+  // desde aquí si de verdad completó la ficha en el otro sitio (esa parte vive
+  // fuera de esta app), pero sí cuántas veces este botón llevó a alguien allá.
+  const registrarClicPersonero = () => {
+    if (!registroId) return;
+    supabase.from("simulacro_voto").update({ clic_personero: true }).eq("id", registroId).then();
   };
 
   const reiniciar = () => {
     setMarcaLima(null); setMarcaSjl(null);
     setIntentosInvalidos(0);
     setListo(false);
+    setRegistroId(null);
   };
 
   const nombrePartidoLima = partidos.find((p) => p.ambito === "lima" && p.numero_lista === marcaLima)?.nombre;
@@ -313,7 +324,7 @@ export default function AprendeAVotarPage() {
 
             <div className="mt-6 pt-6 border-t" style={{ borderColor: "rgba(148,163,184,0.16)" }}>
               <p className="text-sm mb-3" style={{ color: "#cbd5e1" }}>¿Quieres ayudar a que más gente defienda su voto el 4 de octubre?</p>
-              <a href={FICHA_INSCRIPCION_URL} target="_blank" rel="noopener noreferrer"
+              <a href={FICHA_INSCRIPCION_URL} target="_blank" rel="noopener noreferrer" onClick={registrarClicPersonero}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-black text-white transition-all"
                 style={{ background: "linear-gradient(135deg, #16a34a, #15803d)", boxShadow: "0 6px 18px rgba(22,163,74,0.4)" }}>
                 <HowToVoteIcon /> Únete como personero
