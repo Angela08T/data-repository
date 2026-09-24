@@ -10,7 +10,6 @@ import HowToVoteIcon from "@mui/icons-material/HowToVote";
 import CelebrationIcon from "@mui/icons-material/Celebration";
 
 const FICHA_INSCRIPCION_URL = "https://jesusmaldonadooficial.com/#personero";
-const TAMANO_CASILLA = 52;
 
 // ── Geometría del trazo: valida "X" o "+" sin usar IA, con reglas simples ────
 interface Punto { x: number; y: number }
@@ -81,11 +80,14 @@ function CasillaMarcable({ marcado, resetSignal, onValidar, onInvalido, onLimpia
 
   useEffect(() => { setTrazosListos([]); setTrazoActivo(null); }, [resetSignal]);
 
+  // El tamaño real de la casilla se mide del DOM (no se asume un valor fijo):
+  // así funciona igual de bien con el tamaño chico de dos columnas en un
+  // celular que con uno más grande en pantallas anchas.
   function puntoRelativo(e: React.PointerEvent): Punto {
     const rect = svgRef.current!.getBoundingClientRect();
     return {
-      x: Math.max(0, Math.min(TAMANO_CASILLA, e.clientX - rect.left)),
-      y: Math.max(0, Math.min(TAMANO_CASILLA, e.clientY - rect.top)),
+      x: Math.max(0, Math.min(rect.width, e.clientX - rect.left)),
+      y: Math.max(0, Math.min(rect.height, e.clientY - rect.top)),
     };
   }
 
@@ -103,8 +105,9 @@ function CasillaMarcable({ marcado, resetSignal, onValidar, onInvalido, onLimpia
     const trazoFinal = trazoActivo;
     setTrazoActivo(null);
     if (trazoFinal.length < 2) return;
+    const rect = svgRef.current!.getBoundingClientRect();
     const nuevos = [...trazosListos, trazoFinal];
-    if (validarMarca(nuevos, TAMANO_CASILLA, TAMANO_CASILLA)) {
+    if (validarMarca(nuevos, rect.width, rect.height)) {
       setTrazosListos(nuevos);
       onValidar();
     } else if (nuevos.length >= 2) {
@@ -120,24 +123,23 @@ function CasillaMarcable({ marcado, resetSignal, onValidar, onInvalido, onLimpia
   const aTrazo = (t: Punto[]) => t.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
 
   return (
-    <div className="relative flex-shrink-0" style={{ width: TAMANO_CASILLA, height: TAMANO_CASILLA }}>
-      <div className="absolute inset-0 rounded-md border-2 bg-white transition-colors"
+    <div className="relative flex-shrink-0 w-8 h-8 sm:w-11 sm:h-11">
+      <div className="absolute inset-0 rounded-sm border-2 bg-white transition-colors"
         style={{ borderColor: marcado ? "#16a34a" : flashError ? "#dc2626" : "#94a3b8" }} />
       <svg
         ref={svgRef}
-        width={TAMANO_CASILLA} height={TAMANO_CASILLA}
-        className="absolute inset-0"
+        className="absolute inset-0 w-full h-full"
         style={{ touchAction: "none", cursor: marcado ? "pointer" : "crosshair" }}
         onPointerDown={handleDown} onPointerMove={handleMove} onPointerUp={handleUp} onPointerCancel={handleUp}
       >
         {trazosListos.map((t, i) => (
-          <polyline key={i} points={aTrazo(t)} fill="none" stroke="#dc2626" strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />
+          <polyline key={i} points={aTrazo(t)} fill="none" stroke="#dc2626" strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" />
         ))}
-        {trazoActivo && <polyline points={aTrazo(trazoActivo)} fill="none" stroke="#dc2626" strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />}
+        {trazoActivo && <polyline points={aTrazo(trazoActivo)} fill="none" stroke="#dc2626" strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" />}
       </svg>
       {marcado && (
-        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "#16a34a" }}>
-          <CheckIcon sx={{ fontSize: 13, color: "#fff" }} />
+        <div className="absolute -top-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center" style={{ background: "#16a34a" }}>
+          <CheckIcon sx={{ fontSize: 10, color: "#fff" }} />
         </div>
       )}
     </div>
@@ -150,10 +152,10 @@ function FilaPartido({ partido, marcado, resetSignal, onValidar, onInvalido, onL
   onValidar: () => void; onInvalido: () => void; onLimpiar: () => void;
 }) {
   return (
-    <div className="flex items-center gap-3 px-3 py-2 border-b border-black/10 last:border-b-0">
+    <div className="flex items-center gap-1.5 sm:gap-3 px-1.5 sm:px-3 py-1.5 sm:py-2 border-b border-black/10 last:border-b-0">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`/simbolos-partidos/${partido.ambito}-${partido.numero_lista}.png`} alt="" className="w-9 h-9 flex-shrink-0" draggable={false} />
-      <span className="flex-1 text-[13px] font-bold uppercase leading-tight text-black">{partido.nombre}</span>
+      <img src={`/simbolos-partidos/${partido.ambito}-${partido.numero_lista}.png`} alt="" className="w-6 h-6 sm:w-9 sm:h-9 flex-shrink-0" draggable={false} />
+      <span className="flex-1 min-w-0 text-[9.5px] sm:text-[13px] font-bold uppercase leading-tight text-black">{partido.nombre}</span>
       <CasillaMarcable marcado={marcado} resetSignal={resetSignal} onValidar={onValidar} onInvalido={onInvalido} onLimpiar={onLimpiar} />
     </div>
   );
@@ -167,13 +169,13 @@ interface SeccionProps {
 function SeccionCedula({ titulo, subtitulo, colorFondo, colorHeader, partidos, marcaActual, resets, onValidar, onInvalido, onLimpiar }: SeccionProps) {
   return (
     <div className="rounded-lg overflow-hidden border border-black/20 flex-1 min-w-0">
-      <div className="text-center py-2 px-2" style={{ background: colorHeader }}>
-        <p className="text-white font-black text-sm leading-tight">{titulo}</p>
-        <p className="text-white/80 text-[11px] leading-tight">{subtitulo}</p>
+      <div className="text-center py-1.5 sm:py-2 px-1" style={{ background: colorHeader }}>
+        <p className="text-white font-black text-[10px] sm:text-sm leading-tight">{titulo}</p>
+        <p className="text-white/80 text-[8px] sm:text-[11px] leading-tight">{subtitulo}</p>
       </div>
-      <div className="text-center py-1.5 px-2 bg-white border-b border-black/10">
-        <p className="text-[10px] font-bold text-black">MARCA CON UNA CRUZ (X) O UN ASPA (+)</p>
-        <p className="text-[9px] text-gray-600">DENTRO DEL RECUADRO DE SÍMBOLO DE SU PREFERENCIA</p>
+      <div className="text-center py-1 sm:py-1.5 px-1 bg-white border-b border-black/10">
+        <p className="text-[7.5px] sm:text-[10px] font-bold text-black leading-tight">MARCA CON UNA CRUZ (X) O UN ASPA (+)</p>
+        <p className="text-[6.5px] sm:text-[9px] text-gray-600 leading-tight">DENTRO DEL RECUADRO DE SÍMBOLO DE SU PREFERENCIA</p>
       </div>
       <div style={{ background: colorFondo }}>
         {partidos.map((p) => (
@@ -281,7 +283,7 @@ export default function AprendeAVotarPage() {
 
   return (
     <div className="min-h-dvh" style={{ background: "#0b1120" }}>
-      <div className="max-w-3xl mx-auto px-3 py-5 sm:px-6" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 24px)", paddingTop: "max(env(safe-area-inset-top), 20px)" }}>
+      <div className="max-w-3xl mx-auto px-2 py-5 sm:px-6" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 24px)", paddingTop: "max(env(safe-area-inset-top), 20px)" }}>
 
         {/* Cabecera */}
         <div className="text-center mb-4">
@@ -339,7 +341,7 @@ export default function AprendeAVotarPage() {
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-row gap-1.5 sm:gap-4">
               <SeccionCedula
                 titulo="PROVINCIA DE LIMA METROPOLITANA" subtitulo="Elección provincial"
                 colorFondo="#fbdcee" colorHeader="#3d3d3d"
