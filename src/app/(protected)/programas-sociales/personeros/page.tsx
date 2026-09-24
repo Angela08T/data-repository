@@ -108,6 +108,17 @@ function calcularEdad(fechaNacimiento: string): number | null {
   return edad >= 0 ? edad : null;
 }
 
+// Un .in("id", ids) con miles de UUIDs viaja en la URL de la petición y puede
+// superar el límite del servidor (Bad Request) — se divide en lotes chicos
+// para que una operación masiva (marcar como llamado, eliminar, etc.) nunca
+// falle solo por la cantidad de filas involucradas.
+const TAMANO_LOTE_IN = 300;
+function dividirEnLotes<T>(items: T[], tamano = TAMANO_LOTE_IN): T[][] {
+  const lotes: T[][] = [];
+  for (let i = 0; i < items.length; i += tamano) lotes.push(items.slice(i, i + tamano));
+  return lotes;
+}
+
 const EDAD_MAX = 100;
 const COMUNAS = Array.from({ length: 18 }, (_, i) => i + 1);
 const ZONAS = Array.from({ length: 8 }, (_, i) => i + 1);
@@ -506,8 +517,10 @@ export default function PersonerosPage() {
   const handleWspEnviados = async (ids: string[], canal: "sms" | "whatsapp") => {
     if (canal !== "whatsapp" || ids.length === 0) return;
     const ahora = new Date().toISOString();
-    const { error } = await supabase.from("personeros").update({ wsp_enviado: true, wsp_enviado_en: ahora }).in("id", ids);
-    if (error) { showError("No se pudo marcar el envío de WhatsApp", error.message); return; }
+    for (const lote of dividirEnLotes(ids)) {
+      const { error } = await supabase.from("personeros").update({ wsp_enviado: true, wsp_enviado_en: ahora }).in("id", lote);
+      if (error) { showError("No se pudo marcar el envío de WhatsApp", error.message); return; }
+    }
     setData((prev) => prev.map((p) => (ids.includes(p.id) ? { ...p, wsp_enviado: true, wsp_enviado_en: ahora } : p)));
   };
 
@@ -538,13 +551,17 @@ export default function PersonerosPage() {
 
     const ids = lote.map((p) => p.id);
     const ahora = new Date().toISOString();
-    const { error: updateError } = await supabase
-      .from("personeros")
-      .update({ llamado: true, fecha_llamada: ahora })
-      .in("id", ids);
+    let errorActualizar: string | null = null;
+    for (const grupo of dividirEnLotes(ids)) {
+      const { error: updateError } = await supabase
+        .from("personeros")
+        .update({ llamado: true, fecha_llamada: ahora })
+        .in("id", grupo);
+      if (updateError) { errorActualizar = updateError.message; break; }
+    }
 
-    if (updateError) {
-      showError("No se pudo actualizar", updateError.message);
+    if (errorActualizar) {
+      showError("No se pudo actualizar", errorActualizar);
     } else {
       setData((prev) => prev.map((p) => (ids.includes(p.id) ? { ...p, llamado: true, fecha_llamada: ahora } : p)));
       setSuccessMsg(`${ids.length} contacto${ids.length !== 1 ? "s" : ""} descargado${ids.length !== 1 ? "s" : ""} y marcado${ids.length !== 1 ? "s" : ""} como llamado${ids.length !== 1 ? "s" : ""}.`);
@@ -673,15 +690,20 @@ export default function PersonerosPage() {
     }
 
     const ids = objetivos.map((p) => p.id);
-    const { data: borrados, error: borrarError } = await supabase.from("personeros").delete().in("id", ids).select("id");
+    const idsBorrados = new Set<string>();
+    let borrarError: string | null = null;
+    for (const grupo of dividirEnLotes(ids)) {
+      const { data: borrados, error } = await supabase.from("personeros").delete().in("id", grupo).select("id");
+      if (error) { borrarError = error.message; break; }
+      (borrados ?? []).forEach((b) => idsBorrados.add(b.id));
+    }
     setEliminando(false);
 
-    if (borrarError || !borrados || borrados.length === 0) {
-      setErrorEliminar(borrarError?.message ?? "El registro se archivó, pero no se pudo quitar de la lista (sin permiso). Bórralo de nuevo.");
+    if (borrarError || idsBorrados.size === 0) {
+      setErrorEliminar(borrarError ?? "El registro se archivó, pero no se pudo quitar de la lista (sin permiso). Bórralo de nuevo.");
       return;
     }
 
-    const idsBorrados = new Set(borrados.map((b) => b.id));
     setData((prev) => prev.filter((x) => !idsBorrados.has(x.id)));
     setSelectedIds((prev) => {
       const next = new Set(prev);
