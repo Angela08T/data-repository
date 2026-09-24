@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { CircularProgress, IconButton, Tooltip } from "@mui/material";
 import { supabase } from "@/lib/supabase";
 import { exportToExcel } from "@/lib/utils/exportExcel";
@@ -50,39 +50,65 @@ function StatCard({ label, value, subtitle, icon, color }: {
   );
 }
 
+// Mide el ancho real de la tarjeta (ResizeObserver) para que las barras se
+// adapten a lo que hay de verdad, en vez de un ancho fijo que a veces deja un
+// hueco vacío enorme (pocos días) y otras veces se queda corto (muchos días).
+function useAnchoContenedor(): [React.RefObject<HTMLDivElement | null>, number] {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [ancho, setAncho] = useState(900);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const medir = () => setAncho(Math.round(el.getBoundingClientRect().width));
+    medir();
+    const observer = new ResizeObserver(medir);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, ancho];
+}
+
 function BarrasResultado({ puntos }: { puntos: PuntoDiario[] }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const raf = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(raf); }, []);
+  const [contRef, anchoDisponible] = useAnchoContenedor();
 
   const alturaSvg = 200, padB = 26, padT = 16;
   const plotH = alturaSvg - padB - padT;
-  const anchoBarra = 26, gap = 10;
-  const anchoSvg = Math.max(600, puntos.length * (anchoBarra + gap) + gap);
+  const gap = 10;
+  const anchoBarraMin = 26, anchoBarraMax = 64;
+  const anchoNecesario = puntos.length * (anchoBarraMin + gap) + gap;
+  const anchoBarra = anchoDisponible > anchoNecesario
+    ? Math.min(anchoBarraMax, (anchoDisponible - gap * (puntos.length + 1)) / puntos.length)
+    : anchoBarraMin;
+  const anchoSvg = puntos.length * (anchoBarra + gap) + gap;
   const max = Math.max(...puntos.map((p) => p.sinErrores + p.conErrores), 1);
 
   return (
-    <div className="overflow-x-auto">
-      <svg viewBox={`0 0 ${anchoSvg} ${alturaSvg}`} width={anchoSvg} height={alturaSvg} style={{ display: "block" }}>
-        <line x1={0} x2={anchoSvg} y1={alturaSvg - padB} y2={alturaSvg - padB} stroke="rgba(148,163,184,0.22)" strokeWidth={1} />
-        {puntos.map((p, i) => {
-          const total = p.sinErrores + p.conErrores;
-          const hOk = mounted ? (p.sinErrores / max) * plotH : 0;
-          const hErr = mounted ? (p.conErrores / max) * plotH : 0;
-          const x = gap + i * (anchoBarra + gap);
-          const yBase = alturaSvg - padB;
-          const yOkTop = yBase - hOk;
-          const yErrTop = yOkTop - hErr;
-          return (
-            <g key={p.key}>
-              {total > 0 && <text x={x + anchoBarra / 2} y={yErrTop - 6} textAnchor="middle" fontSize={11} fontWeight={700} fill="#eef2ff">{total}</text>}
-              {p.conErrores > 0 && <rect x={x} y={yErrTop} width={anchoBarra} height={hErr} rx={4} fill="#f59e0b" style={{ transition: "height 700ms ease-out, y 700ms ease-out" }} />}
-              {p.sinErrores > 0 && <rect x={x} y={yOkTop} width={anchoBarra} height={hOk} rx={4} fill="#4ade80" style={{ transition: "height 700ms ease-out, y 700ms ease-out" }} />}
-              {total === 0 && <rect x={x} y={yBase - 2} width={anchoBarra} height={2} rx={1} fill="rgba(148,163,184,0.25)" />}
-              <text x={x + anchoBarra / 2} y={alturaSvg - padB + 16} textAnchor="middle" fontSize={10} fill="#94a3b8" fontWeight={600}>{etiquetaDia(p.fecha)}</text>
-            </g>
-          );
-        })}
-      </svg>
+    <div ref={contRef} className="overflow-x-auto">
+      <div className="flex justify-center">
+        <svg viewBox={`0 0 ${anchoSvg} ${alturaSvg}`} width={anchoSvg} height={alturaSvg} style={{ display: "block" }}>
+          <line x1={0} x2={anchoSvg} y1={alturaSvg - padB} y2={alturaSvg - padB} stroke="rgba(148,163,184,0.22)" strokeWidth={1} />
+          {puntos.map((p, i) => {
+            const total = p.sinErrores + p.conErrores;
+            const hOk = mounted ? (p.sinErrores / max) * plotH : 0;
+            const hErr = mounted ? (p.conErrores / max) * plotH : 0;
+            const x = gap + i * (anchoBarra + gap);
+            const yBase = alturaSvg - padB;
+            const yOkTop = yBase - hOk;
+            const yErrTop = yOkTop - hErr;
+            return (
+              <g key={p.key}>
+                {total > 0 && <text x={x + anchoBarra / 2} y={yErrTop - 6} textAnchor="middle" fontSize={11} fontWeight={700} fill="#eef2ff">{total}</text>}
+                {p.conErrores > 0 && <rect x={x} y={yErrTop} width={anchoBarra} height={hErr} rx={4} fill="#f59e0b" style={{ transition: "height 700ms ease-out, y 700ms ease-out" }} />}
+                {p.sinErrores > 0 && <rect x={x} y={yOkTop} width={anchoBarra} height={hOk} rx={4} fill="#4ade80" style={{ transition: "height 700ms ease-out, y 700ms ease-out" }} />}
+                {total === 0 && <rect x={x} y={yBase - 2} width={anchoBarra} height={2} rx={1} fill="rgba(148,163,184,0.25)" />}
+                <text x={x + anchoBarra / 2} y={alturaSvg - padB + 16} textAnchor="middle" fontSize={10} fill="#94a3b8" fontWeight={600}>{etiquetaDia(p.fecha)}</text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
       <div className="flex items-center gap-4 justify-center mt-1 text-xs text-gray-400">
         <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#4ade80" }} /> Sin errores (ya sabían)</span>
         <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#f59e0b" }} /> Con errores (aprendieron)</span>
