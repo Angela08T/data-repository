@@ -515,7 +515,7 @@ export default function PersonerosPage() {
   const totalHombres      = data.filter((p) => normalizarSexo(p.sexo) === "M").length;
   const porRegistrador    = data.filter(esPorRegistrador).length;
   const selCount          = filtrados.filter((p) => selectedIds.has(p.id)).length;
-  const COLS              = 19; // checkbox + cols + tipo + registrador + colegio + mesa + zona + llamado + resultado + wsp + acciones
+  const COLS              = 20; // checkbox + cols + tipo + registrador + colegio + mesa + zona + llamado + resultado + wsp + registrado + acciones
 
   // Solo se puede descargar/marcar en lote a quienes aún están pendientes
   // (respetando los demás filtros activos: búsqueda, sexo, comuna, colegio, tipo, cumpleaños, edad, llamado).
@@ -1193,7 +1193,7 @@ export default function PersonerosPage() {
                     onChange={toggleSelectAll} disabled={loading || filtrados.length === 0}
                     sx={{ p: 0, color: "#cbd5e1", "&.Mui-checked": { color: "#1565c0" }, "&.MuiCheckbox-indeterminate": { color: "#1565c0" } }} />
                 </th>
-                {["Apellidos y Nombres", "DNI", "Nacimiento", "Edad", "Sexo", "Distrito", "Dirección", "Teléfono", "Comuna", "Tipo", "Registrador", "Colegio de Votación", "N° Mesa", "Zona", "Llamado", "Resultado", "WSP", ""].map((h) => (
+                {["Apellidos y Nombres", "DNI", "Nacimiento", "Edad", "Sexo", "Distrito", "Dirección", "Teléfono", "Comuna", "Tipo", "Registrador", "Colegio de Votación", "N° Mesa", "Zona", "Llamado", "Resultado", "WSP", "Registrado", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide whitespace-nowrap" style={{ color: "#94a3b8" }}>
                     {h}
                   </th>
@@ -1409,6 +1409,18 @@ export default function PersonerosPage() {
                           }
                           onSave={(v) => handleActualizarWsp(p.id, v)}
                         />
+                      </td>
+
+                      {/* Fecha y hora de registro */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {p.created_at ? (
+                          <div>
+                            <p className="text-xs font-semibold text-[#cbd5e1]">{dayjs(p.created_at).format("DD/MM/YYYY")}</p>
+                            <p className="text-[10px] text-gray-500">{dayjs(p.created_at).format("HH:mm")}</p>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-500">—</span>
+                        )}
                       </td>
 
                       {/* Acciones */}
