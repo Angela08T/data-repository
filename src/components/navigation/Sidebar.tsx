@@ -10,8 +10,39 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { logout } from "@/redux/slices/authSlice";
 import { showConfirm } from "@/lib/utils/swalConfig";
+import { supabase } from "@/lib/supabase";
 import DynamicIcon from "./DynamicIcon";
 import type { MenuItem as MenuItemType } from "@/lib/constants";
+
+// Ítem del menú cuyo contador de no leídas se muestra como una campanita —
+// se consulta una sola vez y se mantiene al día por Realtime, sin recargar
+// la página ni abrir el historial completo.
+const ITEM_NOTIFICACIONES = "personeros-notificaciones";
+
+function useNotificacionesNoLeidas(): number {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let activo = true;
+    const contar = async () => {
+      const { count: n } = await supabase
+        .from("notificaciones")
+        .select("id", { count: "exact", head: true })
+        .eq("leida", false);
+      if (activo) setCount(n ?? 0);
+    };
+    contar();
+
+    const canal = supabase
+      .channel("sidebar-notificaciones")
+      .on("postgres_changes", { event: "*", schema: "public", table: "notificaciones" }, contar)
+      .subscribe();
+
+    return () => { activo = false; supabase.removeChannel(canal); };
+  }, []);
+
+  return count;
+}
 
 interface SidebarProps {
   toggled: boolean;
@@ -32,6 +63,7 @@ export default function Sidebar({ toggled, setToggled, menuItems, color }: Sideb
   const [collapsed, setCollapsed] = useState(false);
   const [anchorEl, setAnchorEl]   = useState<null | HTMLElement>(null);
   const [mounted, setMounted]     = useState(false);
+  const noLeidas = useNotificacionesNoLeidas();
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -84,6 +116,8 @@ export default function Sidebar({ toggled, setToggled, menuItems, color }: Sideb
       );
     }
 
+    const mostrarBadge = item.id === ITEM_NOTIFICACIONES && noLeidas > 0;
+
     return (
       <MenuItem
         key={item.id}
@@ -96,8 +130,18 @@ export default function Sidebar({ toggled, setToggled, menuItems, color }: Sideb
           transition:       "all 0.18s ease",
         }}
       >
-        <span style={{ color: active ? "#ffffff" : "#cbd5e1", fontWeight: active ? 700 : 500 }}>
-          {item.nombre}
+        <span className="flex items-center justify-between gap-2">
+          <span style={{ color: active ? "#ffffff" : "#cbd5e1", fontWeight: active ? 700 : 500 }}>
+            {item.nombre}
+          </span>
+          {mostrarBadge && (
+            <span
+              className="flex-shrink-0 rounded-full text-[10px] font-bold flex items-center justify-center"
+              style={{ background: "#dc2626", color: "#fff", minWidth: 18, height: 18, padding: "0 5px" }}
+            >
+              {noLeidas > 99 ? "99+" : noLeidas}
+            </span>
+          )}
         </span>
       </MenuItem>
     );

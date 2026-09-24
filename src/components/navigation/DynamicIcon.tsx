@@ -67,6 +67,7 @@ import {
   DeleteOutline,
   TrendingUp,
   Quiz,
+  Notifications,
 } from "@mui/icons-material";
 
 interface DynamicIconProps {
@@ -145,6 +146,7 @@ const iconMap: Record<string, React.ReactNode> = {
   DeleteOutline: <DeleteOutline />,
   TrendingUp: <TrendingUp />,
   Quiz: <Quiz />,
+  Notifications: <Notifications />,
 };
 
 export default function DynamicIcon({ iconName, className }: DynamicIconProps) {

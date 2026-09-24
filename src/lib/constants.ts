@@ -212,6 +212,14 @@ export const MODULOS_PROGRAMAS_SOCIALES: MenuItem[] = [
         descripcion: "Registros diarios de personeros y proyección hacia el día de la elección",
         permisos: ["all_programas_sociales", "all", "campo", "personeros"],
       },
+      {
+        id: "personeros-notificaciones",
+        nombre: "Notificaciones",
+        ruta: "/programas-sociales/personeros/notificaciones",
+        icono: "Notifications",
+        descripcion: "Historial de personeros nuevos agregados a la campaña",
+        permisos: ["all_programas_sociales", "all", "campo", "personeros"],
+      },
     ],
   },
   {
