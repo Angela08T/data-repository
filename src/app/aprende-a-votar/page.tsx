@@ -230,16 +230,27 @@ export default function AprendeAVotarPage() {
 
   const porAmbito = agruparPorAmbito(partidos);
 
+  // Al marcar un partido, se limpia cualquier trazo suelto que haya quedado en
+  // las demás casillas de esa misma columna (no solo la que antes tenía el
+  // check verde) — así nunca se ve más de una casilla "tocada" a la vez.
   const marcarLima = (numeroLista: number) => {
-    if (marcaLima !== null && marcaLima !== numeroLista) {
-      setResetsLima((prev) => ({ ...prev, [marcaLima]: (prev[marcaLima] ?? 0) + 1 }));
-    }
+    setResetsLima((prev) => {
+      const next = { ...prev };
+      porAmbito.lima.forEach((p) => {
+        if (p.numero_lista !== numeroLista) next[p.numero_lista] = (next[p.numero_lista] ?? 0) + 1;
+      });
+      return next;
+    });
     setMarcaLima(numeroLista);
   };
   const marcarSjl = (numeroLista: number) => {
-    if (marcaSjl !== null && marcaSjl !== numeroLista) {
-      setResetsSjl((prev) => ({ ...prev, [marcaSjl]: (prev[marcaSjl] ?? 0) + 1 }));
-    }
+    setResetsSjl((prev) => {
+      const next = { ...prev };
+      porAmbito.sjl.forEach((p) => {
+        if (p.numero_lista !== numeroLista) next[p.numero_lista] = (next[p.numero_lista] ?? 0) + 1;
+      });
+      return next;
+    });
     setMarcaSjl(numeroLista);
   };
   const limpiarLima = () => { if (marcaLima !== null) setResetsLima((p) => ({ ...p, [marcaLima]: (p[marcaLima] ?? 0) + 1 })); setMarcaLima(null); };
