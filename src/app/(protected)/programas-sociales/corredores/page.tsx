@@ -161,6 +161,9 @@ export default function CorredoresPage() {
         .from("corredores")
         .select("*")
         .order("nombre_completo", { ascending: true })
+        // Desempate por una columna única: sin esto, con muchos nombres
+        // repetidos, una misma fila puede aparecer duplicada entre páginas.
+        .order("id", { ascending: true })
         .range(from, from + PAGE_SIZE - 1);
 
       if (err) { hayError = err.message; break; }

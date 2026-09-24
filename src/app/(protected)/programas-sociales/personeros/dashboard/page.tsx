@@ -309,7 +309,11 @@ export default function PersonerosDashboardPage() {
     while (true) {
       const { data: rows, error: err } = await supabase
         .from("personeros")
-        .select("nombres, apellido_paterno, apellido_materno, sexo, comuna, zona, telefono, fecha_nacimiento, numero_mesa, colegio_votacion")
+        .select("id, nombres, apellido_paterno, apellido_materno, sexo, comuna, zona, telefono, fecha_nacimiento, numero_mesa, colegio_votacion")
+        // Orden por una columna única (id): sin esto, con miles de filas y muchas
+        // repitiendo el mismo apellido, Postgres no garantiza el orden entre
+        // páginas y una misma fila puede aparecer dos veces o ninguna.
+        .order("id", { ascending: true })
         .range(from, from + PAGE_SIZE - 1);
 
       if (err) { hayError = err.message; break; }

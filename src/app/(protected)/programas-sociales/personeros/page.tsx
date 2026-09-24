@@ -360,6 +360,10 @@ export default function PersonerosPage() {
         .from("personeros")
         .select("*")
         .order("apellido_paterno", { ascending: true })
+        // Desempate por una columna única: con miles de filas y muchos apellidos
+        // repetidos, Postgres no garantiza el orden entre páginas sin esto, y una
+        // misma fila puede aparecer duplicada en la lista (o desaparecer).
+        .order("id", { ascending: true })
         .range(from, from + PAGE_SIZE - 1);
 
       if (err) { hayError = err.message; break; }

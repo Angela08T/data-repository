@@ -109,6 +109,9 @@ export default function DirigentesPage() {
         .from("dirigentes")
         .select("*")
         .order("comuna", { ascending: true })
+        // Desempate por una columna única: sin esto, con muchas filas de la
+        // misma comuna, una fila puede aparecer duplicada entre páginas.
+        .order("id", { ascending: true })
         .range(from, from + PAGE_SIZE - 1);
 
       if (err) { hayError = err.message; break; }
