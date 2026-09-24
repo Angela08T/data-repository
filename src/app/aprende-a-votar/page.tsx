@@ -69,9 +69,10 @@ function validarMarca(trazos: Punto[][], ancho: number, alto: number): boolean {
 
 // ── Casilla marcable: el dedo dibuja dentro del recuadro (nunca puede salirse,
 // las coordenadas quedan ancladas al tamaño de la casilla) ──────────────────
-function CasillaMarcable({ marcado, resetSignal, onValidar, onInvalido, onLimpiar }: {
-  marcado: boolean; resetSignal: number;
+function CasillaMarcable({ marcado, bloqueada, resetSignal, onValidar, onInvalido, onLimpiar, onOcupar, onDesocupar }: {
+  marcado: boolean; bloqueada: boolean; resetSignal: number;
   onValidar: () => void; onInvalido: () => void; onLimpiar: () => void;
+  onOcupar: () => void; onDesocupar: () => void;
 }) {
   const [trazosListos, setTrazosListos] = useState<Punto[][]>([]);
   const [trazoActivo, setTrazoActivo] = useState<Punto[] | null>(null);
@@ -93,6 +94,7 @@ function CasillaMarcable({ marcado, resetSignal, onValidar, onInvalido, onLimpia
 
   function handleDown(e: React.PointerEvent) {
     if (marcado) { onLimpiar(); return; }
+    if (bloqueada) return;
     (e.target as Element).setPointerCapture(e.pointerId);
     setTrazoActivo([puntoRelativo(e)]);
   }
@@ -115,8 +117,12 @@ function CasillaMarcable({ marcado, resetSignal, onValidar, onInvalido, onLimpia
       setFlashError(true);
       setTimeout(() => setFlashError(false), 650);
       onInvalido();
+      onDesocupar();
     } else {
+      // Primer trazo, todavía incompleto: esta casilla queda "ocupada" y
+      // bloquea a las demás hasta que se complete la marca o se borre.
       setTrazosListos(nuevos);
+      onOcupar();
     }
   }
 
@@ -129,7 +135,7 @@ function CasillaMarcable({ marcado, resetSignal, onValidar, onInvalido, onLimpia
       <svg
         ref={svgRef}
         className="absolute inset-0 w-full h-full"
-        style={{ touchAction: "none", cursor: marcado ? "pointer" : "crosshair" }}
+        style={{ touchAction: "none", cursor: marcado ? "pointer" : bloqueada ? "not-allowed" : "crosshair", opacity: bloqueada ? 0.45 : 1 }}
         onPointerDown={handleDown} onPointerMove={handleMove} onPointerUp={handleUp} onPointerCancel={handleUp}
       >
         {trazosListos.map((t, i) => (
@@ -147,26 +153,28 @@ function CasillaMarcable({ marcado, resetSignal, onValidar, onInvalido, onLimpia
 }
 
 // ── Fila de un partido: símbolo real + nombre + casilla ──────────────────────
-function FilaPartido({ partido, marcado, resetSignal, onValidar, onInvalido, onLimpiar }: {
-  partido: PartidoEleccion; marcado: boolean; resetSignal: number;
+function FilaPartido({ partido, marcado, bloqueada, resetSignal, onValidar, onInvalido, onLimpiar, onOcupar, onDesocupar }: {
+  partido: PartidoEleccion; marcado: boolean; bloqueada: boolean; resetSignal: number;
   onValidar: () => void; onInvalido: () => void; onLimpiar: () => void;
+  onOcupar: () => void; onDesocupar: () => void;
 }) {
   return (
     <div className="flex items-center gap-1.5 sm:gap-3 px-1.5 sm:px-3 py-1.5 sm:py-2 border-b border-black/10 last:border-b-0">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={`/simbolos-partidos/${partido.ambito}-${partido.numero_lista}.png`} alt="" className="w-6 h-6 sm:w-9 sm:h-9 flex-shrink-0" draggable={false} />
       <span className="flex-1 min-w-0 text-[9.5px] sm:text-[13px] font-bold uppercase leading-tight text-black">{partido.nombre}</span>
-      <CasillaMarcable marcado={marcado} resetSignal={resetSignal} onValidar={onValidar} onInvalido={onInvalido} onLimpiar={onLimpiar} />
+      <CasillaMarcable marcado={marcado} bloqueada={bloqueada} resetSignal={resetSignal} onValidar={onValidar} onInvalido={onInvalido} onLimpiar={onLimpiar} onOcupar={onOcupar} onDesocupar={onDesocupar} />
     </div>
   );
 }
 
 interface SeccionProps {
   titulo: string; subtitulo: string; colorFondo: string; colorHeader: string;
-  partidos: PartidoEleccion[]; marcaActual: number | null; resets: Record<number, number>;
+  partidos: PartidoEleccion[]; marcaActual: number | null; ocupada: number | null; resets: Record<number, number>;
   onValidar: (numeroLista: number) => void; onInvalido: () => void; onLimpiar: () => void;
+  onOcupar: (numeroLista: number) => void; onDesocupar: (numeroLista: number) => void;
 }
-function SeccionCedula({ titulo, subtitulo, colorFondo, colorHeader, partidos, marcaActual, resets, onValidar, onInvalido, onLimpiar }: SeccionProps) {
+function SeccionCedula({ titulo, subtitulo, colorFondo, colorHeader, partidos, marcaActual, ocupada, resets, onValidar, onInvalido, onLimpiar, onOcupar, onDesocupar }: SeccionProps) {
   return (
     <div className="rounded-2xl overflow-hidden border border-black/20 flex-1 min-w-0 shadow-lg">
       <div className="text-center py-1.5 sm:py-2 px-1" style={{ background: colorHeader }}>
@@ -183,10 +191,13 @@ function SeccionCedula({ titulo, subtitulo, colorFondo, colorHeader, partidos, m
             key={p.id}
             partido={p}
             marcado={marcaActual === p.numero_lista}
+            bloqueada={ocupada !== null && ocupada !== p.numero_lista}
             resetSignal={resets[p.numero_lista] ?? 0}
             onValidar={() => onValidar(p.numero_lista)}
             onInvalido={onInvalido}
             onLimpiar={onLimpiar}
+            onOcupar={() => onOcupar(p.numero_lista)}
+            onDesocupar={() => onDesocupar(p.numero_lista)}
           />
         ))}
       </div>
@@ -204,6 +215,10 @@ export default function AprendeAVotarPage() {
 
   const [marcaLima, setMarcaLima] = useState<number | null>(null);
   const [marcaSjl, setMarcaSjl] = useState<number | null>(null);
+  // Casilla que tiene un trazo sin completar todavía (ni marcada ni vacía):
+  // mientras exista, bloquea a las demás casillas de su columna.
+  const [pendienteLima, setPendienteLima] = useState<number | null>(null);
+  const [pendienteSjl, setPendienteSjl] = useState<number | null>(null);
   const [resetsLima, setResetsLima] = useState<Record<number, number>>({});
   const [resetsSjl, setResetsSjl] = useState<Record<number, number>>({});
   const [intentosInvalidos, setIntentosInvalidos] = useState(0);
@@ -241,6 +256,7 @@ export default function AprendeAVotarPage() {
       });
       return next;
     });
+    setPendienteLima(null);
     setMarcaLima(numeroLista);
   };
   const marcarSjl = (numeroLista: number) => {
@@ -251,10 +267,14 @@ export default function AprendeAVotarPage() {
       });
       return next;
     });
+    setPendienteSjl(null);
     setMarcaSjl(numeroLista);
   };
-  const limpiarLima = () => { if (marcaLima !== null) setResetsLima((p) => ({ ...p, [marcaLima]: (p[marcaLima] ?? 0) + 1 })); setMarcaLima(null); };
-  const limpiarSjl = () => { if (marcaSjl !== null) setResetsSjl((p) => ({ ...p, [marcaSjl]: (p[marcaSjl] ?? 0) + 1 })); setMarcaSjl(null); };
+  const limpiarLima = () => { if (marcaLima !== null) setResetsLima((p) => ({ ...p, [marcaLima]: (p[marcaLima] ?? 0) + 1 })); setPendienteLima(null); setMarcaLima(null); };
+  const limpiarSjl = () => { if (marcaSjl !== null) setResetsSjl((p) => ({ ...p, [marcaSjl]: (p[marcaSjl] ?? 0) + 1 })); setPendienteSjl(null); setMarcaSjl(null); };
+
+  const ocupadaLima = marcaLima ?? pendienteLima;
+  const ocupadaSjl = marcaSjl ?? pendienteSjl;
 
   const marcarInvalido = () => {
     setIntentosInvalidos((n) => n + 1);
@@ -356,14 +376,16 @@ export default function AprendeAVotarPage() {
               <SeccionCedula
                 titulo="PROVINCIA DE LIMA METROPOLITANA" subtitulo="Elección provincial"
                 colorFondo="#fbdcee" colorHeader="#3d3d3d"
-                partidos={porAmbito.lima} marcaActual={marcaLima} resets={resetsLima}
+                partidos={porAmbito.lima} marcaActual={marcaLima} ocupada={ocupadaLima} resets={resetsLima}
                 onValidar={marcarLima} onInvalido={marcarInvalido} onLimpiar={limpiarLima}
+                onOcupar={setPendienteLima} onDesocupar={(n) => setPendienteLima((prev) => (prev === n ? null : prev))}
               />
               <SeccionCedula
                 titulo="DISTRITO DE SAN JUAN DE LURIGANCHO" subtitulo="Elección distrital · la que más nos importa"
                 colorFondo="#cceafe" colorHeader="#1d3d5c"
-                partidos={porAmbito.sjl} marcaActual={marcaSjl} resets={resetsSjl}
+                partidos={porAmbito.sjl} marcaActual={marcaSjl} ocupada={ocupadaSjl} resets={resetsSjl}
                 onValidar={marcarSjl} onInvalido={marcarInvalido} onLimpiar={limpiarSjl}
+                onOcupar={setPendienteSjl} onDesocupar={(n) => setPendienteSjl((prev) => (prev === n ? null : prev))}
               />
             </div>
 
