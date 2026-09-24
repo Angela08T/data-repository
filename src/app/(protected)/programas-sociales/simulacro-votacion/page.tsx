@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { CircularProgress, IconButton, Tooltip } from "@mui/material";
 import { supabase } from "@/lib/supabase";
 import { exportToExcel } from "@/lib/utils/exportExcel";
@@ -50,69 +50,73 @@ function StatCard({ label, value, subtitle, icon, color }: {
   );
 }
 
-// Mide el ancho real de la tarjeta (ResizeObserver) para que las barras se
-// adapten a lo que hay de verdad, en vez de un ancho fijo que a veces deja un
-// hueco vacío enorme (pocos días) y otras veces se queda corto (muchos días).
-function useAnchoContenedor(): [React.RefObject<HTMLDivElement | null>, number] {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [ancho, setAncho] = useState(900);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const medir = () => setAncho(Math.round(el.getBoundingClientRect().width));
-    medir();
-    const observer = new ResizeObserver(medir);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-  return [ref, ancho];
-}
-
-function BarrasResultado({ puntos }: { puntos: PuntoDiario[] }) {
+// ── Donut con el total acumulado sin errores vs con errores — siempre se ve
+// "lleno" y equilibrado sin importar cuántos intentos haya en total ────────
+function DonutResultado({ sinErrores, conErrores }: { sinErrores: number; conErrores: number }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const raf = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(raf); }, []);
-  const [contRef, anchoDisponible] = useAnchoContenedor();
 
-  const alturaSvg = 200, padB = 26, padT = 16;
-  const plotH = alturaSvg - padB - padT;
-  const gap = 10;
-  const anchoBarraMin = 26, anchoBarraMax = 64;
-  const anchoNecesario = puntos.length * (anchoBarraMin + gap) + gap;
-  const anchoBarra = anchoDisponible > anchoNecesario
-    ? Math.min(anchoBarraMax, (anchoDisponible - gap * (puntos.length + 1)) / puntos.length)
-    : anchoBarraMin;
-  const anchoSvg = puntos.length * (anchoBarra + gap) + gap;
-  const max = Math.max(...puntos.map((p) => p.sinErrores + p.conErrores), 1);
+  const total = sinErrores + conErrores;
+  const r = 58, cx = 80, cy = 80, grosor = 20;
+  const circunferencia = 2 * Math.PI * r;
+  const pctOk = total > 0 ? sinErrores / total : 0;
+  const largoOk = mounted ? circunferencia * pctOk : 0;
+  const largoErr = mounted ? circunferencia * (1 - pctOk) : 0;
 
   return (
-    <div ref={contRef} className="overflow-x-auto">
-      <div className="flex justify-center">
-        <svg viewBox={`0 0 ${anchoSvg} ${alturaSvg}`} width={anchoSvg} height={alturaSvg} style={{ display: "block" }}>
-          <line x1={0} x2={anchoSvg} y1={alturaSvg - padB} y2={alturaSvg - padB} stroke="rgba(148,163,184,0.22)" strokeWidth={1} />
-          {puntos.map((p, i) => {
-            const total = p.sinErrores + p.conErrores;
-            const hOk = mounted ? (p.sinErrores / max) * plotH : 0;
-            const hErr = mounted ? (p.conErrores / max) * plotH : 0;
-            const x = gap + i * (anchoBarra + gap);
-            const yBase = alturaSvg - padB;
-            const yOkTop = yBase - hOk;
-            const yErrTop = yOkTop - hErr;
-            return (
-              <g key={p.key}>
-                {total > 0 && <text x={x + anchoBarra / 2} y={yErrTop - 6} textAnchor="middle" fontSize={11} fontWeight={700} fill="#eef2ff">{total}</text>}
-                {p.conErrores > 0 && <rect x={x} y={yErrTop} width={anchoBarra} height={hErr} rx={4} fill="#f59e0b" style={{ transition: "height 700ms ease-out, y 700ms ease-out" }} />}
-                {p.sinErrores > 0 && <rect x={x} y={yOkTop} width={anchoBarra} height={hOk} rx={4} fill="#4ade80" style={{ transition: "height 700ms ease-out, y 700ms ease-out" }} />}
-                {total === 0 && <rect x={x} y={yBase - 2} width={anchoBarra} height={2} rx={1} fill="rgba(148,163,184,0.25)" />}
-                <text x={x + anchoBarra / 2} y={alturaSvg - padB + 16} textAnchor="middle" fontSize={10} fill="#94a3b8" fontWeight={600}>{etiquetaDia(p.fecha)}</text>
-              </g>
-            );
-          })}
-        </svg>
+    <div className="flex flex-col items-center justify-center flex-shrink-0 py-2">
+      <svg width={160} height={160} viewBox="0 0 160 160">
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(148,163,184,0.14)" strokeWidth={grosor} />
+        {total > 0 && (
+          <>
+            <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f59e0b" strokeWidth={grosor} strokeLinecap="round"
+              strokeDasharray={`${largoErr} ${circunferencia}`} strokeDashoffset={-largoOk}
+              transform={`rotate(-90 ${cx} ${cy})`} style={{ transition: "stroke-dasharray 800ms ease-out, stroke-dashoffset 800ms ease-out" }} />
+            <circle cx={cx} cy={cy} r={r} fill="none" stroke="#4ade80" strokeWidth={grosor} strokeLinecap="round"
+              strokeDasharray={`${largoOk} ${circunferencia}`}
+              transform={`rotate(-90 ${cx} ${cy})`} style={{ transition: "stroke-dasharray 800ms ease-out" }} />
+          </>
+        )}
+        <text x={cx} y={cy - 3} textAnchor="middle" fontSize={28} fontWeight={800} fill="#eef2ff">{total}</text>
+        <text x={cx} y={cy + 18} textAnchor="middle" fontSize={10.5} fill="#94a3b8">practicaron</text>
+      </svg>
+      <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#4ade80" }} /> Sin errores</span>
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#f59e0b" }} /> Con errores</span>
       </div>
-      <div className="flex items-center gap-4 justify-center mt-1 text-xs text-gray-400">
-        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#4ade80" }} /> Sin errores (ya sabían)</span>
-        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: "#f59e0b" }} /> Con errores (aprendieron)</span>
-      </div>
+    </div>
+  );
+}
+
+// ── Barras horizontales por día: cada fila siempre llena el ancho de la
+// tarjeta (relativa al día con más intentos), así nunca queda un hueco vacío
+// gigante como pasaba con las barras verticales cuando hay pocos días ──────
+function FilasDiarias({ puntos }: { puntos: PuntoDiario[] }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { const raf = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(raf); }, []);
+
+  const max = Math.max(...puntos.map((p) => p.sinErrores + p.conErrores), 1);
+  const filas = [...puntos].reverse();
+
+  return (
+    <div className="flex-1 min-w-0 space-y-2.5 max-h-[280px] overflow-y-auto pr-1">
+      {filas.map((p) => {
+        const total = p.sinErrores + p.conErrores;
+        const anchoPct = mounted ? (total / max) * 100 : 0;
+        return (
+          <div key={p.key} className="flex items-center gap-3">
+            <span className="w-12 flex-shrink-0 text-xs font-semibold text-gray-400">{etiquetaDia(p.fecha)}</span>
+            <div className="flex-1 h-6 rounded-full overflow-hidden" style={{ background: "rgba(148,163,184,0.10)" }}>
+              <div className="h-full flex rounded-full overflow-hidden" style={{ width: `${anchoPct}%`, transition: "width 700ms ease-out" }}>
+                {p.sinErrores > 0 && <div style={{ flexGrow: p.sinErrores, background: "#4ade80" }} />}
+                {p.conErrores > 0 && <div style={{ flexGrow: p.conErrores, background: "#f59e0b" }} />}
+                {total === 0 && <div style={{ flexGrow: 1, background: "rgba(148,163,184,0.25)" }} />}
+              </div>
+            </div>
+            <span className="w-7 flex-shrink-0 text-xs font-bold text-right tabular-nums" style={{ color: "#eef2ff" }}>{total}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -251,8 +255,10 @@ export default function SimulacroVotacionPage() {
                 ))}
               </div>
             </div>
-            <div className="p-2">
-              <BarrasResultado puntos={serieVisible} />
+            <div className="p-4 flex flex-col sm:flex-row items-stretch gap-2 sm:gap-6">
+              <DonutResultado sinErrores={serieVisible.reduce((s, p) => s + p.sinErrores, 0)} conErrores={serieVisible.reduce((s, p) => s + p.conErrores, 0)} />
+              <div className="hidden sm:block w-px my-2" style={{ background: "rgba(148,163,184,0.14)" }} />
+              <FilasDiarias puntos={serieVisible} />
             </div>
           </div>
 
