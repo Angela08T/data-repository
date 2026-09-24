@@ -1331,7 +1331,14 @@ export default function PersonerosPage() {
 
                       {/* Tipo de registro */}
                       <td className="px-4 py-3">
-                        <RegistroBadge tipo={p.tipo_registro} />
+                        <EditableCell
+                          value={esPorRegistrador(p) ? "registrador" : "directo"}
+                          editable={puedeAgregar}
+                          type="select"
+                          options={[{ value: "directo", label: "Directo" }, { value: "registrador", label: "Registrador" }]}
+                          displayValue={<RegistroBadge tipo={p.tipo_registro} />}
+                          onSave={(v) => handleActualizarCampo(p.id, "tipo_registro", v)}
+                        />
                       </td>
 
                       {/* Registrador */}
