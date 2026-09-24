@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { CircularProgress, IconButton, Tooltip } from "@mui/material";
 import { supabase } from "@/lib/supabase";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -71,6 +71,25 @@ function nextNiceMax(n: number): number {
   return niceNorm * pow;
 }
 
+// Mide el ancho real del contenedor para que las barras/celdas se dibujen a
+// tamaño 1:1 (sin CSS que las estire): con pocos días de datos, se agrandan
+// para llenar el espacio disponible; con muchos, se mantienen a su tamaño
+// mínimo legible y el contenedor scrollea en vez de aplastarlas.
+function useAnchoContenedor(): [React.RefObject<HTMLDivElement | null>, number] {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [ancho, setAncho] = useState(900);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const medir = () => setAncho(Math.round(el.getBoundingClientRect().width));
+    medir();
+    const observer = new ResizeObserver(medir);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, ancho];
+}
+
 const COLOR_DIRECTO = "#2dd4bf";
 const COLOR_REGISTRADOR = "#f59e0b";
 const COLOR_TOTAL = "#3b82f6";
@@ -97,17 +116,21 @@ function StatCard({ label, value, subtitle, icon, color }: {
 function BarrasApiladas({ puntos }: { puntos: PuntoDiario[] }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const raf = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(raf); }, []);
+  const [contRef, anchoDisponible] = useAnchoContenedor();
 
   const alturaSvg = 220;
   const padB = 26, padT = 20;
   const plotH = alturaSvg - padB - padT;
-  const anchoBarra = 26, gap = 10;
-  const anchoSvg = Math.max(600, puntos.length * (anchoBarra + gap) + gap);
+  const gap = 10;
+  const anchoBarraMin = 22;
+  const anchoNecesario = puntos.length * (anchoBarraMin + gap) + gap;
+  const anchoSvg = Math.max(anchoNecesario, anchoDisponible);
+  const anchoBarra = anchoSvg > anchoNecesario ? (anchoSvg - gap * (puntos.length + 1)) / puntos.length : anchoBarraMin;
   const max = Math.max(...puntos.map((p) => p.nuevos), 1);
 
   return (
-    <div className="overflow-x-auto">
-      <svg viewBox={`0 0 ${anchoSvg} ${alturaSvg}`} style={{ display: "block", width: "100%", minWidth: anchoSvg, height: "auto" }}>
+    <div ref={contRef} className="overflow-x-auto">
+      <svg viewBox={`0 0 ${anchoSvg} ${alturaSvg}`} width={anchoSvg} height={alturaSvg} style={{ display: "block" }}>
         <line x1={0} x2={anchoSvg} y1={alturaSvg - padB} y2={alturaSvg - padB} stroke="rgba(148,163,184,0.22)" strokeWidth={1} />
         {puntos.map((p, i) => {
           const hDirecto = mounted ? (p.directo / max) * plotH : 0;
@@ -152,6 +175,8 @@ function BarrasApiladas({ puntos }: { puntos: PuntoDiario[] }) {
 // registros se distingue con claridad aunque exista un día con miles (una
 // carga masiva), que en una barra normal aplastaría visualmente a todos los demás.
 function MapaCalor({ puntos }: { puntos: PuntoDiario[] }) {
+  const [contRef, anchoDisponible] = useAnchoContenedor();
+
   if (puntos.length === 0) return null;
 
   const primerDia = puntos[0].fecha;
@@ -172,8 +197,16 @@ function MapaCalor({ puntos }: { puntos: PuntoDiario[] }) {
     return `rgba(59,130,246,${alpha.toFixed(2)})`;
   }
 
-  const celda = 15, gap = 3;
-  const width = totalSemanas * (celda + gap) + 24;
+  const gap = 3, margenIzq = 24;
+  const celdaMin = 13;
+  // La celda crece para llenar el ancho disponible (hasta un tope legible),
+  // en vez de quedar diminuta a la izquierda con un espacio vacío enorme.
+  const celdaMax = 22;
+  const necesario = totalSemanas * (celdaMin + gap) + margenIzq;
+  const celda = anchoDisponible > necesario
+    ? Math.min(celdaMax, (anchoDisponible - margenIzq) / totalSemanas - gap)
+    : celdaMin;
+  const width = Math.max(anchoDisponible, totalSemanas * (celda + gap) + margenIzq);
   const height = 7 * (celda + gap) + 16;
 
   const semanas = Array.from({ length: totalSemanas }, (_, s) => s);
@@ -190,10 +223,10 @@ function MapaCalor({ puntos }: { puntos: PuntoDiario[] }) {
   }
 
   return (
-    <div className="overflow-x-auto px-4 py-4">
-      <svg viewBox={`0 0 ${width} ${height}`} style={{ display: "block", width: "100%", minWidth: width, height: "auto" }}>
+    <div ref={contRef} className="overflow-x-auto px-4 py-4">
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} style={{ display: "block" }}>
         {etiquetasMes.map(({ semana, texto }) => (
-          <text key={semana} x={24 + semana * (celda + gap)} y={10} fontSize={9} fill="#94a3b8" fontWeight={600}>{texto}</text>
+          <text key={semana} x={margenIzq + semana * (celda + gap)} y={10} fontSize={9} fill="#94a3b8" fontWeight={600}>{texto}</text>
         ))}
         {DIAS_SEMANA.map((d, i) => (
           (i % 2 === 1) && <text key={d} x={0} y={16 + 16 + i * (celda + gap) + celda * 0.7} fontSize={9} fill="#94a3b8">{d}</text>
@@ -205,14 +238,14 @@ function MapaCalor({ puntos }: { puntos: PuntoDiario[] }) {
             const punto = porClave.get(key);
             if (!punto) return null;
             return (
-              <Tooltip key={key} title={`${etiquetaDia(fecha)}: ${punto.nuevos} registro${punto.nuevos !== 1 ? "s" : ""}`}>
-                <rect
-                  x={24 + s * (celda + gap)} y={16 + dow * (celda + gap)}
-                  width={celda} height={celda} rx={3}
-                  fill={colorPara(punto.nuevos)}
-                  stroke="rgba(148,163,184,0.12)"
-                />
-              </Tooltip>
+              <rect key={key}
+                x={margenIzq + s * (celda + gap)} y={16 + dow * (celda + gap)}
+                width={celda} height={celda} rx={3}
+                fill={colorPara(punto.nuevos)}
+                stroke="rgba(148,163,184,0.12)"
+              >
+                <title>{`${etiquetaDia(fecha)}: ${punto.nuevos} registro${punto.nuevos !== 1 ? "s" : ""}`}</title>
+              </rect>
             );
           })
         ))}
@@ -381,7 +414,7 @@ function BarrasPorDiaSemana({ promedios }: { promedios: number[] }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const raf = requestAnimationFrame(() => setMounted(true)); return () => cancelAnimationFrame(raf); }, []);
 
-  const width = 360, height = 180, padB = 24, padT = 10;
+  const width = 360, height = 190, padB = 24, padT = 22;
   const plotH = height - padB - padT;
   const gap = 12;
   const anchoBarra = (width - gap * 8) / 7;
@@ -396,7 +429,7 @@ function BarrasPorDiaSemana({ promedios }: { promedios: number[] }) {
         const y = height - padB - h;
         return (
           <g key={i}>
-            <text x={x + anchoBarra / 2} y={y - 6} textAnchor="middle" fontSize={11} fontWeight={700} fill="#eef2ff">{v.toFixed(1)}</text>
+            <text x={x + anchoBarra / 2} y={Math.max(y - 6, padT - 6)} textAnchor="middle" fontSize={11} fontWeight={700} fill="#eef2ff">{v.toFixed(1)}</text>
             <rect x={x} y={y} width={anchoBarra} height={h} rx={5} fill="#818cf8"
               style={{ transition: "height 700ms ease-out, y 700ms ease-out" }} />
             <text x={x + anchoBarra / 2} y={height - padB + 15} textAnchor="middle" fontSize={10} fill="#94a3b8" fontWeight={600}>
