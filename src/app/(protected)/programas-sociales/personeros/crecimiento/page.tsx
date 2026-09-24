@@ -200,13 +200,16 @@ function MapaCalor({ puntos }: { puntos: PuntoDiario[] }) {
   const gap = 3, margenIzq = 24;
   const celdaMin = 13;
   // La celda crece para llenar el ancho disponible (hasta un tope legible),
-  // en vez de quedar diminuta a la izquierda con un espacio vacío enorme.
-  const celdaMax = 22;
+  // en vez de quedar diminuta a la izquierda con un espacio vacío enorme. Pero
+  // el lienzo (viewBox) siempre se ajusta a lo que de verdad se dibuja: si al
+  // tope de celda todavía sobra ancho, ese sobrante se centra en la tarjeta
+  // en vez de quedar como canvas vacío pegado a la derecha.
+  const celdaMax = 26;
   const necesario = totalSemanas * (celdaMin + gap) + margenIzq;
   const celda = anchoDisponible > necesario
     ? Math.min(celdaMax, (anchoDisponible - margenIzq) / totalSemanas - gap)
     : celdaMin;
-  const width = Math.max(anchoDisponible, totalSemanas * (celda + gap) + margenIzq);
+  const width = totalSemanas * (celda + gap) + margenIzq;
   const height = 7 * (celda + gap) + 16;
 
   const semanas = Array.from({ length: totalSemanas }, (_, s) => s);
@@ -223,8 +226,8 @@ function MapaCalor({ puntos }: { puntos: PuntoDiario[] }) {
   }
 
   return (
-    <div ref={contRef} className="overflow-x-auto px-4 py-4">
-      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} style={{ display: "block" }}>
+    <div ref={contRef} className="overflow-x-auto px-4 py-4 flex justify-center">
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} style={{ display: "block", flexShrink: 0 }}>
         {etiquetasMes.map(({ semana, texto }) => (
           <text key={semana} x={margenIzq + semana * (celda + gap)} y={10} fontSize={9} fill="#94a3b8" fontWeight={600}>{texto}</text>
         ))}
@@ -632,7 +635,7 @@ export default function CrecimientoPersonerosPage() {
             <LineaAcumulada historico={serieCompleta} proyeccion={proyeccion} fechaEleccion={fechaEleccionLima} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             <div className="glow-card rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-[rgba(148,163,184,0.14)] flex items-center gap-2">
                 <DonutLargeIcon sx={{ fontSize: 18, color: "#94a3b8" }} />
