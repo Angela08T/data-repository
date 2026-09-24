@@ -33,6 +33,7 @@ import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import SendMessageModal, { Contacto } from "@/components/messaging/SendMessageModal";
 import SuccessToast from "@/components/feedback/SuccessToast";
 import AgregarPersoneroModal, { PersoneroCreado } from "@/components/personeros/AgregarPersoneroModal";
+import NotificationBell from "@/components/notificaciones/NotificationBell";
 import EditableCell from "@/components/personeros/EditableCell";
 import ResultadoLlamadaSelect from "@/components/shared/ResultadoLlamadaSelect";
 import { MOTIVOS_ELIMINACION, motivoInfo } from "@/lib/motivosEliminacion";
@@ -815,6 +816,7 @@ export default function PersonerosPage() {
                 </IconButton>
               </Tooltip>
             )}
+            <NotificationBell />
           </div>
 
           <Popover

@@ -3,32 +3,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { CircularProgress, IconButton, Tooltip } from "@mui/material";
 import { supabase } from "@/lib/supabase";
+import { tiempoRelativo, type NotificacionPersonero as Notificacion } from "@/lib/hooks/useNotificaciones";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import MarkEmailUnreadIcon from "@mui/icons-material/MarkEmailUnread";
 import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
-
-interface Notificacion {
-  id: string;
-  tipo: string;
-  mensaje: string;
-  personero_id: string | null;
-  leida: boolean;
-  creado_en: string;
-}
-
-function tiempoRelativo(fecha: Date): string {
-  const diffMs = Date.now() - fecha.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return "justo ahora";
-  if (diffMin < 60) return `hace ${diffMin} min`;
-  const diffH = Math.floor(diffMin / 60);
-  if (diffH < 24) return `hace ${diffH} h`;
-  const diffD = Math.floor(diffH / 24);
-  if (diffD < 7) return `hace ${diffD} d`;
-  return fecha.toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" });
-}
 
 function StatCard({ label, value, subtitle, icon, color }: {
   label: string; value: string | number; subtitle?: string; icon: React.ReactNode; color: string;

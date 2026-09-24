@@ -10,7 +10,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { logout } from "@/redux/slices/authSlice";
 import { showConfirm } from "@/lib/utils/swalConfig";
-import { supabase } from "@/lib/supabase";
+import { useNotificacionesNoLeidas } from "@/lib/hooks/useNotificaciones";
 import DynamicIcon from "./DynamicIcon";
 import type { MenuItem as MenuItemType } from "@/lib/constants";
 
@@ -18,31 +18,6 @@ import type { MenuItem as MenuItemType } from "@/lib/constants";
 // se consulta una sola vez y se mantiene al día por Realtime, sin recargar
 // la página ni abrir el historial completo.
 const ITEM_NOTIFICACIONES = "personeros-notificaciones";
-
-function useNotificacionesNoLeidas(): number {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    let activo = true;
-    const contar = async () => {
-      const { count: n } = await supabase
-        .from("notificaciones")
-        .select("id", { count: "exact", head: true })
-        .eq("leida", false);
-      if (activo) setCount(n ?? 0);
-    };
-    contar();
-
-    const canal = supabase
-      .channel("sidebar-notificaciones")
-      .on("postgres_changes", { event: "*", schema: "public", table: "notificaciones" }, contar)
-      .subscribe();
-
-    return () => { activo = false; supabase.removeChannel(canal); };
-  }, []);
-
-  return count;
-}
 
 interface SidebarProps {
   toggled: boolean;
