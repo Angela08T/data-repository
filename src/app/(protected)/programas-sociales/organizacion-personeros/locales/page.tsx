@@ -20,6 +20,8 @@ import SchoolIcon from "@mui/icons-material/School";
 import HowToVoteIcon from "@mui/icons-material/HowToVote";
 import GroupsIcon from "@mui/icons-material/Groups";
 import PersonSearchIcon from "@mui/icons-material/PersonSearch";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 interface Local {
   id: string;
@@ -77,6 +79,74 @@ function StatCard({ label, value, subtitle, icon, color }: {
         <p className="text-2xl font-black leading-tight tabular-nums" style={{ color: "#eef2ff" }}>{value}</p>
         {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
       </div>
+    </div>
+  );
+}
+
+interface LocalConDeficit extends Local {
+  requeridos: number;
+  registrados: number;
+  faltan: number;
+}
+
+// Convierte el cálculo de "faltan" (que ya existía, enterrado en la tabla) en
+// una alerta imposible de pasar por alto: los locales más descubiertos
+// primero, sin importar el filtro de comuna/búsqueda que esté activo abajo.
+function AlertaCobertura({ locales }: { locales: LocalConDeficit[] }) {
+  const [expandido, setExpandido] = useState(false);
+
+  if (locales.length === 0) {
+    return (
+      <div className="flex items-center gap-3 px-5 py-4 rounded-2xl" style={{ background: "rgba(74,222,128,0.10)", border: "1px solid rgba(74,222,128,0.3)" }}>
+        <CheckCircleIcon sx={{ color: "#4ade80" }} />
+        <p className="text-sm font-semibold" style={{ color: "#bbf7d0" }}>Todos los locales tienen la cobertura de personeros requerida. Buen trabajo.</p>
+      </div>
+    );
+  }
+
+  const totalFaltan = locales.reduce((s, l) => s + l.faltan, 0);
+  const visibles = expandido ? locales : locales.slice(0, 6);
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.3)" }}>
+      <div className="flex items-center gap-3 px-5 py-4 border-b" style={{ borderColor: "rgba(248,113,113,0.2)" }}>
+        <WarningAmberIcon sx={{ color: "#f87171" }} />
+        <div>
+          <p className="text-sm font-black" style={{ color: "#fecaca" }}>
+            {locales.length} local{locales.length !== 1 ? "es" : ""} sin la cobertura de personeros requerida
+          </p>
+          <p className="text-xs" style={{ color: "#fca5a5" }}>
+            Faltan {numberFmt.format(totalFaltan)} personeros en total — ordenados de mayor a menor urgencia.
+          </p>
+        </div>
+      </div>
+      <div className="divide-y" style={{ borderColor: "rgba(248,113,113,0.14)" }}>
+        {visibles.map((l, i) => (
+          <div key={l.id} className="flex items-center gap-3 px-5 py-3">
+            <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0"
+              style={{ background: "rgba(248,113,113,0.18)", color: "#f87171" }}>{i + 1}</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold truncate" style={{ color: "#eef2ff" }}>{l.nombre}</p>
+              <p className="text-xs text-gray-400">Comuna {l.comuna}{l.direccion ? ` · ${l.direccion}` : ""}</p>
+            </div>
+            <span className="text-sm font-black tabular-nums flex-shrink-0" style={{ color: "#f87171" }}>
+              Faltan {numberFmt.format(l.faltan)}
+            </span>
+            <Tooltip title="Ver en el mapa">
+              <IconButton size="small" component="a" href={urlMapa(l)} target="_blank" rel="noopener noreferrer">
+                <PlaceIcon sx={{ fontSize: 16, color: "#60a5fa" }} />
+              </IconButton>
+            </Tooltip>
+          </div>
+        ))}
+      </div>
+      {locales.length > 6 && (
+        <button onClick={() => setExpandido((v) => !v)}
+          className="w-full text-center text-xs font-semibold py-2.5 border-t transition-colors"
+          style={{ color: "#f87171", borderColor: "rgba(248,113,113,0.14)" }}>
+          {expandido ? "Ver menos ↑" : `Ver los ${locales.length - 6} restantes ↓`}
+        </button>
+      )}
     </div>
   );
 }
@@ -266,17 +336,29 @@ export default function LocalesVotacionPage() {
     return k && !nombresLocales.has(k);
   }).length;
 
+  // Déficit por local SIN aplicar el filtro de comuna/búsqueda de la tabla de
+  // abajo — la alerta de cobertura siempre debe reflejar la realidad completa,
+  // sin importar qué esté mirando el usuario en ese momento en la tabla.
+  const filasCompletas = useMemo(() => {
+    return locales.map((l) => {
+      const requeridos = l.personeros_requeridos ?? l.mesas;
+      const registrados = registradosPorNombre.get(normalizarNombre(l.nombre)) ?? 0;
+      return { ...l, requeridos, registrados, faltan: requeridos - registrados };
+    });
+  }, [locales, registradosPorNombre]);
+
+  // Los locales con mayor déficit primero — son los que necesitan refuerzo urgente.
+  const alertaCobertura = useMemo(
+    () => [...filasCompletas].filter((l) => l.faltan > 0).sort((a, b) => b.faltan - a.faltan),
+    [filasCompletas]
+  );
+
   const filas = useMemo(() => {
     const texto = normalizarNombre(search);
-    return locales
+    return filasCompletas
       .filter((l) => comunaFiltro === "todas" || l.comuna === parseInt(comunaFiltro, 10))
-      .filter((l) => !texto || normalizarNombre(`${l.nombre} ${l.direccion ?? ""}`).includes(texto))
-      .map((l) => {
-        const requeridos = l.personeros_requeridos ?? l.mesas;
-        const registrados = registradosPorNombre.get(normalizarNombre(l.nombre)) ?? 0;
-        return { ...l, requeridos, registrados, faltan: requeridos - registrados };
-      });
-  }, [locales, search, comunaFiltro, registradosPorNombre]);
+      .filter((l) => !texto || normalizarNombre(`${l.nombre} ${l.direccion ?? ""}`).includes(texto));
+  }, [filasCompletas, search, comunaFiltro]);
 
   const grupos = useMemo(() => {
     const m = new Map<number, typeof filas>();
@@ -364,6 +446,8 @@ export default function LocalesVotacionPage() {
         </div>
       ) : (
         <>
+          <AlertaCobertura locales={alertaCobertura} />
+
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <StatCard label="Locales" value={numberFmt.format(totalGeneral.locales)} subtitle={comunaFiltro === "todas" ? "Todas las comunas" : `Comuna ${comunaFiltro}`}
               icon={<SchoolIcon />} color="#60a5fa" />
