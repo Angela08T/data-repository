@@ -434,13 +434,17 @@ export default function PersonerosPage() {
   const totalDuplicados = data.filter((p) => infoDuplicado(p) !== null).length;
 
   const filtrados = data.filter((p) => {
-    const nombreCompleto = `${p.nombres} ${p.apellido_paterno} ${p.apellido_materno}`.toLowerCase();
+    // Se compara sin tildes ni mayúsculas (misma normalización que ya se usa
+    // para detectar duplicados) — si no, buscar "Muñoz" escrito "Munoz", o
+    // cualquier apellido con tilde escrito sin ella, no encontraba nada.
+    const textoBusqueda = normalizarTextoDuplicado(search);
+    const nombreCompleto = normalizarTextoDuplicado(`${p.nombres} ${p.apellido_paterno} ${p.apellido_materno}`);
     const matchSearch =
-      nombreCompleto.includes(search.toLowerCase()) ||
+      nombreCompleto.includes(textoBusqueda) ||
       (p.dni ?? "").includes(search) ||
-      (p.distrito ?? "").toLowerCase().includes(search.toLowerCase()) ||
-      (p.comuna ?? "").toLowerCase().includes(search.toLowerCase()) ||
-      (p.registrador_nombres ?? "").toLowerCase().includes(search.toLowerCase());
+      normalizarTextoDuplicado(p.distrito).includes(textoBusqueda) ||
+      normalizarTextoDuplicado(p.comuna).includes(textoBusqueda) ||
+      normalizarTextoDuplicado(p.registrador_nombres).includes(textoBusqueda);
     const matchSexo     = filtroSexo === "todos" || normalizarSexo(p.sexo) === filtroSexo;
     const matchComuna   = filtroComuna === "todos" || extraerNumeroComuna(p.comuna) === Number(filtroComuna);
     const matchColegio  = filtroColegio === "todos" || (p.colegio_votacion?.trim() ?? "") === filtroColegio;
