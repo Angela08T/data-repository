@@ -335,6 +335,7 @@ export default function PersonerosPage() {
   const [filtroZona, setFiltroZona]               = useState<string>("todos");
   const [filtroFechaCumple, setFiltroFechaCumple] = useState<Dayjs | null>(null);
   const [filtroLlamado, setFiltroLlamado]         = useState<"todos" | "llamados" | "pendientes">("todos");
+  const [filtroDatos, setFiltroDatos]             = useState<"todos" | "sin_colegio" | "sin_mesa" | "sin_alguno">("todos");
   const [soloDuplicados, setSoloDuplicados]       = useState(false);
   const [edadRange, setEdadRange]                 = useState<number[]>([0, EDAD_MAX]);
   const [edadRangeDraft, setEdadRangeDraft]       = useState<number[]>([0, EDAD_MAX]);
@@ -466,8 +467,17 @@ export default function PersonerosPage() {
       : filtroLlamado === "llamados"
         ? !!p.llamado
         : !p.llamado;
+    const sinColegio = !p.colegio_votacion?.trim();
+    const sinMesa    = !p.numero_mesa?.trim();
+    const matchDatos = filtroDatos === "todos"
+      ? true
+      : filtroDatos === "sin_colegio"
+        ? sinColegio
+        : filtroDatos === "sin_mesa"
+          ? sinMesa
+          : sinColegio || sinMesa;
     const matchDuplicado = !soloDuplicados || infoDuplicado(p) !== null;
-    return matchSearch && matchSexo && matchComuna && matchColegio && matchZona && matchTipo && matchCumple && matchEdad && matchLlamado && matchDuplicado;
+    return matchSearch && matchSexo && matchComuna && matchColegio && matchZona && matchTipo && matchCumple && matchEdad && matchLlamado && matchDatos && matchDuplicado;
   });
 
   // Si un filtro o la búsqueda reduce los resultados y la página actual queda
@@ -631,7 +641,7 @@ export default function PersonerosPage() {
     return opcion ? `Comuna ${opcion}` : "";
   }
 
-  const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos" || filtroZona !== "todos" || filtroLlamado !== "todos" || !!filtroFechaCumple || isEdadFiltered || soloDuplicados;
+  const hayFiltrosActivos = filtroComuna !== "todos" || filtroTipoRegistro !== "todos" || filtroColegio !== "todos" || filtroZona !== "todos" || filtroLlamado !== "todos" || filtroDatos !== "todos" || !!filtroFechaCumple || isEdadFiltered || soloDuplicados;
 
   const cerrarDialogoEliminar = () => {
     if (eliminando) return;
@@ -1094,6 +1104,28 @@ export default function PersonerosPage() {
           {/* Separador */}
           <div style={{ width: 1, height: 20, background: "rgba(148,163,184,0.22)" }} />
 
+          {/* Filtro Datos faltantes — para ir completando colegio/mesa más rápido */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Datos:</span>
+            {([
+              { value: "todos",       label: "Todos" },
+              { value: "sin_colegio", label: "Sin colegio" },
+              { value: "sin_mesa",    label: "Sin N° mesa" },
+              { value: "sin_alguno",  label: "Sin colegio o mesa" },
+            ] as const).map((f) => (
+              <button key={f.value} onClick={() => setFiltroDatos(f.value)}
+                className="px-3 py-1 rounded-full text-xs font-semibold border transition-all"
+                style={filtroDatos === f.value
+                  ? { background: "#b45309", color: "#fff", borderColor: "#b45309" }
+                  : { background: "#121a30", color: "#94a3b8", borderColor: "rgba(148,163,184,0.22)" }}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Separador */}
+          <div style={{ width: 1, height: 20, background: "rgba(148,163,184,0.22)" }} />
+
           {/* Filtro Edad (calculada a partir de fecha_nacimiento) */}
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Edad:</span>
@@ -1191,7 +1223,7 @@ export default function PersonerosPage() {
           {/* Limpiar */}
           {hayFiltrosActivos && (
             <button
-              onClick={() => { setFiltroComuna("todos"); setFiltroTipoRegistro("todos"); setFiltroColegio("todos"); setFiltroZona("todos"); setFiltroFechaCumple(null); setFiltroLlamado("todos"); setEdadRange([0, EDAD_MAX]); setEdadRangeDraft([0, EDAD_MAX]); setSoloDuplicados(false); }}
+              onClick={() => { setFiltroComuna("todos"); setFiltroTipoRegistro("todos"); setFiltroColegio("todos"); setFiltroZona("todos"); setFiltroFechaCumple(null); setFiltroLlamado("todos"); setFiltroDatos("todos"); setEdadRange([0, EDAD_MAX]); setEdadRangeDraft([0, EDAD_MAX]); setSoloDuplicados(false); }}
               className="text-xs font-semibold px-3 py-1 rounded-full transition-all"
               style={{ background: "rgba(220,38,38,0.16)", color: "#f87171", border: "1px solid rgba(220,38,38,0.4)" }}>
               Limpiar filtros
